@@ -175,13 +175,13 @@ class ProjectivePlaneCurve:
 
         MILP.set_objective(t)
 
-        MILP.add_constraint(-1 <= v[0] <= 1)
-        MILP.add_constraint(-1 <= v[1] <= 1)
-        MILP.add_constraint(-1 <= v[2] <= 1)
-        MILP.add_constraint(v[0] + v[1] + v[2] == 0)
+        MILP.add_constraint(-1 <= w0 <= 1)
+        MILP.add_constraint(-1 <= w1 <= 1)
+        MILP.add_constraint(-1 <= w1 <= 1)
+        MILP.add_constraint(w0 + w1 + w2 == 0)
 
         for i in G.dict():
-            MILP.add_constraint(t <= i[0] * v[0] + i[1] * v[1] + i[2] * v[2])
+            MILP.add_constraint(t <= i[0] * w0 + i[1] * w1 + i[2] * w2)
 
         MILP.solve()
         values = MILP.get_values(v)
@@ -500,13 +500,13 @@ class ProjectivePlaneCurve:
                         dehomogenization = [x,y]
                         dehomogenization.insert(affine_patch,R(1))
                         dehomogenization = vector(dehomogenization)
-                        line = line( list(dehomogenization * T1) )
+                        affine_line = line( list(dehomogenization * T1) )
 
-                        T2 = self._move_affine_line_to_coordinate_axis(line, affine_patch)
+                        T2 = self._move_affine_line_to_coordinate_axis(affine_line, affine_patch)
 
                         weight_vector = self.instable_weight_vector_wrt(T2 * T1)
                         if weight_vector != None:
-                            list_of_instabilities.append(PPC_Instability(T2 * T1, weight_vector, 'Case (c)'))
+                            list_of_instabilities.append(PPC_Instability(T2 * T1, weight_vector, 'Case (c) with ' + str(line)))
 
         return list_of_instabilities
 
