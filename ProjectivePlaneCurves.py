@@ -506,7 +506,8 @@ class ProjectivePlaneCurve:
 
                         weight_vector = self.instable_weight_vector_wrt(T2 * T1)
                         if weight_vector != None:
-                            list_of_instabilities.append(PPC_Instability(T2 * T1, weight_vector, 'Case (c) with ' + str(line)))
+                            geometric_type = "Case (c) with " + str(line) + " and " + str(P_initial)
+                            list_of_instabilities.append(PPC_Instability(T2 * T1, weight_vector, geometric_type))
 
         return list_of_instabilities
 
@@ -582,12 +583,9 @@ class PPC_TangentCone:
 
 
 
+class PPC_Instability:
 
-
-
-class PPC_Instability:  # make it to an internel class of the class 'ProjectivePlaneCurve'
-
-    def __init__(self, base_change_matrix, weight_vector, geometric_type = None):  # it should also contain the geometric information (point, line, or flag of those)
+    def __init__(self, base_change_matrix, weight_vector, geometric_type = 'not specified'):
 
         self.base_change_matrix = base_change_matrix
         self.weight_vector = weight_vector
