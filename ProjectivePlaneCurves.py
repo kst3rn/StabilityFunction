@@ -447,14 +447,9 @@ class ProjectivePlaneCurve:
         matrices with maximal number of zeros, of self.
 
         MATHEMATICAL INTERPRETATION:
-            We will explain how to compute all instabilities and why there are
+            We will explain how to compute all such instabilities and why there are
             only finitely many of them.
 
-
-        IMPORTANT REMARK:
-            If the list self.instabilities() contains an instability given by the
-            identity matrix, then this instability has index 0, i.e. is equal to
-            self.graded_instabilities()[0].
         """
 
         list_of_instabilities = []
