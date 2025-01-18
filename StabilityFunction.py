@@ -367,6 +367,10 @@ class BTB_Point:
         self.base_ring_valuation = base_ring_valuation
         self.base_change_matrix = base_change_matrix
 
+        # convert all entries to rationals
+        for i, w in enumerate(weight_vector):
+            weight_vector[i] = QQ(w)
+
         normalized_weight_vector = []
         minimal_entry = min(weight_vector)
         for weight_vector_entry in weight_vector:
