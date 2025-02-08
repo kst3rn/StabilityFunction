@@ -359,12 +359,15 @@ class StabilityFunction:
 
 
 
-
     def evaluate_at(self, point_on_BTB):
         """
-        Return the value of self at 'point_on_BTB' (ToDo)
+        Return the value of self at 'point_on_BTB'
         """
-        raise NotImplementedError
+
+        T = point_on_BTB.get_base_change_matrix()
+        w = point_on_BTB.get_weight_vector()
+
+        return min(affine_function(w) for affine_function in self.affine_functions_on_apartment(T))
 
 
 
