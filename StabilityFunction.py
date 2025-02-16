@@ -34,6 +34,11 @@ class StabilityFunction:
 
 
 
+    def __repr__(self):
+        return "Stability Function of {} over {} with {}".format(self.homogeneous_form, self.base_ring, self.base_ring_valuation)
+
+
+
     def get_dimension(self):
         return self.dimension
 
