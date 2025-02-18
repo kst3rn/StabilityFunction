@@ -35,7 +35,7 @@ class StabilityFunction:
 
 
     def __repr__(self):
-        return "Stability Function of {} over {} with {}".format(self.homogeneous_form, self.base_ring, self.base_ring_valuation)
+        return f"Stability Function of {self.homogeneous_form} over {self.base_ring} with {self.base_ring_valuation}"
 
 
 
@@ -399,6 +399,11 @@ class BTB_Point:
             normalized_weight_vector.append(weight_vector_entry - minimal_entry)
 
         self.weight_vector = normalized_weight_vector
+
+
+
+    def __repr__(self):
+        return f"Point on the Bruhat-Tits Building of SL({len(self.weight_vector)}) over {self.base_ring_valuation.domain()} with {self.base_ring_valuation}"
 
 
 
