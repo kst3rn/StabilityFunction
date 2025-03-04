@@ -947,9 +947,8 @@ class GradedInstability:
                     else:
                         array_2d[i][j] = "(" + str(self.instability_matrix[i][j]) + ")*" + str(t) + "^(" + str(t_exponent) + ")"
 
-            print("Let t be the reduction of pi_K. Then the base change to instability is given by the following matrix:")
-            print()
-
+            v_K = self.graded_reduction.get_valuation().get_base_ring_valuation()
+            print("Let t be the reduction of the uniformizer " + str(v_K.uniformizer()) + ". Then the base change to instability is given by the following matrix:")
 
             # Calculate the maximum width of each column
             col_widths = [max( len(str(item)) for item in col ) for col in zip(*array_2d)]
