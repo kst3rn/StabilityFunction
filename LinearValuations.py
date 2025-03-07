@@ -638,6 +638,11 @@ class GradedReduction:
 
 
 
+    def __repr__(self):
+        return str(self.gr_polynomial)
+
+
+
     def get_GRR(self):
         return self.graded_reduction_ring
 
