@@ -702,6 +702,9 @@ class GradedReduction:
         """
         Return a list of graded instabilities of self
 
+        INPUT:
+            matrix_form - one of the strings 'ult', 'uut', 'integral'
+
         MATHEMATICAL INTERPRETATION:
             First, let
                 (y_0,...,y_n) = self.GRR_standard_basis(),
@@ -744,6 +747,8 @@ class GradedReduction:
 
         if len(self.RR_standard_basis()) != 3:
             raise NotImplementedError
+        if matrix_form == 'integral':
+            matrix_form = self.GRR_grading
 
         import ProjectivePlaneCurves as PPC
         reduced_curve = PPC.ProjectivePlaneCurve(self.r_polynomial)
@@ -761,6 +766,9 @@ class GradedReduction:
         """
         Return a sublist of 'self.graded_instabilities()' consisting only of
         retional graded instabilities.
+
+        INPUT:
+            matrix_form - one of the strings 'ult', 'uut', 'integral'
         """
 
         Rational_Graded_Instabilities = []
