@@ -185,7 +185,6 @@ class StabilityFunction:
         return MILP.get_values(v)
 
 
-
     def ascent_directions_at(self, point_on_BTB, matrix_form = 'uut'):
         """
         Return a list of matrices which describe base changes, fixing 'point_on_BTB', to apartment,
@@ -235,7 +234,7 @@ class StabilityFunction:
         return ascent_directions
 
 
-    def ascent_direction_at(self, point_on_BTB, matrix_form = 'uut'):
+    def ascent_direction_at(self, point_on_BTB, matrix_form = 'integral'):
         """
         Return a matrix which describes a base change, fixing 'point_on_BTB', to an apartment,
         where the stability function can be maximized further.
@@ -257,9 +256,12 @@ class StabilityFunction:
             return ascent_directions[0]
 
 
-    def maximize(self):
+    def maximize(self, matrix_form = 'integral'):
         """
         Return the maximum and the point where the stability function takes it
+
+        INPUT:
+            matrix_form - one of the strings 'ult', 'uut', 'integral'
         """
 
         global_trafo_matrix = identity_matrix(self.base_ring, self.dimension + 1)
@@ -275,7 +277,7 @@ class StabilityFunction:
             return [maximum, point_on_BTB]
 
         affine_patch = point_on_BTB.affine_patch()
-        local_trafo_matrix = self.ascent_direction_at(point_on_BTB)
+        local_trafo_matrix = self.ascent_direction_at(point_on_BTB, matrix_form)
 
         if local_trafo_matrix == None:
             return [maximum, point_on_BTB]
@@ -294,7 +296,7 @@ class StabilityFunction:
                 return [maximum, point_on_BTB]
 
             affine_patch = point_on_BTB.affine_patch()
-            local_trafo_matrix = self.ascent_direction_at(point_on_BTB)
+            local_trafo_matrix = self.ascent_direction_at(point_on_BTB, matrix_form)
 
             if local_trafo_matrix == None:
                 return [maximum, point_on_BTB]
@@ -322,7 +324,6 @@ class StabilityFunction:
 
 
 
-
 class BTB_Point:
     def __init__(self, base_ring_valuation, base_change_matrix, weight_vector):
 
@@ -341,30 +342,24 @@ class BTB_Point:
         self.weight_vector = normalized_weight_vector
 
 
-
     def __repr__(self):
         return f"Point on the Bruhat-Tits Building of SL({len(self.weight_vector)}) over {self.base_ring_valuation.domain()} with {self.base_ring_valuation}"
-
 
 
     def get_base_change_matrix(self):
         return self.base_change_matrix
 
 
-
     def get_weight_vector(self):
         return self.weight_vector
-
 
 
     def affine_patch(self):
         return self.weight_vector.index(0)
 
 
-
     def get_base_ring(self):
         return self.base_change_matrix.base_ring()
-
 
 
     def minimal_simplex_dimension(self):
@@ -373,37 +368,21 @@ class BTB_Point:
 
         MATHEMATICAL INTERPRETATION (ToDo. But at this point we just give an example.): 
             If we start with the point (0, 1/2, 3/2, 1/3), we first move it to
-
             (0, 1/2, 1/2, 1/3). Then we see that {(0,0,0,0), (0, 1, 1, 0), (0, 1, 1, 1)}
-
             is the minimal simplex containing (0, 1/2, 1/2, 1/3). This is because we have
-
             to consider the lines <(0, 1, 0, 0)>, <(0, 0, 1, 0)>, <(0, 0, 0, 1)>,
-
             <(0, 1, 1, 0)>, <(0, 1, 0, 1)>, <(0, 0, 1, 1)>, <(0, 1, 1, 1)> and to find the
-
             minimal direct sum, containing (0, 1/2, 1/2, 1/3). In our case this is the sum
-
                 <(0, 1, 1, 0)> oplus <(0, 0, 0, 1> = <(0,1,1,0), (0, 0, 0, 1)>.
-
             Since the simplices need to have a cyclic basis, we must choose
-
             (0, 1, 1, 0), (0, 1, 1, 1) as a basis of the direct sum above.
-
             In general, we first have to normalize the valuation to have the value group ZZ,
-
             i.e. to divide the vector 'self.weight_vector()' by v_K(pi_K). Let w_normalized be
-
             this normalized vector. Now we have to move w_normalized inside the cube [0,1]^N.
-
             Let w be this translated vector. Now remove all zeros from w. Let w_without_zeros be
-
             this modified vector. Now compute the cardinality of the set set(w_without_zeros).
-
             This cardinality is exactly the dimension of the minimal simplex containing self.
-
             Note that this is the same as the cardinality of the set set(w) minus 1, i.e.
-
             len(set(w)) - 1.
         """
 
