@@ -697,7 +697,6 @@ class GradedReduction:
         return self.linear_valuation
 
 
-
     def graded_instabilities(self, matrix_form = 'uut'):
         """
         Return a list of graded instabilities of self
@@ -759,7 +758,6 @@ class GradedReduction:
                 Graded_Instabilities.append(GradedInstability(self, T))
 
         return Graded_Instabilities
-
 
 
     def rational_graded_instabilities(self, matrix_form = 'uut'):
