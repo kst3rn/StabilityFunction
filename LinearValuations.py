@@ -36,84 +36,45 @@ class LinearValuation:
 
         INTERPRETATION:
             First, let
-
                 K   = polynomial_ring.base_ring(),
-
                 E_0 = (x_0,...,x_n) = polynomial_ring.gens(),
-
                 v_K = base_ring_valuation,
-
                 A   = base_change_matrix,
-
                 B   = base_change_matrix.inverse(),
-
                 w   = weight_vector .
-
             Thus, we can write
-
                 polynomial_ring = K[x_0,...,x_n] .
-
             We call E_0 the standard basis and consider A and B as linear transformations,
-
             with respect to E_0, i.e.
-
                 A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n b_{ij}*x_i .
-
             Then E = (y_0,...,y_n) = ( B(x_0),...,B(x_n) ) is a new basis of K[x_0,...,x_n].
-
             and we set
-
                 LinearValuation( K[x_0,...,x_n], v_K, A, w ) = v_{E,u} .
-
             Now let F be a polynomial in K[x_0,...,x_n]. To compute v_{E,u}(F) we have to
-
             write F with respect to the basis E. This will be done as follows. If we view
-
             E_0 = (x_0,...,x_n) as a vector in Sage, we get
-
                 (x_0,...,x_n)*B = (sum_{i=0}^n b_{i,0}*x_i,...,sum_{i=0}^n b_{i,n}*x_i)
-
                                 = (y_0,...,y_n)
-
             and therefore
-
                 F(x_0,...,x_n) = F( (y_0,...,y_n)*B^{-1} ) = F( (y_0,...,y_n)*A ) .
-
             Thus, the polynomial
-
                 G(y_0,...,y_n) = F( (y_0,...,y_n)*A ) in K[y_0,...,y_n]
-
             describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
-
             Thus, with the notation
-
                 <i,u> = i_0*u_0 + ... + i_n*u_n,
-
             we obtain
-
                 v_{E,u}(F) = min( v_K(a_i) + <i,u> : i in I ) with G = sum_{i in I} a_i y^i,
-
             where i is a multi-index, i.e. I is a subset of NN^{n+1}.
-
             Remark. Note that the valuations
-
                 LinearValuation( K[x_0,...,x_n], v_K, A, w )
-
             and
-
                 LinearValuation( K[y_0,...,y_n], v_K, identity_matrix, w )
-
             are equal. We will use this fact for example to compute graded reduction.
-
         IMPORTANT REMARK:
             We do not want to introduce new variables and hence we will consider
-
                 G(x_0,...,x_n) = F( (x_0,...,x_n)*T^{-1} )
-
             and not G(y_0,...,y_n). But for mathematical clarity, we will still
-
             refer to (y_0,...,y_n) in the comments below.
-
         """
 
         # convert all entries to rationals
@@ -129,35 +90,28 @@ class LinearValuation:
         return self.polynomial_ring
 
 
-
     def get_base_field(self):
         return self.polynomial_ring.base_ring()
-
 
 
     def get_base_ring_valuation(self):
         return self.base_ring_valuation
 
 
-
     def get_dimension(self):
         return len(self.weight_vector)
-
 
 
     def standard_basis(self):
         return self.polynomial_ring.gens()
 
 
-
     def get_weight_vector(self):
         return self.weight_vector
 
 
-
     def get_base_change_matrix(self):
         return self.base_change_matrix
-
 
 
     def evaluate_at( self, polynomial ):
@@ -172,87 +126,47 @@ class LinearValuation:
 
         MATHEMATICAL INTERPRETATION:
             First, let
-
                 K   = self.polynomial_ring.base_ring(),
-
                 E_0 = (x_0,...,x_n) = self.polynomial_ring.gens(),
-
                 v_K = self.base_ring_valuation,
-
                 A   = self.base_change_matrix,
-
                 B   = self.base_change_matrix.inverse(),
-
                 u   = self.weight_vector .
-
             Thus, we can write
-
                 self.polynomial_ring = K[x_0,...,x_n] .
-
             We call E_0 the standard basis and consider A and B as linear transformations,
-
             with respect to E_0, i.e.
-
                 A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n b_{ij}*x_i .
-
             Then E = (y_0,...,y_n) = ( B(x_0),...,B(x_n) ) is a new basis of K[x_0,...,x_n].
-
             and
-
                 LinearValuation( K[x_0,...,x_n], v_K, A, u ) = v_{E,u} .
-
             Let F be a polynomial in K[x_0,...,x_n]. To evaluate v_{E,u} at F we have to
-    
             write F with respect to the basis E. This will be done as follows. If we view
-
             E_0 = (x_0,...,x_n) as a vector in Sage, we get
-
                 (x_0,...,x_n)*B = (sum_{i=0}^n B_{i,0}*x_i,...,sum_{i=0}^n B_{i,n}*x_i)
-
                                 = (y_0,...,y_n)
-
             and therefore
-
                 F(x_0,...,x_n) = F( (y_0,...,y_n)*B^{-1} ) = F( (y_0,...,y_n)*A ) .
-
             Thus, the polynomial
-
                 G(y_0,...,y_n) = F( (y_0,...,y_n)*A ) in K[y_0,...,y_n]
-
             describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
-
             For a multi index set I subset NN^(n+1) we can write
-
                 G = sum_{i in I} a_i y_0^i_0 * ... * y_n^i_n
-
             Thus, with the notation
-
                 <i,u> = i_0*u_0 + ... + i_n*u_n,
-
             we obtain
-
                 v_{E,u}(F) = min( v_K(a_i) + <i,u> : i in I ).
-
             Remark. Note that the valuations
-
                 LinearValuation( K[x_0,...,x_n], v_K, A, u )
-
             and
-
                 LinearValuation( K[y_0,...,y_n], v_K, identity_matrix, u )
-
             are equal. We will use this fact for example to compute graded reduction.
-
 
         IMPORTANT REMARK:
             We do not want to introduce new variables and hence we will consider
-
                 G(x_0,...,x_n) = F( (x_0,...,x_n)*T^{-1} )
-
             and not G(y_0,...,y_n). But for mathematical clarity, we will still
-
             refer to (y_0,...,y_n) in the comments below.
-
         """
 
         if not polynomial.parent() == self.polynomial_ring:
@@ -270,7 +184,6 @@ class LinearValuation:
         return min(values)
 
 
-
     def graded_reduction_of( self, polynomial ):
         """
         Return the graded reduction of polynomial with respect to self.
@@ -283,165 +196,86 @@ class LinearValuation:
 
         MATHEMATICS AND IMPLEMENTATION:
             First, let
-
                 F   = polynomial,
-
                 K   = self.polynomial_ring.base_ring(),
-
                 E_0 = (x_0,...,x_n) = self.polynomial_ring.gens(),
-
                 v_K = self.base_ring_valuation,
-
                 k   = v_K.residue_field()
-
                 p_K = v_K.uniformizer()
-
                 A   = self.base_change_matrix,
-
                 B   = self.base_change_matrix.inverse(),
-
                 u   = self.weight_vector .
-
             Thus, we can write
-
                 self.polynomial_ring = K[x_0,...,x_n] .
-
             We call E_0 the standard basis and consider A and B as linear transformations,
-
             with respect to E_0, i.e.
-
                 A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n b_{ij}*x_i .
-
             Then E = (y_0,...,y_n) = ( B(x_0),...,B(x_n) ) is a new basis of K[x_0,...,x_n].
-
             and
-
                 LinearValuation( K[x_0,...,x_n], v_K, A, u ) = v_{E,u} .
-
             The graded reduction ring of v_{E,u} is the graded ring
-
                 R = k[t,t^(-1)][Y_0,...,Y_n]
-
             where
-
                 t = [p_K], Y_0 = [y_0],..., Y_n = [y_n]
-
             are the graded reduction of
-
                 p_K, y_0,..., y_n,
-
             respectively. Moreover, the grading of R is given by the degrees of
-
             the generators
-
                 |t| = v_K(p_K), |Y_0| = v_{E,u}(y_0),..., |Y_n| = v_{E,u}(y_n) .
-
             To compute the graded reduction  [F] of F we first have to write F with
-
             respect to the basis E. This will be done as follows. If we view
-
             E_0 = (x_0,...,x_n) as a vector in Sage, we get
-
                 (x_0,...,x_n)*B = (sum_{i=0}^n B_{i,0}*x_i,...,sum_{i=0}^n B_{i,n}*x_i)
-
                                 = (y_0,...,y_n)
-
             and therefore
-
                 F(x_0,...,x_n) = F( (y_0,...,y_n)*B^(-1) ) = F( (y_0,...,y_n)*A ) .
-
             Since A = B^(-1), the polynomial
-
                 G(y_0,...,y_n) = F( (y_0,...,y_n)*A ) in K[y_0,...,y_n]
-
             describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
-
             Note that mathematically the rings
-
                 K[x_0,...,x_n] and K[y_0,...,y_n]
-
             are the same as well as the polynomials F and G are the same. We only perform a change
-
             of coordinates. So, for a multi index set I subset NN^(n+1) let
-
                 F = G = sum_{i in I} g_i y_0^i_0 * ... * y_n^i_n .
-
             Now, with the notation
-
                 <i,u> = i_0*u_0 + ... + i_n*u_n
-
             and
-
                 J = { i in I : v_{E,u}(F) = v_{E,u}(g_i y_0^i_0 * ... * y_n^i_n) },
-
             we have
-
                  v_{E,u}(F) = min( v_K(g_i) + <i,u> : i in I )
-
             and therefore the graded reduction [F] is given by
-
                 sum_{i in J} [g_i / p_K^(v_{E,u}(F)-<i,u>)]*t^(v_{E,u}(F)-<i,u>) * Y_0^i_1*...*Y_n^i_n,
-
             where
-
                 [g_i / p_K^(v_{E,u}(F)-<i,u>)]
-
             is the reduction of
-
                 g_i / p_K^(v_{E,u}(F)-<i,u>)
-
             with respect to v_K.
 
-
             REMARK 1. Note that the valuations
-
                 v1 = LinearValuation( K[x_0,...,x_n], v_K, A, u )
-
             and
-
                 v2 = LinearValuation( K[y_0,...,y_n], v_K, identity_matrix, u )
-
             are both (mathematically) equal to v_{E,u}. As well as F and G are
-
             both (mathematically) equal. In particular, (mathematically) we have
-
                 v_{E,u}(F) = v_{E,u}(G) .
-
             But in SageMath we have
-
                 v1 != v2
-
             as well as
-
                 F != G .
-
             But by construction of v1 and v2 as well as F and G we have
-
                 v1.evaluate_at(F) = v2.evaluate_at(G) .
-
             Moreover, to compute
-
                 v_{E,u}(g_j y_0^j_0 * ... * y_n^j_n)
-
             in SageMath, we have to compute
-
                 v2.evaluate_at(g_j y_0^j_0 * ... * y_n^j_n),
-
             since the monomial
-
                 g_j y_0^j_0 * ... * y_n^j_n
-
             is already written with respect to the basis E = (y_0,...,y_n).
 
-
             REMARK 2. We do not want to introduce new variables and hence we will consider
-
                 G(x_0,...,x_n) = F( (x_0,...,x_n)*T^(-1) )
-
             and not G(y_0,...,y_n). But for mathematical clarity, we will still
-
             refer to (y_0,...,y_n) in the comments.
-
         """
 
         if not polynomial.parent() == self.polynomial_ring:
@@ -455,11 +289,8 @@ class LinearValuation:
         N = self.get_dimension()
         GradedReductionRing = PolynomialRing( BaseRing, 'y', N )
 
-
         E_matrix = identity_matrix( self.polynomial_ring.base_ring(), N )
-
         G = polynomial( list( vector(self.standard_basis()) * self.base_change_matrix ) )
-
         v_help = LinearValuation( self.polynomial_ring, self.base_ring_valuation, E_matrix, self.weight_vector )
 
         # By REMARK 1 we have self.evaluate_at(polynomial) = v_help.evaluate_at(G)
@@ -497,122 +328,64 @@ class GradedReduction:
             graded reduction of F with respect to 'linear_valuation' as object of the
             class 'GradedReduction'
 
-
         MATHEMATICS and IMPLEMENTATION:
             First, let
-
                 f = gr_polynomial,
-
                 s = linear_valuation.get_base_ring_valuation().value_group().gen(),
-
                 u = linear_valuation.get_weight_vector() .
-
             Then s is a rational number and u = (u_0,...,u_n) a trupel of rational
-
             numbers. Moreover, f is the graded reduction of a polynomial
-
                 F in K[x_0,...,x_n]
-
             with respect to a linear valuation v. The graded reduction ring of v is
-
             given by the polynomial ring
-
                 R = k[t,t^(-1)][y_0,...,y_n]
-
             over the Laurent polynomial ring k[t,t^(-1)]. Here y_i is the reduction
-
             of x_i. Thus, we can write f as
-
                 sum_{j,i_0,...,i_n} a_{j,i_0,...,i_n} * t^j * y_0^i_0 * ... * y_n^i_n .
-
             Furthermore, R has a grading given by
-
                 |a| = 0 for all a in k, |t| = s,
-
             and
-
                 |y_0| = v(x_0) = u_0, ..., |y_n| = v(x_n) = u_n .
-
             With respect to this grading, f is a homogeneous element. With the notation
-
                 <i,u> = i_0 * u_0 + ... + i_n * u_n
-
             we have
-
                 |f| = j*s + <i,u>
-
             for all j and i = (i_0,...,i_n) with nonzero a_{j,i_0,...,i_n}.
-
             Not let
-
                 d_0 = (u_0/s).denominator(), ..., d_n = (u_n/s).denominator()
-
             and
-
                 d = lcm(d_0,...,d_n) .
-
             In an algebraic closure of the fraction field of k[t,t^(-1)] let T be an
-
             element with
-
                 T^d = t .
-
             Then, in the integral extension of rings
-
                 k[t,t^(-1)] ---> k[T,T^(-1)]
-
             we can write
-
                 T^(d/d_i) = (t^(1/d))^(d/d_i) = t^(1/d * d/d_i) = t^(1/d_i) .
-
             Thus, over k[T,T^(-1)] we can introduce the variables
-
                 z_0 = t^(-u_0/s) * y_0, ..., z_n = t^(-u_n/s) * y_n .
-
             Note that
-
                 |z_i| = -u_i / s * |t| + |y_i| = -u_i + u_i = 0
-
             for any i. Further, using
-
                 y_i = t^(u_i/s) * z_i
-
             we get
-
                 t^j*y_0^i_0*...*y_n^i_n = t^(j+1/s*<i,u>)*z_0^i_0*...*z_n^i_n .
-
             As explained above, we have
-
                 |f| = j*u + <i,u>
-
             and therefore
-
                 |f|/s = j + 1/s * <i,u>
-
             for all j and i = (i_0,...,i_n) with nonzero a_{j,i_0,...,i_n}.
-
             Thus, we have
-
                 t^j*y_0^i_0*...*y_n^i_n = t^(|f|/s)*z_0^i_0*...*z_n^i_n
-
             and therefore f is equal to
-
                 t^(|f|/s)*sum_{j,i_0,...,i_n} a_{j,i_0,...,i_n}*z_0^i_0*...*z_n^i_n .
-
             Now we view
-
                 g = sum_{j,i_0,...,i_n} a_{j,i_0,...,i_n}*z_0^i_0*...*z_n^i_n
-
             as an element of the polynomial ring
-
                 k[z_0,...,z_n]
-
             over the field k.
-
             For computational reasons we will work with g and transfere the
-
             results back to f with the inverse coordinate change.
-
         """
 
         self.linear_valuation = linear_valuation
@@ -637,60 +410,48 @@ class GradedReduction:
             self.r_polynomial = self.r_polynomial + monom
 
 
-
     def __repr__(self):
         return str(self.gr_polynomial)
-
 
 
     def get_GRR(self):
         return self.graded_reduction_ring
 
 
-
     def GRR_standard_basis(self):
         return self.graded_reduction_ring.gens()
-
 
 
     def get_base_ring_grading(self):
         return self.base_ring_grading
 
 
-
     def get_GRR_grading(self):
         return self.GRR_grading
-
 
 
     def RR_standard_basis(self):
         return self.reduction_ring.gens()
 
 
-
     def get_scaled_GRR_grading(self):
         return self.scaled_GRR_grading
-
 
 
     def get_gr_polynomial(self):
         return self.gr_polynomial
 
 
-
     def get_r_polynomial(self):
         return self.r_polynomial
-
 
 
     def get_initial_polynomial_ring(self):
         return self.polynomial_ring
 
 
-
     def get_initial_base_ring(self):
         return self.polynomial_ring.base_ring()
-
 
 
     def get_valuation(self):
@@ -876,7 +637,6 @@ class GradedInstability:
                         lifted_graded_trafo_matrix[i][j] = base_ring_valuation.lift(entry_in_row) * prime_element**exponent
 
         return matrix(base_ring, lifted_graded_trafo_matrix)
-
 
 
     def print_matrix(self):
