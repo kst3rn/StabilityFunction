@@ -126,7 +126,7 @@ class ProjectivePlaneCurve:
                 list_of_pseu_inst.append(PseudoInstability(self, Point = P))
             elif m > self.degree / 2:  # CASE (d) 1/2
                 for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
-                    if line_multiplicity > m / 2:
+                    if L_multiplicity > m / 2:
                         list_of_pseu_inst.append(PseudoInstability(self, P, L))
 
         # CASES (a) and (c)
@@ -492,70 +492,70 @@ class ProjectivePlaneCurve:
 
 
 
-    def _instabilities(self):
-        """
-        Return a list of all instabilities, given by unipotent upper triangular
-        matrices with maximal number of zeros, of self.
-
-        MATHEMATICAL INTERPRETATION:
-            We will explain how to compute all such instabilities and why there are
-            only finitely many of them.
-
-        """
-
-        list_of_instabilities = []
-
-
-        # CASES (b) and (d)
-        for P_initial, m in self.points_with_high_multiplicity():
-            if m > 2 * self.degree / 3:  # CASE (b)
-                affine_patch, T1 = self._move_point_to_affine_origin(P_initial)
-                weight_vector = [1, 1, 1]
-                weight_vector[affine_patch] = -2
-                weight_vector = tuple(weight_vector)
-                list_of_instabilities.append(PPC_Instability(T1, weight_vector, (P_initial, m)))
-
-            elif m > self.degree / 2:  # CASE (d) 1/2
-                affine_patch, T1 = self._move_point_to_affine_origin(P_initial)
-
-                for line, line_multiplicity in PPC_TangentCone(self, P_initial).get_lines():
-                    if line_multiplicity > m / 2:
-                        T2 = self._move_affine_line_to_coordinate_axis(line, affine_patch)
-
-                        weight_vector = self.instable_weight_vector_wrt(T2*T1)
-                        if not weight_vector == None:
-                            list_of_instabilities.append(PPC_Instability(T2 * T1, weight_vector, 'Case (d)'))
-
-        # CASES (a) and (c)
-        for line, line_multiplicity, G in self.lines_with_high_multiplicity():
-            if line_multiplicity > self.degree / Integer(3):  # CASE (a)
-                for coordinate_axis_index, T in self._move_projective_line_to_coordinate_axis(line):
-                    weight_vector = [-1, -1, -1]
-                    weight_vector[coordinate_axis_index] = 2
-                    weight_vector = tuple(weight_vector)
-                    list_of_instabilities.append(PPC_Instability(T, weight_vector, (line, line_multiplicity)))
-
-            else: # CASE (c) 1/2
-                line_curve = self.projective_plane.curve(line)
-                G_curve = self.projective_plane.curve(G)
-                for P_initial in line_curve.intersection_points(G_curve):
-                    if line_curve.intersection_multiplicity(G_curve, P_initial) > (self.degree - line_multiplicity) / Integer(2):
-                        affine_patch, T1 = self._move_point_to_affine_origin(P_initial)
-                        R = PolynomialRing(self.base_ring, ['x', 'y'])
-                        x, y = R.gens()
-                        dehomogenization = [x,y]
-                        dehomogenization.insert(affine_patch,R(1))
-                        dehomogenization = vector(dehomogenization)
-                        affine_line = line( list(dehomogenization * T1) )
-
-                        T2 = self._move_affine_line_to_coordinate_axis(affine_line, affine_patch)
-
-                        weight_vector = self.instable_weight_vector_wrt(T2 * T1)
-                        if weight_vector != None:
-                            geometric_type = "Case (c) with " + str(line) + " and " + str(P_initial)
-                            list_of_instabilities.append(PPC_Instability(T2 * T1, weight_vector, geometric_type))
-
-        return list_of_instabilities
+    # def _instabilities(self):
+    #     """
+    #     Return a list of all instabilities, given by unipotent upper triangular
+    #     matrices with maximal number of zeros, of self.
+    # 
+    #     MATHEMATICAL INTERPRETATION:
+    #         We will explain how to compute all such instabilities and why there are
+    #         only finitely many of them.
+    # 
+    #     """
+    # 
+    #     list_of_instabilities = []
+    # 
+    # 
+    #     # CASES (b) and (d)
+    #     for P_initial, m in self.points_with_high_multiplicity():
+    #         if m > 2 * self.degree / 3:  # CASE (b)
+    #             affine_patch, T1 = self._move_point_to_affine_origin(P_initial)
+    #             weight_vector = [1, 1, 1]
+    #             weight_vector[affine_patch] = -2
+    #             weight_vector = tuple(weight_vector)
+    #             list_of_instabilities.append(PPC_Instability(T1, weight_vector, (P_initial, m)))
+    # 
+    #         elif m > self.degree / 2:  # CASE (d) 1/2
+    #             affine_patch, T1 = self._move_point_to_affine_origin(P_initial)
+    # 
+    #             for line, line_multiplicity in PPC_TangentCone(self, P_initial).get_lines():
+    #                 if line_multiplicity > m / 2:
+    #                     T2 = self._move_affine_line_to_coordinate_axis(line, affine_patch)
+    # 
+    #                     weight_vector = self.instable_weight_vector_wrt(T2*T1)
+    #                     if not weight_vector == None:
+    #                         list_of_instabilities.append(PPC_Instability(T2 * T1, weight_vector, 'Case (d)'))
+    # 
+    #     # CASES (a) and (c)
+    #     for line, line_multiplicity, G in self.lines_with_high_multiplicity():
+    #         if line_multiplicity > self.degree / Integer(3):  # CASE (a)
+    #             for coordinate_axis_index, T in self._move_projective_line_to_coordinate_axis(line):
+    #                 weight_vector = [-1, -1, -1]
+    #                 weight_vector[coordinate_axis_index] = 2
+    #                 weight_vector = tuple(weight_vector)
+    #                 list_of_instabilities.append(PPC_Instability(T, weight_vector, (line, line_multiplicity)))
+    # 
+    #         else: # CASE (c) 1/2
+    #             line_curve = self.projective_plane.curve(line)
+    #             G_curve = self.projective_plane.curve(G)
+    #             for P_initial in line_curve.intersection_points(G_curve):
+    #                 if line_curve.intersection_multiplicity(G_curve, P_initial) > (self.degree - line_multiplicity) / Integer(2):
+    #                     affine_patch, T1 = self._move_point_to_affine_origin(P_initial)
+    #                     R = PolynomialRing(self.base_ring, ['x', 'y'])
+    #                     x, y = R.gens()
+    #                     dehomogenization = [x,y]
+    #                     dehomogenization.insert(affine_patch,R(1))
+    #                     dehomogenization = vector(dehomogenization)
+    #                     affine_line = line( list(dehomogenization * T1) )
+    # 
+    #                     T2 = self._move_affine_line_to_coordinate_axis(affine_line, affine_patch)
+    # 
+    #                     weight_vector = self.instable_weight_vector_wrt(T2 * T1)
+    #                     if weight_vector != None:
+    #                         geometric_type = "Case (c) with " + str(line) + " and " + str(P_initial)
+    #                         list_of_instabilities.append(PPC_Instability(T2 * T1, weight_vector, geometric_type))
+    # 
+    #     return list_of_instabilities
 
 
 
@@ -645,21 +645,16 @@ class PPC_TangentCone:
             translation of TanCon from the origin to the point P.            
         """
 
-        PPC_polynomial = self.projective_plane_curve.get_polynomial()
-        standard_basis = list(self.projective_plane_curve.get_standard_basis())
-        dehomogenization = standard_basis.copy()
-        dehomogenization[self.affine_patch] = self.polynomial_ring(1)
-
         T = _ult_line_transformation(self.base_ring, self.normalized_point)
         T_inverse = T.inverse()
-
-        f = PPC_polynomial(list( vector(dehomogenization)*T ))
+        F = self.projective_plane_curve.get_polynomial()
+        f = _apply_matrix(T, F, self.affine_patch)
 
         f_homo_comp_dict = f.homogeneous_components()
         minimal_degree = min(f_homo_comp_dict.keys())
         tangent_cone_polynomial = f_homo_comp_dict[minimal_degree]
 
-        return tangent_cone_polynomial(list( vector(standard_basis)*T_inverse ))
+        return _apply_matrix(T.inverse(), tangent_cone_polynomial)
 
 
     def get_lines(self):
@@ -944,7 +939,7 @@ def _apply_matrix(T, F, affine_patch = None):
 
     generators = list(F.parent().gens())
     if affine_patch != None:
-        generators[affine_patch] = 1
+        generators[affine_patch] = F.parent()(1)
     return F(list( vector(generators) * T ))
 
 
