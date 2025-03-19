@@ -698,86 +698,48 @@ class GradedReduction:
 
 
 
-    def graded_instabilities(self):
+    def graded_instabilities(self, matrix_form = 'uut'):
         """
         Return a list of graded instabilities of self
 
         MATHEMATICAL INTERPRETATION:
             First, let
-
                 (y_0,...,y_n) = self.GRR_standard_basis(),
-
                 (z_0,...,z_n) = self.RR_standard_basis(),
-
                 f = self.get_gr_polynomial(),
-
                 g = self.get_r_polynomial(),
-
             compare the description of the '__init__' method.
-
             Let (E,w) with E = (e_0,...,e_n) be an instability of g over k, i.e.
-
             there exists an invertible matrix
-
                 M in GL_n(k)
-
             which describes the base change from E to (z_0,...,z_n). So, if we
-
             view E and (z_0,...,z_n) as a vectors in SageMath, we can write
-
                 E * M = (z_0,...,z_n) .
-
             Note that M, as a matrix over k, desribes a k-linear transforamtion
-
             of degree zero, i.e. it does not change the grading.
-
             Now let D be the invertible diagonal matrix
-
                 D = diag(t^(u_0/s), ..., t^(u_n/s)) in GL_3(k[T,T^(-1)]) .
-
             We define the basis
-
                 E_new = (e_0_new,...,e_n_new)
-
             by
-
                 E_new * D^(-1) = E .
-
             Note that D describes a k-linear transforamtion which changes the degree
-
             of homogeneous elements. Furthermore, we obtain
-
                 E_new * D^(-1) * M * D = E * M * D = (z_0,...,z_n) * D
-
                                        = (y_0,...,y_n) .
-
             In particular, (E_new,w) is an instability of f over k[T,T^(-1)]. Note also
-
             that D^(-1) * M * D describes a k-linear isomorphism of degree zero and
-
             hence induces an isomorphism of graded rings,
-
                 k[T,T^(-1)][y_0,...,y_n] ---> k[T,T^(-1)][y_0,...,y_n] .
-
-
             REMARK. Of course we have
-
                 E * M * D = (z_0,...,z_n) * D = (y_0,...,y_n)
-
             and therefore (E,w) is already an instability of f over k[T,T^(-1)]. But the
-
             matrix M*D describes a k-linear transforamtion, which shifts degrees. For
-
             reasons of computational clarity, we want to avoid transformations that
-
             lead to degree shifts. Thus, we only consider transformations of the form
-
                 D^(-1) * M * D
-
             as explained above. The (i,j)-th entry of such a matrix is equal to
-
                 m_{ij} * t^{(u_j - u_i) / s} .
-
         """
 
         if len(self.RR_standard_basis()) != 3:
@@ -788,7 +750,8 @@ class GradedReduction:
         Graded_Instabilities = []
 
         for instability in reduced_curve.instabilities():
-            Graded_Instabilities.append(GradedInstability(self, instability.get_base_change_matrix()))
+            for T in instability.base_change_matrices(matrix_form):
+                Graded_Instabilities.append(GradedInstability(self, T))
 
         return Graded_Instabilities
 
@@ -825,27 +788,16 @@ class GradedInstability:
 
         MATHEMATICAL INTERPRETATION:
             First, let
-
                 f in k[t,t^(-1)][y_0,...,y_n]
-
             and
-
                 g in k[z_0,...,z_n]
-
             as defined in the mathematical interpretation of the '__init__' method
-
             in the 'GradedReduction' class. Moreover, let
-
                 M = (m_{ij}) in GL_n(k)
-
             and
-
                 D = diag(t^(u_0/s), ..., t^(u_n/s)) in GL_3(k[T,T^(-1)]) .
-
             as in the 'instabilities' method in the 'GradedReduction' class.
-
             ToDo...
-
         """
 
         self.graded_reduction = graded_reduction
@@ -856,6 +808,9 @@ class GradedInstability:
         self.instability_matrix = instability_matrix
 
 
+    def __repr__(self):
+        return f"Graded Instability of {self.graded_reduction}"
+
 
     def is_rational(self):
         """
@@ -864,21 +819,13 @@ class GradedInstability:
 
         MATHEMATICAL INTERPRETATION:
             To understand the notation, first read the mathematical interpretation in
-
             the '__init__' method of self. The (i,j)-th entry of the matrix
-
                 self.instability_matrix
-
             is of the form
-
                 m_{ij} * t^{(u_j - u_i) / s}
-
             with m_{ij} in k. Thus, we have
-
                 self.instability_matrix[i][j] in k[t,t^(-1)]
-
             if and only if
-
                 m_{ij} = 0 or s.divides(u_j - u_i) .
         """
 
@@ -889,7 +836,6 @@ class GradedInstability:
                     if not t_exponent.is_integral() :
                         return False
         return True
-
 
 
     def get_matrix(self):
@@ -906,7 +852,6 @@ class GradedInstability:
                     else:
                         return None
         return matrix(self.graded_reduction_ring, graded_trafo_matrix)
-
 
 
     def lift_matrix(self):
