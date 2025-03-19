@@ -42,7 +42,6 @@ class ProjectivePlaneCurve:
         return f"Projective Plane Curve with defining polynomial {self.polynomial}"
 
 
-
     def get_base_ring(self):
         return self.base_ring
 
@@ -59,7 +58,6 @@ class ProjectivePlaneCurve:
         """
         Return the tangent cone of self at P
         """
-
         return PPC_TangentCone(self, P)
 
 
@@ -243,252 +241,251 @@ class ProjectivePlaneCurve:
 
 
 
-    def _move_point_to_affine_origin( self, projective_point ):
-        """
-        Return a list consisting of an integer i with 0 <= i <=2 and the upper
-        triangular unipotent matrix T with maximal number of zeros such that
-        e_i * T = projective_point, where e_i is the i-th standard basis vector.
-
-        INPUT:
-            projective_point - [a, b, c]
-
-        MATHEMATICAL INTERPRETATION:
-            If a is not zero, we can assume a = 1. Then i = 0 and the matrix
-
-                T = [[1, b, c],
-                     [0, 1, 0],
-                     [0, 0, 1]]
-
-            satisfies (1, 0, 0) * T = (1, b, c). If a = 0, but b is not zero, we can
-
-            assume a = 0 and b = 1. Then i = 1 and the matrix
-
-                T = [[1, 0, 0],
-                     [0, 1, c],
-                     [0, 0, 1]]
-
-            satisfies (0, 1, 0) * T = (a, b, c). Finally, if a = b = 0, we can assume
-
-            c = 1. Then i = 2 and T is the identity matrix.
-        """
-
-        T = [[1,0,0],[0,1,0],[0,0,1]]
-
-        # Find the minimal index, say i_min, with projective_point[i_min] != 0 
-        L_proj_point = list(projective_point)
-        i_min = L_proj_point.index(next(x for x in L_proj_point if x != 0))
-
-        # Normalize projective_point
-        L_proj_point_i_min = L_proj_point[i_min]
-        for i in range(3):
-            L_proj_point[i] = L_proj_point[i] / L_proj_point_i_min
-
-        T[i_min] = L_proj_point
-
-        return [i_min, matrix(self.base_ring, T)]
-
-
-
-    def _move_affine_line_to_coordinate_axis(self, line, affine_patch):
-        """
-        Return an upper triangular unipotent matrix with maximal number of zeros which describes
-        a projective transformation moving the affine line, 'line', to one of the affine coordinate
-        axes in the affine patch 'affine_patch'.
-
-        INPUT:
-            line         - A*x + B*y with A, B elements of self.base_ring
-            affine_patch - 0 or 1 or 2
-
-        OUTPUT:
-            matrix over self.base_ring
-
-        MATHEMATICAL INTERPRETATION:
-            First, let
-
-                k = self.base_ring,
-                L = line .
-
-            Then we have
-
-                L = A*x + B*y in k[x,y] .
-
-            If A = 0 or B = 0, the affine line L is already equal to one of the
-
-            two coordinate axes. Thus, we can assume that A != 0 and B != 0. In
-
-            that case the matrix
-
-                M = [[1, -A/B],
-                     [0,    1]]
-
-            describes an affine transformation moving L to A*x. In fact, we have
-
-                (x,y) * M = (x, -A / B * x + y)
-
-            and therefore
-
-                L((x,y) * M) = A*x + B*(-A / B * x + y) = B*y .
-
-            Furthermore, depending on whether
-
-                affine_patch = 0 or affine_patch = 1 or affine_patch = 2,
-
-            the corresponding projective transformation if given by
-
-                [1, 0,    0]
-                [0, 1, -A/B]
-                [0, 0,    1]
-
-            or
-
-                [1, 0, -A/B]
-                [0, 1,    0]
-                [0, 0,    1]
-
-            or
-
-                [1, -A/B, 0]
-                [0,    1, 0]
-                [0,    0, 1]
-
-            respectively.
-
-        REMARK: This function will be used in combination with the
-
-        function _move_point_to_affine_origin(self, (a:b:c)) which
-
-        returns one of the following matrices
-
-            [1, b, c]        [1, 0, 0]        [1, 0, 0]
-            [0, 1, 0]   or   [0, 1, c]   or   [0, 1, 0]
-            [0, 0, 1]        [0, 0, 1]        [0, 0, 1]
-
-        depending on whether
-
-            a != 0 or b != 0 or c != 0 .
-
-        Thus, the composition of the matrices given by the functions
-
-            '_move_point_to_affine_origin'
-
-        and
-
-            '_move_projective_line_to_coordinate_axis'
-
-        will be again an upper triangular unipotent matrix.
-        """
-
-        T = [[1,0,0],[0,1,0],[0,0,1]]
-        line_coefficients = line.coefficients()
-
-        if len(line_coefficients) == 1:
-            return matrix(self.base_ring, T)
-
-        if affine_patch == 0:
-            T[1][2] = -line_coefficients[0] / line_coefficients[1]
-
-        elif affine_patch == 1:
-            T[0][2] = -line_coefficients[0] / line_coefficients[1]
-
-        else:
-            T[0][1] = -line_coefficients[0] / line_coefficients[1]
-
-        return matrix(self.base_ring, T)
-
-
-
-    def _move_projective_line_to_coordinate_axis(self, projective_line):
-        """
-        Return the list of tupels, t, where t[1] run over all upper triangular
-        unipotent matrices with maximal number of zeros which transform
-        'projective_line' to a coordinate axis and t[0] is the index of the
-        corresponding coordinate axis.
-
-        MATHEMATICAL INTERPRETATION:
-            First, let
-
-                L = projective_line .
-
-            Then we can write
-
-                L = A*x + B*y + C*z .
-
-            Depending on whether
-
-                C != 0 or C != 0 and B != 0 or C = 0 and B != 0 or C = 0 and B = 0
-
-            the unipotent upper triangular matrices with maximal number of zeros, T,
-
-            moving L to a coordinate axis, via L((x, y, z) * T), are given by the four
-
-            matrices:
-
-                [[1, 0, -A/C],
-                 [0, 1, -B/C],
-                 [0, 0,   1 ]]
-
-                [[1, -A/B,  0],
-                 [0,   1, -B/C],
-                 [0,   0,   1]]
-
-                [[1, -A/B, 0],
-                 [0,   1,  0],
-                 [0,   0,  1]]
-
-                [[1, 0, 0],
-                 [0, 1, 0],
-                 [0, 0, 1]]
-
-            Note that in the case C != 0 and B != 0 both matrices
-
-                [[1, 0, -A/C],
-                 [0, 1, -B/C],
-                 [0, 0,   1 ]]
-
-            and
-
-                [[1, -A/B,  0],
-                 [0,   1, -B/C],
-                 [0,   0,   1]]
-
-            are equal if and only if A = 0.
-        """
-
-        if projective_line.degree() != 1:
-            raise ValueError
-
-        if projective_line.parent() != self.polynomial_ring:
-            raise ValueError
-
-        x0, x1, x2 = self.standard_basis
-        A = projective_line.monomial_coefficient(x0)
-        B = projective_line.monomial_coefficient(x1)
-        C = projective_line.monomial_coefficient(x2)
-        L = []
-
-        if C != 0:
-            coordinate_axis_index = 2
-            T = [[1, 0, -A/C], [0, 1, -B/C], [0, 0, 1]]
-            T = matrix(self.base_ring, T)
-            L.append((coordinate_axis_index, T))
-            if B != 0 and A != 0:
-                T = [[1, -A/B, 0], [0, 1, -B/C], [0, 0, 1]]
-                T = matrix(self.base_ring, T)
-                L.append((coordinate_axis_index, T))
-
-        elif B != 0:
-            coordinate_axis_index = 1
-            T = [[1, -A/B, 0], [0, 1, 0], [0, 0, 1]]
-            T = matrix(self.base_ring, T)
-            L.append((coordinate_axis_index, T))
-
-        else:
-            coordinate_axis_index = 0
-            T = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-            T = matrix(self.base_ring, T)
-            L.append((coordinate_axis_index, T))
-
-        return L
+    # def _move_point_to_affine_origin( self, projective_point ):
+    #     """
+    #     Return a list consisting of an integer i with 0 <= i <=2 and the upper
+    #     triangular unipotent matrix T with maximal number of zeros such that
+    #     e_i * T = projective_point, where e_i is the i-th standard basis vector.
+    # 
+    #     INPUT:
+    #         projective_point - [a, b, c]
+    # 
+    #     MATHEMATICAL INTERPRETATION:
+    #         If a is not zero, we can assume a = 1. Then i = 0 and the matrix
+    # 
+    #             T = [[1, b, c],
+    #                  [0, 1, 0],
+    #                  [0, 0, 1]]
+    # 
+    #         satisfies (1, 0, 0) * T = (1, b, c). If a = 0, but b is not zero, we can
+    # 
+    #         assume a = 0 and b = 1. Then i = 1 and the matrix
+    # 
+    #             T = [[1, 0, 0],
+    #                  [0, 1, c],
+    #                  [0, 0, 1]]
+    # 
+    #         satisfies (0, 1, 0) * T = (a, b, c). Finally, if a = b = 0, we can assume
+    # 
+    #         c = 1. Then i = 2 and T is the identity matrix.
+    #     """
+    # 
+    #     T = [[1,0,0],[0,1,0],[0,0,1]]
+    # 
+    #     # Find the minimal index, say i_min, with projective_point[i_min] != 0 
+    #     L_proj_point = list(projective_point)
+    #     i_min = L_proj_point.index(next(x for x in L_proj_point if x != 0))
+    # 
+    #     # Normalize projective_point
+    #     L_proj_point_i_min = L_proj_point[i_min]
+    #     for i in range(3):
+    #         L_proj_point[i] = L_proj_point[i] / L_proj_point_i_min
+    # 
+    #     T[i_min] = L_proj_point
+    # 
+    #     return [i_min, matrix(self.base_ring, T)]
+
+
+    # def _move_affine_line_to_coordinate_axis(self, line, affine_patch):
+    #     """
+    #     Return an upper triangular unipotent matrix with maximal number of zeros which describes
+    #     a projective transformation moving the affine line, 'line', to one of the affine coordinate
+    #     axes in the affine patch 'affine_patch'.
+    # 
+    #     INPUT:
+    #         line         - A*x + B*y with A, B elements of self.base_ring
+    #         affine_patch - 0 or 1 or 2
+    # 
+    #     OUTPUT:
+    #         matrix over self.base_ring
+    # 
+    #     MATHEMATICAL INTERPRETATION:
+    #         First, let
+    # 
+    #             k = self.base_ring,
+    #             L = line .
+    # 
+    #         Then we have
+    # 
+    #             L = A*x + B*y in k[x,y] .
+    # 
+    #         If A = 0 or B = 0, the affine line L is already equal to one of the
+    # 
+    #         two coordinate axes. Thus, we can assume that A != 0 and B != 0. In
+    # 
+    #         that case the matrix
+    # 
+    #             M = [[1, -A/B],
+    #                  [0,    1]]
+    # 
+    #         describes an affine transformation moving L to A*x. In fact, we have
+    # 
+    #             (x,y) * M = (x, -A / B * x + y)
+    # 
+    #         and therefore
+    # 
+    #             L((x,y) * M) = A*x + B*(-A / B * x + y) = B*y .
+    # 
+    #         Furthermore, depending on whether
+    # 
+    #             affine_patch = 0 or affine_patch = 1 or affine_patch = 2,
+    # 
+    #         the corresponding projective transformation if given by
+    # 
+    #             [1, 0,    0]
+    #             [0, 1, -A/B]
+    #             [0, 0,    1]
+    # 
+    #         or
+    # 
+    #             [1, 0, -A/B]
+    #             [0, 1,    0]
+    #             [0, 0,    1]
+    # 
+    #         or
+    # 
+    #             [1, -A/B, 0]
+    #             [0,    1, 0]
+    #             [0,    0, 1]
+    # 
+    #         respectively.
+    # 
+    #     REMARK: This function will be used in combination with the
+    # 
+    #     function _move_point_to_affine_origin(self, (a:b:c)) which
+    # 
+    #     returns one of the following matrices
+    # 
+    #         [1, b, c]        [1, 0, 0]        [1, 0, 0]
+    #         [0, 1, 0]   or   [0, 1, c]   or   [0, 1, 0]
+    #         [0, 0, 1]        [0, 0, 1]        [0, 0, 1]
+    # 
+    #     depending on whether
+    # 
+    #         a != 0 or b != 0 or c != 0 .
+    # 
+    #     Thus, the composition of the matrices given by the functions
+    # 
+    #         '_move_point_to_affine_origin'
+    # 
+    #     and
+    # 
+    #         '_move_projective_line_to_coordinate_axis'
+    # 
+    #     will be again an upper triangular unipotent matrix.
+    #     """
+    # 
+    #     T = [[1,0,0],[0,1,0],[0,0,1]]
+    #     line_coefficients = line.coefficients()
+    # 
+    #     if len(line_coefficients) == 1:
+    #         return matrix(self.base_ring, T)
+    # 
+    #     if affine_patch == 0:
+    #         T[1][2] = -line_coefficients[0] / line_coefficients[1]
+    # 
+    #     elif affine_patch == 1:
+    #         T[0][2] = -line_coefficients[0] / line_coefficients[1]
+    # 
+    #     else:
+    #         T[0][1] = -line_coefficients[0] / line_coefficients[1]
+    # 
+    #     return matrix(self.base_ring, T)
+
+
+
+    # def _move_projective_line_to_coordinate_axis(self, projective_line):
+    #     """
+    #     Return the list of tupels, t, where t[1] run over all upper triangular
+    #     unipotent matrices with maximal number of zeros which transform
+    #     'projective_line' to a coordinate axis and t[0] is the index of the
+    #     corresponding coordinate axis.
+    # 
+    #     MATHEMATICAL INTERPRETATION:
+    #         First, let
+    # 
+    #             L = projective_line .
+    # 
+    #         Then we can write
+    # 
+    #             L = A*x + B*y + C*z .
+    # 
+    #         Depending on whether
+    # 
+    #             C != 0 or C != 0 and B != 0 or C = 0 and B != 0 or C = 0 and B = 0
+    # 
+    #         the unipotent upper triangular matrices with maximal number of zeros, T,
+    # 
+    #         moving L to a coordinate axis, via L((x, y, z) * T), are given by the four
+    # 
+    #         matrices:
+    # 
+    #             [[1, 0, -A/C],
+    #              [0, 1, -B/C],
+    #              [0, 0,   1 ]]
+    # 
+    #             [[1, -A/B,  0],
+    #              [0,   1, -B/C],
+    #              [0,   0,   1]]
+    # 
+    #             [[1, -A/B, 0],
+    #              [0,   1,  0],
+    #              [0,   0,  1]]
+    # 
+    #             [[1, 0, 0],
+    #              [0, 1, 0],
+    #              [0, 0, 1]]
+    # 
+    #         Note that in the case C != 0 and B != 0 both matrices
+    # 
+    #             [[1, 0, -A/C],
+    #              [0, 1, -B/C],
+    #              [0, 0,   1 ]]
+    # 
+    #         and
+    # 
+    #             [[1, -A/B,  0],
+    #              [0,   1, -B/C],
+    #              [0,   0,   1]]
+    # 
+    #         are equal if and only if A = 0.
+    #     """
+    # 
+    #     if projective_line.degree() != 1:
+    #         raise ValueError
+    # 
+    #     if projective_line.parent() != self.polynomial_ring:
+    #         raise ValueError
+    # 
+    #     x0, x1, x2 = self.standard_basis
+    #     A = projective_line.monomial_coefficient(x0)
+    #     B = projective_line.monomial_coefficient(x1)
+    #     C = projective_line.monomial_coefficient(x2)
+    #     L = []
+    # 
+    #     if C != 0:
+    #         coordinate_axis_index = 2
+    #         T = [[1, 0, -A/C], [0, 1, -B/C], [0, 0, 1]]
+    #         T = matrix(self.base_ring, T)
+    #         L.append((coordinate_axis_index, T))
+    #         if B != 0 and A != 0:
+    #             T = [[1, -A/B, 0], [0, 1, -B/C], [0, 0, 1]]
+    #             T = matrix(self.base_ring, T)
+    #             L.append((coordinate_axis_index, T))
+    # 
+    #     elif B != 0:
+    #         coordinate_axis_index = 1
+    #         T = [[1, -A/B, 0], [0, 1, 0], [0, 0, 1]]
+    #         T = matrix(self.base_ring, T)
+    #         L.append((coordinate_axis_index, T))
+    # 
+    #     else:
+    #         coordinate_axis_index = 0
+    #         T = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+    #         T = matrix(self.base_ring, T)
+    #         L.append((coordinate_axis_index, T))
+    # 
+    #     return L
 
 
 
