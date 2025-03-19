@@ -33,40 +33,32 @@ class StabilityFunction:
         self.dimension          = len(self.standard_basis) - 1
 
 
-
     def __repr__(self):
         return f"Stability Function of {self.homogeneous_form} over {self.base_ring} with {self.base_ring_valuation}"
-
 
 
     def get_dimension(self):
         return self.dimension
 
 
-
     def get_standard_basis(self):
         return self.standard_basis
-
 
 
     def get_polynomial_ring(self):
         return self.polynomial_ring
 
 
-
     def get_base_ring(self):
         return self.base_ring
-
 
 
     def graded_reduction_at(self, point_on_BTB):
 
         A = point_on_BTB.get_base_change_matrix()
         u = point_on_BTB.get_weight_vector()
-
         linear_valuation = LV.LinearValuation(self.polynomial_ring, self.base_ring_valuation, A, u)
         return linear_valuation.graded_reduction_of(self.homogeneous_form)
-
 
 
     def affine_functions_on_apartment(self, base_change_matrix, affine_patch = None):
@@ -82,82 +74,45 @@ class StabilityFunction:
 
         MATHEMATICS and IMPLEMENTATION:
             We will now explain the mathematics and its implementation in Sage. First, let
-
                 v_K = self.base_ring_valuation,
-
                 A   = base_change_matrix,
-
                 B   = base_change_matrix.inverse(),
-
                 E_0 = (x_0,...,x_n) = self.standard_basis,
-
                 F   = self.homogeneous_form .
-
             Thus, F is a homogeneous polynomial in K[x_0,...,x_n]. Fruther, we call E_0 the standard
-
             basis and consider A and B as linear transformations, with respect to E_0, i.e.
-
                 A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n b_{ij}*x_i .
-
             Then,
-
                 E := (y_0,...,y_n) := ( B(x_0),...,B(x_n) )
-
             is a new basis of K[x_0,...,x_n]. Now if we view E_0 = (x_0,...,x_n) as a vector in Sage,
-
             we get
-
                 (y_0,...,y_n) = (sum_{i=0}^n b_{i,0}*x_i,...,sum_{i=0}^n b_{i,n}*x_i)
-
                               = (x_0,...,x_n)*B
-`
             and therefore
-
                 F(x_0,...,x_n) = F( (y_0,...,y_n)*B^{-1} ) = F( (y_0,...,y_n)*A ) .
-
             Thus, the homogeneous polynomial
-
                 G(y_0,...,y_n) := F( (y_0,...,y_n)*A ) in K[y_0,...,y_n]
-
             describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
-
             Thus, for the valuation v_{E,w} we obtain
-
                 v_{E,w}(F) = min( v_K(a_i) + <i,w> : i in I ) with G = sum_{i in I} a_i y^i,
-
             where i is a multi-index, i.e. I is a subset of NN^{n+1}. Moreover, the we have
-
                 omega(v_{E,w}) = 1/(n+1) * ( w_0 + ... + w_n - v_K( det(E) ) .
-
             Note that per definition det(E) = det(B). Furthermore,
-
                 v_K( det(B) ) = v_K( det(A^{-1}) ) = v_K( det(A)^{-1} ) = -v_K( det(A) )
-
             and therefore
-
                 omega(v_{E,w}) = 1/(n+1) * ( w_0 + ... + w_n + v_K( det(A) ) .
-
             Now let N = n + 1. It follows, that 
-
                 phi_E(w) = v_{E,w}(F) - d*omega(v_{E,w})
-
                          = min(v_K(a_i) - d/N*v_K(det(A)) + sum_{j=0}^n (i_j - d/N)*w_j : i in I) .
-
             Finally, we set w_{affine_patch} = 0, if affine_patch != None.
-
         IMPORTANT REMARK:
             We do not want to introduce new variables and hence we will consider
-
                 G(x_0,...,x_n) = F( (x_0,...,x_n)*T^{-1} )
-
             and not G(y_0,...,y_n). But for mathematical clarity, we will still refer to (y_0,...,y_n) in the comments below.
-
         """
 
         if not base_change_matrix.is_invertible():
             raise ValueError
-
-
 
         # Set up variables
         d = Integer(self.homogeneous_form.degree())
@@ -190,8 +145,7 @@ class StabilityFunction:
         return affine_functions
 
 
-
-    def maximum_on_apartment( self, base_change_matrix, affine_patch ):
+    def maximum_on_apartment(self, base_change_matrix, affine_patch):
         """
         Return the maximum of the stability function on the apartment given by 'self.standard_basis*base_change_matrix.inverse()'.
 
@@ -204,7 +158,7 @@ class StabilityFunction:
             the basis 'self.standard_basis*base_change_matrix.inverse()'
         """
 
-        affine_functions = self.affine_functions_on_apartment( base_change_matrix, affine_patch )
+        affine_functions = self.affine_functions_on_apartment(base_change_matrix, affine_patch)
 
         # Note that by definition of the method 'affine_functions_on_apartment()' the elements
         # of 'affine_functions', i.e. affine_function_i's are linear polynomials in QQ[w_0,...,w_n]
@@ -232,7 +186,7 @@ class StabilityFunction:
 
 
 
-    def ascent_directions_at(self, point_on_BTB):
+    def ascent_directions_at(self, point_on_BTB, matrix_form = 'uut'):
         """
         Return a list of matrices which describe base changes, fixing 'point_on_BTB', to apartment,
         where the stability function can be maximized further.
@@ -240,42 +194,32 @@ class StabilityFunction:
         INPUT:
             point_on_BTB - object in the class 'BTB_Point' such that 'point_on_BTB.get_base_ring()'
                            equals 'self.base_ring'
+            matrix_form  - one of the strings 'ult', 'uut', 'integral'
 
         OUTPUT:
             list of invertible matrix in GL_{self.dimension + 1}(self.base_ring)
 
         MATHEMATICAL INTERPRETATION:
             First, let
-
                 A   = point_on_BTB.get_base_change_matrix(),
                 u   = point_on_BTB.get_weight_vector(),
                 B   = A.inverse(),
                 K   = self.base_ring
                 n   = self.dimension
                 E_0 = self.standard_basis .
-
             Then the matrix A lies in GL_n(K) and point_on_BTB is represented by the valuation v_{E,u}.
-
             Now we view E_0 = (x_0,...,x_n) as a vector in Sage and define the basis
-
                 E_1 = (x_0,...,x_n)*B .
-
             Furthermore, let phi be the stability function, 'self'. We want to find a matrix T in GL_n(K)
-
             such that for the basis E_2 = E_1*T^(-1) we get
-
                 phi(point_on_BTB) < max phi_{E_2},
-
             where phi_{E_2} is the stability function phi restricted to the apartment given by E_2.
-
             Note that if n = 2, we can compute E_2 by computing a graded instability (E_2, w) of the graded
-
             reduction of 'self.homogeneous_form' with respect to a valuation representing 'point_on_BTB'.
         """
 
         if self.dimension != 2:
             raise NotImplementedError
-
         if self.base_ring != point_on_BTB.get_base_ring():
             raise ValueError
 
@@ -284,18 +228,14 @@ class StabilityFunction:
         # (3) Find all rational graded instability in L and return their lifted matrices. Otherwise return None.
 
         graded_reduction = self.graded_reduction_at(point_on_BTB)
-        rational_graded_instabilities = graded_reduction.rational_graded_instabilities()
-        if rational_graded_instabilities == None:
-            return None
 
         ascent_directions = []
-        for rational_graded_instability in rational_graded_instabilities:
+        for rational_graded_instability in graded_reduction.rational_graded_instabilities(matrix_form):
             ascent_directions.append(rational_graded_instability.lift_matrix())
         return ascent_directions
 
 
-
-    def ascent_direction_at(self, point_on_BTB):
+    def ascent_direction_at(self, point_on_BTB, matrix_form = 'uut'):
         """
         Return a matrix which describes a base change, fixing 'point_on_BTB', to an apartment,
         where the stability function can be maximized further.
@@ -303,18 +243,18 @@ class StabilityFunction:
         INPUT:
             point_on_BTB - object in the class 'BTB_Point' such that 'point_on_BTB.get_base_ring()'
                            equals 'self.base_ring'
+            matrix_form  - one of the strings 'ult', 'uut', 'integral'
 
         OUTPUT:
             invertible matrix in GL_{self.dimension + 1}(self.base_ring) 
         """
 
-        ascent_directions = self.ascent_directions_at(point_on_BTB)
+        ascent_directions = self.ascent_directions_at(point_on_BTB, matrix_form)
 
-        if ascent_directions != None:
+        if len(ascent_directions) == 0:
+            return None
+        else:
             return ascent_directions[0]
-
-        return None
-
 
 
     def maximize(self):
