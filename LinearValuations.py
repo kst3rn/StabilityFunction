@@ -757,19 +757,16 @@ class GradedReduction:
 
 
 
-    def rational_graded_instabilities(self):
+    def rational_graded_instabilities(self, matrix_form = 'uut'):
         """
         Return a sublist of 'self.graded_instabilities()' consisting only of
         retional graded instabilities.
         """
 
         Rational_Graded_Instabilities = []
-        for Graded_Instability in self.graded_instabilities():
+        for Graded_Instability in self.graded_instabilities(matrix_form):
             if Graded_Instability.is_rational():
                 Rational_Graded_Instabilities.append(Graded_Instability)
-
-        if len(Rational_Graded_Instabilities) == 0:
-            return None
 
         return Rational_Graded_Instabilities
 
