@@ -204,7 +204,7 @@ class StabilityFunction:
         maximum = solution_dict['maximum']
         weight_vector = [solution_dict['u'+str(i)] for i in range(self.dimension + 1)]
         point_on_BTB = BTB_Point(self.base_ring_valuation, base_change_matrix, weight_vector)
-        return [maximum, BTB_Point(self.base_ring_valuation)]
+        return [maximum, point_on_BTB]
 
 
     def ascent_directions_at(self, point_on_BTB, matrix_form = 'uut'):
