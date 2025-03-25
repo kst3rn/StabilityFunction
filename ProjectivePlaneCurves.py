@@ -14,7 +14,6 @@
 from sage.all import *
 
 
-
 class ProjectivePlaneCurve:
 
     def __init__(self, polynomial):
@@ -148,96 +147,102 @@ class ProjectivePlaneCurve:
         return [I for I in self.pseudo_instabilities() if I.is_instability()]
 
 
-    def instable_weight_vector_wrt(self, base_change_matrix):
-        """
-        Return an instable weight vector with respect to the basis given by
-        base_change_matrix or 'None' if no such vector exist.
+    def is_semistable(self):
+        if len(self.instabilities()) == 0:
+            return True
+        return False
 
-        INPUT:
-            base_change_matrix - 3x3 invertible matrix over self.base_ring
 
-        MATHEMATICAL INTERPRETATION:
-            First, let
-
-                K = self.base_ring,
-                T = base_change_matrix,
-                F = self.get_polynomial() .
-
-            Furthermore, let
-
-                (x0, x1, x2) = self.get_standard_basis()
-
-            and
-
-                G = F((x0, x1, x2) * T) .
-
-            For a multi index set I subset NN^3 we can write
-
-                G = sum_{i in I} a_i x0^i0 * x1^i1 * x2^i2
-
-            with a_i != 0 for all i in I.
-
-            Now, we want to find an ordered and balanced weight vector
-
-                (w0, w1, w2) in QQ^3
-
-            for G, i.e. w0 => w1 => w2, w0 + w1 + w2 = 0 and
-
-                i0*w0 + i1*w1 + i2*w2 > 0
-
-            for all i in I.
-
-        REMARK. An ordered and balanced weight vector for G exists if
-
-        and only if there exists a balanced weight vector (w0, w1, w2)
-
-        for G such that
-
-            -1 <= w0, w1, w2 <= 1.
-
-        This follows from the fact, that any nonzero multiple of a
-
-        balanced weight vector is again a balanced weight vector.
-
-        Thus, we only have to maximize the function
-
-            min(i0*w0 + i1*w1 + i2*w2 : i in I)
-
-        under the constraints -1 <= w0, w1, w2 <= 1 and to check
-
-        whether the maximum is > 0 or not.
-        """
-
-        if not base_change_matrix.is_invertible():
-            raise ValueError
-
-        G = self.polynomial(list(vector(self.standard_basis) * base_change_matrix))
-
-        MILP = MixedIntegerLinearProgram(solver='PPL')
-        v = MILP.new_variable()
-
-        t = v['maximum']
-        w0 = v['w0']
-        w1 = v['w1']
-        w2 = v['w2']
-
-        MILP.set_objective(t)
-
-        MILP.add_constraint(-1 <= w0 <= 1)
-        MILP.add_constraint(-1 <= w1 <= 1)
-        MILP.add_constraint(-1 <= w1 <= 1)
-        MILP.add_constraint(w0 + w1 + w2 == 0)
-
-        for i in G.dict():
-            MILP.add_constraint(t <= i[0] * w0 + i[1] * w1 + i[2] * w2)
-
-        MILP.solve()
-        values = MILP.get_values(v)
-
-        if values['maximum'] > 0:
-            return (values['w0'], values['w1'], values['w2'])
-
-        return None
+    # def instable_weight_vector_wrt(self, base_change_matrix):
+    #     """
+    #     Return an instable weight vector with respect to the basis given by
+    #     base_change_matrix or 'None' if no such vector exist.
+    # 
+    #     INPUT:
+    #         base_change_matrix - 3x3 invertible matrix over self.base_ring
+    # 
+    #     MATHEMATICAL INTERPRETATION:
+    #         First, let
+    # 
+    #             K = self.base_ring,
+    #             T = base_change_matrix,
+    #             F = self.get_polynomial() .
+    # 
+    #         Furthermore, let
+    # 
+    #             (x0, x1, x2) = self.get_standard_basis()
+    # 
+    #         and
+    # 
+    #             G = F((x0, x1, x2) * T) .
+    # 
+    #         For a multi index set I subset NN^3 we can write
+    # 
+    #             G = sum_{i in I} a_i x0^i0 * x1^i1 * x2^i2
+    # 
+    #         with a_i != 0 for all i in I.
+    # 
+    #         Now, we want to find an ordered and balanced weight vector
+    # 
+    #             (w0, w1, w2) in QQ^3
+    # 
+    #         for G, i.e. w0 => w1 => w2, w0 + w1 + w2 = 0 and
+    # 
+    #             i0*w0 + i1*w1 + i2*w2 > 0
+    # 
+    #         for all i in I.
+    # 
+    #     REMARK. An ordered and balanced weight vector for G exists if
+    # 
+    #     and only if there exists a balanced weight vector (w0, w1, w2)
+    # 
+    #     for G such that
+    # 
+    #         -1 <= w0, w1, w2 <= 1.
+    # 
+    #     This follows from the fact, that any nonzero multiple of a
+    # 
+    #     balanced weight vector is again a balanced weight vector.
+    # 
+    #     Thus, we only have to maximize the function
+    # 
+    #         min(i0*w0 + i1*w1 + i2*w2 : i in I)
+    # 
+    #     under the constraints -1 <= w0, w1, w2 <= 1 and to check
+    # 
+    #     whether the maximum is > 0 or not.
+    #     """
+    # 
+    #     if not base_change_matrix.is_invertible():
+    #         raise ValueError
+    # 
+    #     G = self.polynomial(list(vector(self.standard_basis) * base_change_matrix))
+    # 
+    #     MILP = MixedIntegerLinearProgram(solver='PPL')
+    #     v = MILP.new_variable()
+    # 
+    #     t = v['maximum']
+    #     w0 = v['w0']
+    #     w1 = v['w1']
+    #     w2 = v['w2']
+    # 
+    #     MILP.set_objective(t)
+    # 
+    #     MILP.add_constraint(-1 <= w0 <= 1)
+    #     MILP.add_constraint(-1 <= w1 <= 1)
+    #     MILP.add_constraint(-1 <= w1 <= 1)
+    #     MILP.add_constraint(w0 + w1 + w2 == 0)
+    # 
+    #     for i in G.dict():
+    #         MILP.add_constraint(t <= i[0] * w0 + i[1] * w1 + i[2] * w2)
+    # 
+    #     MILP.solve()
+    #     values = MILP.get_values(v)
+    # 
+    #     if values['maximum'] > 0:
+    #         return (values['w0'], values['w1'], values['w2'])
+    # 
+    #     return None
 
 
 
