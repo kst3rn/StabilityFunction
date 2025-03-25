@@ -521,6 +521,12 @@ class GradedReduction:
         return Graded_Instabilities
 
 
+    def is_semistable(self):
+        if len(self.graded_instabilities()) == 0:
+            return True
+        return False
+
+
     def rational_graded_instabilities(self, matrix_form = 'uut'):
         """
         Return a sublist of 'self.graded_instabilities()' consisting only of
