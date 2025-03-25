@@ -151,7 +151,7 @@ class StabilityFunction:
         return affine_functions
 
 
-    def maximum_on_apartment(self, base_change_matrix, affine_patch):
+    def _maximum_on_apartment(self, base_change_matrix, affine_patch):
         """
         Return the maximum of the stability function on the apartment given by 'self.standard_basis*base_change_matrix.inverse()'.
 
@@ -189,6 +189,22 @@ class StabilityFunction:
         MILP.solve()
 
         return MILP.get_values(v)
+
+
+    def maximum_on_apartment(self, base_change_matrix, affine_patch = None):
+        """
+        Return the maximum on the apartment given by base_change_matrix and
+        the point where the maximum is reached
+        """
+
+        if affine_patch != None:
+            return self._maximum_on_apartment(base_change_matrix, affine_patch)
+
+        solution_dict = self.maximum_on_apartment(base_change_matrix, 0)
+        maximum = solution_dict['maximum']
+        weight_vector = [solution_dict['u'+str(i)] for i in range(self.dimension + 1)]
+        point_on_BTB = BTB_Point(self.base_ring_valuation, base_change_matrix, weight_vector)
+        return [maximum, BTB_Point(self.base_ring_valuation)]
 
 
     def ascent_directions_at(self, point_on_BTB, matrix_form = 'uut'):
