@@ -61,6 +61,12 @@ class StabilityFunction:
         return linear_valuation.graded_reduction_of(self.homogeneous_form)
 
 
+    def has_semistable_reduction_at(self, point_on_BTB):
+        if self.graded_reduction_at(point_on_BTB).is_semistable():
+            return True
+        return False
+
+
     def affine_functions_on_apartment(self, base_change_matrix, affine_patch = None):
         """
         Return the stability function restricted to the apartment given by 'self.standard_basis*base_change_matrix.inverse()'.
