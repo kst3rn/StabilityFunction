@@ -24,6 +24,9 @@ class StabilityFunction:
             base_ring_valuation - discrete valuation on K
         """
 
+        if homogeneous_form.base_ring() != base_ring_valuation.domain():
+            raise ValueError(f"Base rings of {homogeneous_form} and {base_ring_valuation} are not equal")
+
         self.homogeneous_form       = homogeneous_form
         self.base_ring_valuation    = base_ring_valuation
 
