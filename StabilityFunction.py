@@ -37,6 +37,10 @@ class StabilityFunction:
         return f"Stability Function of {self.homogeneous_form} over {self.base_ring} with {self.base_ring_valuation}"
 
 
+    def get_homogeneous_form(self):
+        return self.homogeneous_form
+
+
     def get_dimension(self):
         return self.dimension
 
