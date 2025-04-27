@@ -356,6 +356,46 @@ class StabilityFunction:
 
 
 
+class RestrictedStabilityFunction:
+    def __init__(self, stability_function, base_change_matrix):
+        r"""
+        Return ...
+        """
+
+        self.homogeneous_form = stability_function.get_homogeneous_form()
+        self.base_ring_valuation = stability_function.get_base_ring_valuation()
+        self.base_change_matrix = base_change_matrix
+
+
+    def __repr__(self, ):
+        n = len(self.homogeneous_form.parent().gens())
+        return f"Stability Function of {self.homogeneous_form} over {self.base_ring} with {self.base_ring_valuation} restricted to RR^{n}"
+
+
+    def maximum(self):
+        raise NotImplementedError
+
+
+    def active_functions(self, w, flag = True):
+        r"""
+        Return the set of active functions a w
+        """
+
+        d = self.homogeneous_form.degree()
+        N = len(self.homogeneous_form.parent().gens())
+        # Compute d/N*v_K( det(A) )
+        const_A = d/N*self.base_ring_valuation(self.base_change_matrix.det())
+        affine_functions_values = dict()
+        F = _apply_matrix(self.base_change_matrix, self.homogeneous_form)
+        for multi_index, coefficient in F.dict().items():
+            value_at_w = self.base_ring_valuation(coefficient) - const_A
+            for j in range(N):
+                value_at_w = value_at_w + multi_index[j] * w[j]
+            affine_functions_values[multi_index] = value_at_w
+        min_value = min(affine_functions_values.values())
+        return [key for key, value in affine_functions_values.items() if value == min_value]
+
+
 
 class BTB_Point:
     def __init__(self, base_ring_valuation, base_change_matrix, weight_vector):
