@@ -162,6 +162,10 @@ class StabilityFunction:
         return affine_functions
 
 
+    def active_functions_at(self, base_change_matrix, weight_vector):
+        return RestrictedStabilityFunction(self, base_change_matrix).active_functions(weight_vector)
+
+
     def _maximum_on_apartment(self, base_change_matrix, affine_patch):
         """
         Return the maximum of the stability function on the apartment given by 'self.standard_basis*base_change_matrix.inverse()'.
@@ -481,4 +485,31 @@ class BTB_apartment_point:
         """
         ToDo
         """
-        
+
+
+
+# ===================== helper functions =====================
+
+def _apply_matrix(T, F, affine_patch = None):
+    """
+    Return F((x_0,...,x_n) * T) or its dehomogenization
+    at affine_patch, i.e. x_{affine_patch} = 1 if
+    affine_patch != None
+
+    INPUT:
+        T            - matrix over K
+        F            - polynomial in K[x_0,...,x_n]
+        affine_patch - integer between 0 and n
+
+    OUTPUT:
+        F((x_0,...,x_n) * T) with x_{affine_patch} = 1 if
+        affine_patch != None
+
+    MATHEMATICAL INTERPRETATION:
+        ToDo...
+    """
+
+    generators = list(F.parent().gens())
+    if affine_patch != None:
+        generators[affine_patch] = F.parent()(1)
+    return F(list( vector(generators) * T ))
