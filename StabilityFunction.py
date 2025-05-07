@@ -67,7 +67,7 @@ class StabilityFunction:
     def graded_reduction_at(self, point_on_BTB):
 
         A = point_on_BTB.get_base_change_matrix()
-        u = point_on_BTB.get_weight_vector()
+        u = point_on_BTB.weight_vector()
         linear_valuation = LV.LinearValuation(self.polynomial_ring, self.base_ring_valuation, A, u)
         return linear_valuation.graded_reduction_of(self.homogeneous_form)
 
@@ -238,7 +238,7 @@ class StabilityFunction:
         MATHEMATICAL INTERPRETATION:
             First, let
                 A   = point_on_BTB.get_base_change_matrix(),
-                u   = point_on_BTB.get_weight_vector(),
+                u   = point_on_BTB.weight_vector(),
                 B   = A.inverse(),
                 K   = self.base_ring
                 n   = self.dimension
@@ -349,7 +349,7 @@ class StabilityFunction:
         """
 
         T = point_on_BTB.get_base_change_matrix()
-        w = point_on_BTB.get_weight_vector()
+        w = point_on_BTB.weight_vector()
 
         return min(affine_function(w) for affine_function in self.affine_functions_on_apartment(T))
 
@@ -422,23 +422,23 @@ class BTB_Point:
         for w in weight_vector_qq:
             normalized_weight_vector.append(w - w_min)
 
-        self.weight_vector = normalized_weight_vector
+        self._weight_vector = normalized_weight_vector
 
 
     def __repr__(self):
-        return f"Point on the Bruhat-Tits Building of SL({len(self.weight_vector)}) over {self.base_ring_valuation.domain()} with {self.base_ring_valuation}"
+        return f"Point on the Bruhat-Tits Building of SL({len(self._weight_vector)}) over {self.base_ring_valuation.domain()} with {self.base_ring_valuation}"
 
 
     def get_base_change_matrix(self):
         return self.base_change_matrix
 
 
-    def get_weight_vector(self):
-        return self.weight_vector
+    def weight_vector(self):
+        return self._weight_vector
 
 
     def affine_patch(self):
-        return self.weight_vector.index(0)
+        return self._weight_vector.index(0)
 
 
     def get_base_ring(self):
@@ -472,7 +472,7 @@ class BTB_Point:
         # normalize the value grout to be ZZ
         value_groug_generator = self.base_ring_valuation.value_group().gen()
         norm_weight_vector = []
-        for i in self.weight_vector:
+        for i in self._weight_vector:
             norm_weight_vector.append(i/value_groug_generator)
 
         # translate inside the unit cube
