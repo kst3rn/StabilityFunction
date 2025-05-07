@@ -415,13 +415,12 @@ class BTB_Point:
         self.base_change_matrix = base_change_matrix
 
         # convert all entries to rationals
-        for i, w in enumerate(weight_vector):
-            weight_vector[i] = QQ(w)
+        weight_vector_qq = [QQ(w) for w in weight_vector]
 
         normalized_weight_vector = []
-        minimal_entry = min(weight_vector)
-        for weight_vector_entry in weight_vector:
-            normalized_weight_vector.append(weight_vector_entry - minimal_entry)
+        w_min = min(weight_vector_qq)
+        for w in weight_vector_qq:
+            normalized_weight_vector.append(w - w_min)
 
         self.weight_vector = normalized_weight_vector
 
