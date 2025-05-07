@@ -400,6 +400,13 @@ class RestrictedStabilityFunction:
         return [key for key, value in affine_functions_values.items() if value == min_value]
 
 
+    def embedding_matrix(self):
+        r"""
+        Return the matrix T such that...
+        """
+        return self.base_change_matrix
+
+
 
 class BTB_Point:
     def __init__(self, base_ring_valuation, base_change_matrix, weight_vector):
