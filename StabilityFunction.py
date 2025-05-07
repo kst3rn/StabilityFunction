@@ -66,7 +66,7 @@ class StabilityFunction:
 
     def graded_reduction_at(self, point_on_BTB):
 
-        A = point_on_BTB.get_base_change_matrix()
+        A = point_on_BTB.base_change_matrix()
         u = point_on_BTB.weight_vector()
         linear_valuation = LV.LinearValuation(self.polynomial_ring, self.base_ring_valuation, A, u)
         return linear_valuation.graded_reduction_of(self.homogeneous_form)
@@ -237,7 +237,7 @@ class StabilityFunction:
 
         MATHEMATICAL INTERPRETATION:
             First, let
-                A   = point_on_BTB.get_base_change_matrix(),
+                A   = point_on_BTB.base_change_matrix(),
                 u   = point_on_BTB.weight_vector(),
                 B   = A.inverse(),
                 K   = self.base_ring
@@ -348,7 +348,7 @@ class StabilityFunction:
         Return the value of self at 'point_on_BTB'
         """
 
-        T = point_on_BTB.get_base_change_matrix()
+        T = point_on_BTB.base_change_matrix()
         w = point_on_BTB.weight_vector()
 
         return min(affine_function(w) for affine_function in self.affine_functions_on_apartment(T))
@@ -361,14 +361,14 @@ class StabilityFunction:
 
 
 class RestrictedStabilityFunction:
-    def __init__(self, stability_function, base_change_matrix):
+    def __init__(self, stability_function, embedding_matrix):
         r"""
         Return ...
         """
 
         self.homogeneous_form = stability_function.get_homogeneous_form()
         self.base_ring_valuation = stability_function.get_base_ring_valuation()
-        self.base_change_matrix = base_change_matrix
+        self._embedding_matrix = embedding_matrix
 
 
     def __repr__(self, ):
@@ -388,9 +388,9 @@ class RestrictedStabilityFunction:
         d = self.homogeneous_form.degree()
         N = len(self.homogeneous_form.parent().gens())
         # Compute d/N*v_K( det(A) )
-        const_A = d/N*self.base_ring_valuation(self.base_change_matrix.det())
+        const_A = d/N*self.base_ring_valuation(self._embedding_matrix.det())
         affine_functions_values = dict()
-        F = _apply_matrix(self.base_change_matrix, self.homogeneous_form)
+        F = _apply_matrix(self._embedding_matrix, self.homogeneous_form)
         for multi_index, coefficient in F.dict().items():
             value_at_w = self.base_ring_valuation(coefficient) - const_A
             for j in range(N):
@@ -404,7 +404,7 @@ class RestrictedStabilityFunction:
         r"""
         Return the matrix T such that...
         """
-        return self.base_change_matrix
+        return self._embedding_matrix
 
 
 
@@ -412,7 +412,7 @@ class BTB_Point:
     def __init__(self, base_ring_valuation, base_change_matrix, weight_vector):
 
         self.base_ring_valuation = base_ring_valuation
-        self.base_change_matrix = base_change_matrix
+        self._base_change_matrix = base_change_matrix
 
         # convert all entries to rationals
         weight_vector_qq = [QQ(w) for w in weight_vector]
@@ -429,8 +429,8 @@ class BTB_Point:
         return f"Point on the Bruhat-Tits Building of SL({len(self._weight_vector)}) over {self.base_ring_valuation.domain()} with {self.base_ring_valuation}"
 
 
-    def get_base_change_matrix(self):
-        return self.base_change_matrix
+    def base_change_matrix(self):
+        return self._base_change_matrix
 
 
     def weight_vector(self):
@@ -442,7 +442,7 @@ class BTB_Point:
 
 
     def get_base_ring(self):
-        return self.base_change_matrix.base_ring()
+        return self._base_change_matrix.base_ring()
 
 
     def minimal_simplex_dimension(self):
