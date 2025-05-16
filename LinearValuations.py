@@ -12,7 +12,7 @@
 
 
 from sage.all import *
-
+import re
 
 
 class LinearValuation:
@@ -90,7 +90,7 @@ class LinearValuation:
         return "Linear valuation"
 
 
-    def __call__(self, polynom):
+    def __call__(self, polynomial):
         return self.evaluate_at(polynomial)
 
 
@@ -191,6 +191,39 @@ class LinearValuation:
                 value = value + multi_index[j]*self.weight_vector[j]
             values.append( value )
         return min(values)
+
+
+    def initial_form(self, polynomial):
+        r"""
+        Return the initial form of polynomial with respect to self
+
+        EXAMPLE:
+        ToDo
+        """
+        polynomial_value = self(polynomial)
+        G = _apply_matrix(self.base_change_matrix, polynomial)
+        if G.is_zero():
+            return "0"
+
+        parent_ring = G.parent()
+        gens = parent_ring.gens()
+        G_initial = parent_ring(0)
+        N = self.get_dimension()
+        for multi_index, coefficient in G.dict().items():
+            value = self.base_ring_valuation(coefficient)
+            value += sum(multi_index[j] * self.weight_vector[j] for j in range(N))
+            if value == polynomial_value:
+                G_initial += coefficient * prod(gens[j]**multi_index[j] for j in range(N))
+
+        s = str(G_initial)
+
+        var_names = [str(g) for g in gens]
+        sorted_var_names = sorted(var_names, key=len, reverse=True)
+        for v_name in sorted_var_names:
+            pattern = r'\b' + re.escape(v_name) + r'\b'
+            replacement = f"T({v_name})"
+            s = re.sub(pattern, replacement, s)
+        return s
 
 
     def graded_reduction_of( self, polynomial ):
