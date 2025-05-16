@@ -86,6 +86,14 @@ class LinearValuation:
         self.weight_vector = weight_vector_qq
 
 
+    def __repr__(self):
+        return "Linear valuation"
+
+
+    def __call__(self, polynom):
+        return self.evaluate_at(polynomial)
+
+
     def get_polynomial_ring(self):
         return self.polynomial_ring
 
@@ -168,9 +176,11 @@ class LinearValuation:
             and not G(y_0,...,y_n). But for mathematical clarity, we will still
             refer to (y_0,...,y_n) in the comments below.
         """
-
         if not polynomial.parent() == self.polynomial_ring:
-            raise TypeError
+            raise TypeError(f"Polynomial must be in {self.polynomial_ring}, but got parent {polynomial.parent()}")
+
+        if polynomial == 0:
+            return +Infinity
         
         N = self.get_dimension()
         G = polynomial( list( vector(self.standard_basis()) * self.base_change_matrix ) )
@@ -180,7 +190,6 @@ class LinearValuation:
             for j in range(N):
                 value = value + multi_index[j]*self.weight_vector[j]
             values.append( value )
-
         return min(values)
 
 
