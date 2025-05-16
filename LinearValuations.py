@@ -78,14 +78,14 @@ class LinearValuation:
         """
 
         # convert all entries to rationals
-        for i, w in enumerate(weight_vector):
-            weight_vector[i] = QQ(w)
+        weight_vector_qq = [QQ(w) for w in weight_vector]
     
         self.polynomial_ring = polynomial_ring
         self.base_ring_valuation = base_ring_valuation
         self.base_change_matrix = base_change_matrix
-        self.weight_vector = weight_vector
-    
+        self.weight_vector = weight_vector_qq
+
+
     def get_polynomial_ring(self):
         return self.polynomial_ring
 
