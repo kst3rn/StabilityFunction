@@ -78,6 +78,10 @@ class StabilityFunction:
         return False
 
 
+    def inital_form(self, point_on_BTB):
+        return point_on_BTB.linear_valuation().initial_form(self.homogeneous_form)
+
+
     def affine_functions_on_apartment(self, base_change_matrix, affine_patch = None):
         """
         Return the stability function restricted to the apartment given by 'self.standard_basis*base_change_matrix.inverse()'.
