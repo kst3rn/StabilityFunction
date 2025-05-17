@@ -196,9 +196,50 @@ class LinearValuation:
     def initial_form(self, polynomial):
         r"""
         Return the initial form of polynomial with respect to self
-
-        EXAMPLE:
-        ToDo
+        INPUT:
+            polynomial - element of self.polynomial_ring
+        OUTPUT:
+            string
+        MATHEMATICAL INTERPRETATION:
+            First, let
+                K   = self.polynomial_ring.base_ring(),
+                E_0 = (x_0,...,x_n) = self.polynomial_ring.gens(),
+                v_K = self.base_ring_valuation,
+                A   = self.base_change_matrix,
+                T   = self.base_change_matrix.inverse(),
+                u   = self.weight_vector .
+            Thus, we can write
+                self.polynomial_ring = K[x_0,...,x_n] .
+            We call E_0 the standard basis and consider A and T as linear transformations,
+            with respect to E_0, i.e.
+                A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  T(x_j) = sum_{i=0}^n t_{ij}*x_i .
+            Then E = (y_0,...,y_n) = ( T(x_0),...,T(x_n) ) is a new basis of K[x_0,...,x_n].
+            and
+                LinearValuation( K[x_0,...,x_n], v_K, A, u ) = v_{E,u} .
+            Let F be a polynomial in K[x_0,...,x_n]. To evaluate v_{E,u} at F we have to
+            write F with respect to the basis E. This will be done as follows. If we view
+            E_0 = (x_0,...,x_n) as a vector in Sage, we get
+                (x_0,...,x_n)*T = (sum_{i=0}^n T_{i,0}*x_i,...,sum_{i=0}^n T_{i,n}*x_i)
+                                = (y_0,...,y_n)
+            and therefore
+                F(x_0,...,x_n) = F( (y_0,...,y_n)*T^{-1} ) = F( (y_0,...,y_n)*A ) .
+            Thus, the polynomial
+                G(y_0,...,y_n) = F( (y_0,...,y_n)*A ) in K[y_0,...,y_n]
+            describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
+            For a multi index set I subset NN^(n+1) we can write
+                G = sum_{i in I} a_i y_0^i_0 * ... * y_n^i_n
+            Thus, with the notation
+                <i,u> = i_0*u_0 + ... + i_n*u_n,
+            we obtain
+                v_{E,u}(F) = min( v_K(a_i) + <i,u> : i in I ).
+            Remark. Note that the valuations
+                LinearValuation( K[x_0,...,x_n], v_K, A, u )
+            and
+                LinearValuation( K[y_0,...,y_n], v_K, identity_matrix, u )
+            are equal. The initial form of F with respect to v_{E, u} is the polynomial
+                sum_{i in I_0} a_i y_0^i_0 * ... * y_n^i_n
+            for
+                I_0 = {i \in I : v_K(a_i) + <i,u> = v_{E, u}(F)}.
         """
         polynomial_value = self(polynomial)
         G = _apply_matrix(self.base_change_matrix, polynomial)
