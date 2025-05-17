@@ -40,23 +40,23 @@ class LinearValuation:
                 E_0 = (x_0,...,x_n) = polynomial_ring.gens(),
                 v_K = base_ring_valuation,
                 A   = base_change_matrix,
-                B   = base_change_matrix.inverse(),
+                T   = base_change_matrix.inverse(),
                 w   = weight_vector .
             Thus, we can write
                 polynomial_ring = K[x_0,...,x_n] .
-            We call E_0 the standard basis and consider A and B as linear transformations,
+            We call E_0 the standard basis and consider A and T as linear transformations,
             with respect to E_0, i.e.
-                A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n b_{ij}*x_i .
-            Then E = (y_0,...,y_n) = ( B(x_0),...,B(x_n) ) is a new basis of K[x_0,...,x_n].
+                A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  T(x_j) = sum_{i=0}^n t_{ij}*x_i .
+            Then E = (y_0,...,y_n) = ( T(x_0),...,T(x_n) ) is a new basis of K[x_0,...,x_n].
             and we set
                 LinearValuation( K[x_0,...,x_n], v_K, A, w ) = v_{E,u} .
             Now let F be a polynomial in K[x_0,...,x_n]. To compute v_{E,u}(F) we have to
             write F with respect to the basis E. This will be done as follows. If we view
             E_0 = (x_0,...,x_n) as a vector in Sage, we get
-                (x_0,...,x_n)*B = (sum_{i=0}^n b_{i,0}*x_i,...,sum_{i=0}^n b_{i,n}*x_i)
+                (x_0,...,x_n)*T = (sum_{i=0}^n t_{i,0}*x_i,...,sum_{i=0}^n t_{i,n}*x_i)
                                 = (y_0,...,y_n)
             and therefore
-                F(x_0,...,x_n) = F( (y_0,...,y_n)*B^{-1} ) = F( (y_0,...,y_n)*A ) .
+                F(x_0,...,x_n) = F( (y_0,...,y_n)*T^{-1} ) = F( (y_0,...,y_n)*A ) .
             Thus, the polynomial
                 G(y_0,...,y_n) = F( (y_0,...,y_n)*A ) in K[y_0,...,y_n]
             describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
@@ -138,23 +138,23 @@ class LinearValuation:
                 E_0 = (x_0,...,x_n) = self.polynomial_ring.gens(),
                 v_K = self.base_ring_valuation,
                 A   = self.base_change_matrix,
-                B   = self.base_change_matrix.inverse(),
+                T   = self.base_change_matrix.inverse(),
                 u   = self.weight_vector .
             Thus, we can write
                 self.polynomial_ring = K[x_0,...,x_n] .
-            We call E_0 the standard basis and consider A and B as linear transformations,
+            We call E_0 the standard basis and consider A and T as linear transformations,
             with respect to E_0, i.e.
-                A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n b_{ij}*x_i .
-            Then E = (y_0,...,y_n) = ( B(x_0),...,B(x_n) ) is a new basis of K[x_0,...,x_n].
+                A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  T(x_j) = sum_{i=0}^n t_{ij}*x_i .
+            Then E = (y_0,...,y_n) = ( T(x_0),...,T(x_n) ) is a new basis of K[x_0,...,x_n].
             and
                 LinearValuation( K[x_0,...,x_n], v_K, A, u ) = v_{E,u} .
             Let F be a polynomial in K[x_0,...,x_n]. To evaluate v_{E,u} at F we have to
             write F with respect to the basis E. This will be done as follows. If we view
             E_0 = (x_0,...,x_n) as a vector in Sage, we get
-                (x_0,...,x_n)*B = (sum_{i=0}^n B_{i,0}*x_i,...,sum_{i=0}^n B_{i,n}*x_i)
+                (x_0,...,x_n)*T = (sum_{i=0}^n T_{i,0}*x_i,...,sum_{i=0}^n T_{i,n}*x_i)
                                 = (y_0,...,y_n)
             and therefore
-                F(x_0,...,x_n) = F( (y_0,...,y_n)*B^{-1} ) = F( (y_0,...,y_n)*A ) .
+                F(x_0,...,x_n) = F( (y_0,...,y_n)*T^{-1} ) = F( (y_0,...,y_n)*A ) .
             Thus, the polynomial
                 G(y_0,...,y_n) = F( (y_0,...,y_n)*A ) in K[y_0,...,y_n]
             describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
@@ -286,14 +286,14 @@ class LinearValuation:
                 k   = v_K.residue_field()
                 p_K = v_K.uniformizer()
                 A   = self.base_change_matrix,
-                B   = self.base_change_matrix.inverse(),
+                T   = self.base_change_matrix.inverse(),
                 u   = self.weight_vector .
             Thus, we can write
                 self.polynomial_ring = K[x_0,...,x_n] .
-            We call E_0 the standard basis and consider A and B as linear transformations,
+            We call E_0 the standard basis and consider A and T as linear transformations,
             with respect to E_0, i.e.
-                A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n b_{ij}*x_i .
-            Then E = (y_0,...,y_n) = ( B(x_0),...,B(x_n) ) is a new basis of K[x_0,...,x_n].
+                A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  T(x_j) = sum_{i=0}^n t_{ij}*x_i .
+            Then E = (y_0,...,y_n) = ( T(x_0),...,T(x_n) ) is a new basis of K[x_0,...,x_n].
             and
                 LinearValuation( K[x_0,...,x_n], v_K, A, u ) = v_{E,u} .
             The graded reduction ring of v_{E,u} is the graded ring
@@ -308,11 +308,11 @@ class LinearValuation:
             To compute the graded reduction  [F] of F we first have to write F with
             respect to the basis E. This will be done as follows. If we view
             E_0 = (x_0,...,x_n) as a vector in Sage, we get
-                (x_0,...,x_n)*B = (sum_{i=0}^n B_{i,0}*x_i,...,sum_{i=0}^n B_{i,n}*x_i)
+                (x_0,...,x_n)*T = (sum_{i=0}^n T_{i,0}*x_i,...,sum_{i=0}^n T_{i,n}*x_i)
                                 = (y_0,...,y_n)
             and therefore
-                F(x_0,...,x_n) = F( (y_0,...,y_n)*B^(-1) ) = F( (y_0,...,y_n)*A ) .
-            Since A = B^(-1), the polynomial
+                F(x_0,...,x_n) = F( (y_0,...,y_n)*T^(-1) ) = F( (y_0,...,y_n)*A ) .
+            Since A = T^(-1), the polynomial
                 G(y_0,...,y_n) = F( (y_0,...,y_n)*A ) in K[y_0,...,y_n]
             describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
             Note that mathematically the rings
