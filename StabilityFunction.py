@@ -411,7 +411,7 @@ class RestrictedStabilityFunction:
 class BTB_Point:
     def __init__(self, base_ring_valuation, base_change_matrix, weight_vector):
 
-        self.base_ring_valuation = base_ring_valuation
+        self._base_ring_valuation = base_ring_valuation
         self._base_change_matrix = base_change_matrix
 
         # convert all entries to rationals
@@ -426,7 +426,11 @@ class BTB_Point:
 
 
     def __repr__(self):
-        return f"Point on the Bruhat-Tits Building of SL({len(self._weight_vector)}) over {self.base_ring_valuation.domain()} with {self.base_ring_valuation}"
+        return f"Point on the Bruhat-Tits Building of SL({len(self._weight_vector)}) over {self._base_ring_valuation.domain()} with {self._base_ring_valuation}"
+
+
+    def base_ring_valuation(self):
+        return self._base_ring_valuation
 
 
     def base_change_matrix(self):
@@ -443,6 +447,16 @@ class BTB_Point:
 
     def get_base_ring(self):
         return self._base_change_matrix.base_ring()
+
+
+    def linear_valuation(self):
+        r"""
+        Return a linear valuation representing self
+        """
+        K = self.base_ring_valuation().domain()
+        N = len(self.weight_vector())
+        R = PolynomialRing(K, N, 'x')
+        return LV.LinearValuation(R, self.base_ring_valuation(), self.base_change_matrix(), self.weight_vector())
 
 
     def minimal_simplex_dimension(self):
@@ -470,7 +484,7 @@ class BTB_Point:
         """
 
         # normalize the value grout to be ZZ
-        value_groug_generator = self.base_ring_valuation.value_group().gen()
+        value_groug_generator = self.base_ring_valuation().value_group().gen()
         norm_weight_vector = []
         for i in self._weight_vector:
             norm_weight_vector.append(i/value_groug_generator)
