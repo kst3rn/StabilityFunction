@@ -39,40 +39,40 @@ class LinearValuation:
                 K   = polynomial_ring.base_ring(),
                 E_0 = (x_0,...,x_n) = polynomial_ring.gens(),
                 v_K = base_ring_valuation,
-                A   = base_change_matrix,
-                T   = base_change_matrix.inverse(),
+                T   = base_change_matrix,
+                B   = base_change_matrix.inverse(),
                 w   = weight_vector .
             Thus, we can write
                 polynomial_ring = K[x_0,...,x_n] .
-            We call E_0 the standard basis and consider A and T as linear transformations,
+            We call E_0 the standard basis and consider T and B as linear transformations,
             with respect to E_0, i.e.
-                A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  T(x_j) = sum_{i=0}^n t_{ij}*x_i .
-            Then E = (y_0,...,y_n) = ( T(x_0),...,T(x_n) ) is a new basis of K[x_0,...,x_n].
+                T(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n t_{ij}*x_i .
+            Then E = (y_0,...,y_n) = ( B(x_0),...,B(x_n) ) is a new basis of K[x_0,...,x_n].
             and we set
-                LinearValuation( K[x_0,...,x_n], v_K, A, w ) = v_{E,u} .
+                LinearValuation( K[x_0,...,x_n], v_K, T, w ) = v_{E,u} .
             Now let F be a polynomial in K[x_0,...,x_n]. To compute v_{E,u}(F) we have to
             write F with respect to the basis E. This will be done as follows. If we view
             E_0 = (x_0,...,x_n) as a vector in Sage, we get
-                (x_0,...,x_n)*T = (sum_{i=0}^n t_{i,0}*x_i,...,sum_{i=0}^n t_{i,n}*x_i)
+                (x_0,...,x_n)*B = (sum_{i=0}^n t_{i,0}*x_i,...,sum_{i=0}^n t_{i,n}*x_i)
                                 = (y_0,...,y_n)
             and therefore
-                F(x_0,...,x_n) = F( (y_0,...,y_n)*T^{-1} ) = F( (y_0,...,y_n)*A ) .
+                F(x_0,...,x_n) = F( (y_0,...,y_n)*B^{-1} ) = F( (y_0,...,y_n)*T ) .
             Thus, the polynomial
-                G(y_0,...,y_n) = F( (y_0,...,y_n)*A ) in K[y_0,...,y_n]
-            describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
+                G(y_0,...,y_n) = F( (y_0,...,y_n)*T ) in K[y_0,...,y_n]
+            describes F with respect to the basis (y_0,...,y_n) and T describes the base change.
             Thus, with the notation
                 <i,u> = i_0*u_0 + ... + i_n*u_n,
             we obtain
                 v_{E,u}(F) = min( v_K(a_i) + <i,u> : i in I ) with G = sum_{i in I} a_i y^i,
             where i is a multi-index, i.e. I is a subset of NN^{n+1}.
             Remark. Note that the valuations
-                LinearValuation( K[x_0,...,x_n], v_K, A, w )
+                LinearValuation( K[x_0,...,x_n], v_K, T, w )
             and
                 LinearValuation( K[y_0,...,y_n], v_K, identity_matrix, w )
             are equal. We will use this fact for example to compute graded reduction.
         IMPORTANT REMARK:
             We do not want to introduce new variables and hence we will consider
-                G(x_0,...,x_n) = F( (x_0,...,x_n)*T^{-1} )
+                G(x_0,...,x_n) = F( (x_0,...,x_n)*B^{-1} )
             and not G(y_0,...,y_n). But for mathematical clarity, we will still
             refer to (y_0,...,y_n) in the comments below.
         """
@@ -137,27 +137,27 @@ class LinearValuation:
                 K   = self.polynomial_ring.base_ring(),
                 E_0 = (x_0,...,x_n) = self.polynomial_ring.gens(),
                 v_K = self.base_ring_valuation,
-                A   = self.base_change_matrix,
-                T   = self.base_change_matrix.inverse(),
+                T   = self.base_change_matrix,
+                B   = self.base_change_matrix.inverse(),
                 u   = self.weight_vector .
             Thus, we can write
                 self.polynomial_ring = K[x_0,...,x_n] .
-            We call E_0 the standard basis and consider A and T as linear transformations,
+            We call E_0 the standard basis and consider T and B as linear transformations,
             with respect to E_0, i.e.
-                A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  T(x_j) = sum_{i=0}^n t_{ij}*x_i .
-            Then E = (y_0,...,y_n) = ( T(x_0),...,T(x_n) ) is a new basis of K[x_0,...,x_n].
+                T(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n t_{ij}*x_i .
+            Then E = (y_0,...,y_n) = ( B(x_0),...,B(x_n) ) is a new basis of K[x_0,...,x_n].
             and
-                LinearValuation( K[x_0,...,x_n], v_K, A, u ) = v_{E,u} .
+                LinearValuation( K[x_0,...,x_n], v_K, T, u ) = v_{E,u} .
             Let F be a polynomial in K[x_0,...,x_n]. To evaluate v_{E,u} at F we have to
             write F with respect to the basis E. This will be done as follows. If we view
             E_0 = (x_0,...,x_n) as a vector in Sage, we get
-                (x_0,...,x_n)*T = (sum_{i=0}^n T_{i,0}*x_i,...,sum_{i=0}^n T_{i,n}*x_i)
+                (x_0,...,x_n)*B = (sum_{i=0}^n B_{i,0}*x_i,...,sum_{i=0}^n B_{i,n}*x_i)
                                 = (y_0,...,y_n)
             and therefore
-                F(x_0,...,x_n) = F( (y_0,...,y_n)*T^{-1} ) = F( (y_0,...,y_n)*A ) .
+                F(x_0,...,x_n) = F( (y_0,...,y_n)*B^{-1} ) = F( (y_0,...,y_n)*T ) .
             Thus, the polynomial
-                G(y_0,...,y_n) = F( (y_0,...,y_n)*A ) in K[y_0,...,y_n]
-            describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
+                G(y_0,...,y_n) = F( (y_0,...,y_n)*T ) in K[y_0,...,y_n]
+            describes F with respect to the basis (y_0,...,y_n) and T describes the base change.
             For a multi index set I subset NN^(n+1) we can write
                 G = sum_{i in I} a_i y_0^i_0 * ... * y_n^i_n
             Thus, with the notation
@@ -165,14 +165,14 @@ class LinearValuation:
             we obtain
                 v_{E,u}(F) = min( v_K(a_i) + <i,u> : i in I ).
             Remark. Note that the valuations
-                LinearValuation( K[x_0,...,x_n], v_K, A, u )
+                LinearValuation( K[x_0,...,x_n], v_K, T, u )
             and
                 LinearValuation( K[y_0,...,y_n], v_K, identity_matrix, u )
             are equal. We will use this fact for example to compute graded reduction.
 
         IMPORTANT REMARK:
             We do not want to introduce new variables and hence we will consider
-                G(x_0,...,x_n) = F( (x_0,...,x_n)*T^{-1} )
+                G(x_0,...,x_n) = F( (x_0,...,x_n)*B^{-1} )
             and not G(y_0,...,y_n). But for mathematical clarity, we will still
             refer to (y_0,...,y_n) in the comments below.
         """
@@ -205,27 +205,27 @@ class LinearValuation:
                 K   = self.polynomial_ring.base_ring(),
                 E_0 = (x_0,...,x_n) = self.polynomial_ring.gens(),
                 v_K = self.base_ring_valuation,
-                A   = self.base_change_matrix,
-                T   = self.base_change_matrix.inverse(),
+                T   = self.base_change_matrix,
+                B   = self.base_change_matrix.inverse(),
                 u   = self.weight_vector .
             Thus, we can write
                 self.polynomial_ring = K[x_0,...,x_n] .
-            We call E_0 the standard basis and consider A and T as linear transformations,
+            We call E_0 the standard basis and consider T and B as linear transformations,
             with respect to E_0, i.e.
-                A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  T(x_j) = sum_{i=0}^n t_{ij}*x_i .
-            Then E = (y_0,...,y_n) = ( T(x_0),...,T(x_n) ) is a new basis of K[x_0,...,x_n].
+                T(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n t_{ij}*x_i .
+            Then E = (y_0,...,y_n) = ( B(x_0),...,B(x_n) ) is a new basis of K[x_0,...,x_n].
             and
-                LinearValuation( K[x_0,...,x_n], v_K, A, u ) = v_{E,u} .
+                LinearValuation( K[x_0,...,x_n], v_K, T, u ) = v_{E,u} .
             Let F be a polynomial in K[x_0,...,x_n]. To evaluate v_{E,u} at F we have to
             write F with respect to the basis E. This will be done as follows. If we view
             E_0 = (x_0,...,x_n) as a vector in Sage, we get
-                (x_0,...,x_n)*T = (sum_{i=0}^n T_{i,0}*x_i,...,sum_{i=0}^n T_{i,n}*x_i)
+                (x_0,...,x_n)*B = (sum_{i=0}^n B_{i,0}*x_i,...,sum_{i=0}^n B_{i,n}*x_i)
                                 = (y_0,...,y_n)
             and therefore
-                F(x_0,...,x_n) = F( (y_0,...,y_n)*T^{-1} ) = F( (y_0,...,y_n)*A ) .
+                F(x_0,...,x_n) = F( (y_0,...,y_n)*B^{-1} ) = F( (y_0,...,y_n)*T ) .
             Thus, the polynomial
-                G(y_0,...,y_n) = F( (y_0,...,y_n)*A ) in K[y_0,...,y_n]
-            describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
+                G(y_0,...,y_n) = F( (y_0,...,y_n)*T ) in K[y_0,...,y_n]
+            describes F with respect to the basis (y_0,...,y_n) and T describes the base change.
             For a multi index set I subset NN^(n+1) we can write
                 G = sum_{i in I} a_i y_0^i_0 * ... * y_n^i_n
             Thus, with the notation
@@ -233,7 +233,7 @@ class LinearValuation:
             we obtain
                 v_{E,u}(F) = min( v_K(a_i) + <i,u> : i in I ).
             Remark. Note that the valuations
-                LinearValuation( K[x_0,...,x_n], v_K, A, u )
+                LinearValuation( K[x_0,...,x_n], v_K, T, u )
             and
                 LinearValuation( K[y_0,...,y_n], v_K, identity_matrix, u )
             are equal. The initial form of F with respect to v_{E, u} is the polynomial
@@ -285,17 +285,17 @@ class LinearValuation:
                 v_K = self.base_ring_valuation,
                 k   = v_K.residue_field()
                 p_K = v_K.uniformizer()
-                A   = self.base_change_matrix,
-                T   = self.base_change_matrix.inverse(),
+                T   = self.base_change_matrix,
+                B   = self.base_change_matrix.inverse(),
                 u   = self.weight_vector .
             Thus, we can write
                 self.polynomial_ring = K[x_0,...,x_n] .
-            We call E_0 the standard basis and consider A and T as linear transformations,
+            We call E_0 the standard basis and consider T and B as linear transformations,
             with respect to E_0, i.e.
-                A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  T(x_j) = sum_{i=0}^n t_{ij}*x_i .
-            Then E = (y_0,...,y_n) = ( T(x_0),...,T(x_n) ) is a new basis of K[x_0,...,x_n].
+                T(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n t_{ij}*x_i .
+            Then E = (y_0,...,y_n) = ( B(x_0),...,B(x_n) ) is a new basis of K[x_0,...,x_n].
             and
-                LinearValuation( K[x_0,...,x_n], v_K, A, u ) = v_{E,u} .
+                LinearValuation( K[x_0,...,x_n], v_K, T, u ) = v_{E,u} .
             The graded reduction ring of v_{E,u} is the graded ring
                 R = k[t,t^(-1)][Y_0,...,Y_n]
             where
@@ -308,13 +308,13 @@ class LinearValuation:
             To compute the graded reduction  [F] of F we first have to write F with
             respect to the basis E. This will be done as follows. If we view
             E_0 = (x_0,...,x_n) as a vector in Sage, we get
-                (x_0,...,x_n)*T = (sum_{i=0}^n T_{i,0}*x_i,...,sum_{i=0}^n T_{i,n}*x_i)
+                (x_0,...,x_n)*B = (sum_{i=0}^n B_{i,0}*x_i,...,sum_{i=0}^n B_{i,n}*x_i)
                                 = (y_0,...,y_n)
             and therefore
-                F(x_0,...,x_n) = F( (y_0,...,y_n)*T^(-1) ) = F( (y_0,...,y_n)*A ) .
-            Since A = T^(-1), the polynomial
-                G(y_0,...,y_n) = F( (y_0,...,y_n)*A ) in K[y_0,...,y_n]
-            describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
+                F(x_0,...,x_n) = F( (y_0,...,y_n)*B^(-1) ) = F( (y_0,...,y_n)*T ) .
+            Since T = B^(-1), the polynomial
+                G(y_0,...,y_n) = F( (y_0,...,y_n)*T ) in K[y_0,...,y_n]
+            describes F with respect to the basis (y_0,...,y_n) and T describes the base change.
             Note that mathematically the rings
                 K[x_0,...,x_n] and K[y_0,...,y_n]
             are the same as well as the polynomials F and G are the same. We only perform a change
@@ -335,7 +335,7 @@ class LinearValuation:
             with respect to v_K.
 
             REMARK 1. Note that the valuations
-                v1 = LinearValuation( K[x_0,...,x_n], v_K, A, u )
+                v1 = LinearValuation( K[x_0,...,x_n], v_K, T, u )
             and
                 v2 = LinearValuation( K[y_0,...,y_n], v_K, identity_matrix, u )
             are both (mathematically) equal to v_{E,u}. As well as F and G are
@@ -356,7 +356,7 @@ class LinearValuation:
             is already written with respect to the basis E = (y_0,...,y_n).
 
             REMARK 2. We do not want to introduce new variables and hence we will consider
-                G(x_0,...,x_n) = F( (x_0,...,x_n)*T^(-1) )
+                G(x_0,...,x_n) = F( (x_0,...,x_n)*B^(-1) )
             and not G(y_0,...,y_n). But for mathematical clarity, we will still
             refer to (y_0,...,y_n) in the comments.
         """
