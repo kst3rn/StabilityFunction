@@ -10,7 +10,7 @@
 # ****************************************************************************
 
 
-
+from functools import cached_property
 from sage.all import *
 
 
@@ -26,6 +26,9 @@ class ProjectivePlaneCurve:
             raise TypeError
 
         if not len(polynomial.parent().gens()) == 3:
+            raise ValueError
+
+        if not polynomial.base_ring().is_field():
             raise ValueError
 
         self.polynomial = polynomial
@@ -60,10 +63,49 @@ class ProjectivePlaneCurve:
         return PPC_TangentCone(self, P)
 
 
+    def is_smooth(self):
+        return self.plane_curve.is_smooth()
+
+
+    def is_reduced(self):
+        return not any(multiplicity > 1 for factor, multiplicity in self._decompose)
+
+
+    def is_irreducible(self):
+        if len(self._decompose) > 1:
+            return False
+        return self.is_reduced()
+
+
     def is_semistable(self):
         if len(self.instabilities()) == 0:
             return True
         return False
+
+
+    def is_stable(self):
+        r"""
+        ToDo
+        """
+
+
+    def reduced_subscheme(self):
+        r"""
+        Return the reduced subscheme of self as a projective plane curve
+        """
+        f = prod(factor for factor, multiplicity in self._decompose)
+        return ProjectivePlaneCurve(f)
+
+
+    def irreducible_components(self):
+        return [ProjectivePlaneCurve(factor)
+                for factor, multiplicity in self._decompose]
+
+
+    def nonreduced_components(self):
+        return [(multiplicity, ProjectivePlaneCurve(factor))
+                for factor, multiplicity in self._decompose
+                if multiplicity > 1]
 
 
     def points_with_high_multiplicity(self):
@@ -152,6 +194,14 @@ class ProjectivePlaneCurve:
         """
 
         return [I for I in self.pseudo_instabilities() if I.is_instability()]
+
+
+    @cached_property
+    def _decompose(self):
+        r"""
+        Return the factored form of self.polynomial.
+        """
+        return list(self.polynomial.factor())
 
 
 
