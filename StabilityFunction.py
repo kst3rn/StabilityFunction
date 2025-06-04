@@ -78,7 +78,7 @@ class StabilityFunction:
         return False
 
 
-    def inital_form(self, point_on_BTB):
+    def initial_form(self, point_on_BTB):
         return point_on_BTB.linear_valuation().initial_form(self.homogeneous_form)
 
 
