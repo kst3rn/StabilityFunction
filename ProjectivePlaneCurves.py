@@ -16,192 +16,296 @@ from sage.all import *
 
 class ProjectivePlaneCurve:
 
-    def __init__(self, polynomial):
-        """
-        INPUT:
-            ...
-        """
+  def __init__(self, polynomial):
+    r"""
+    Construct ...
+    """
 
-        if not polynomial.is_homogeneous():
-            raise TypeError
+    if not polynomial.is_homogeneous():
+      raise TypeError
+    if not len(polynomial.parent().gens()) == 3:
+      raise ValueError
 
-        if not len(polynomial.parent().gens()) == 3:
-            raise ValueError
+    if not polynomial.base_ring().is_field():
+      raise ValueError
 
-        if not polynomial.base_ring().is_field():
-            raise ValueError
-
-        self.polynomial = polynomial
-        self.degree = self.polynomial.degree()
-        self.polynomial_ring = self.polynomial.parent()
-        self.base_ring = self.polynomial.base_ring()
-        self.projective_plane = ProjectiveSpace(self.polynomial_ring)
-        self.plane_curve = self.projective_plane.curve(self.polynomial)
-        self.standard_basis = self.polynomial_ring.gens()
+    self.polynomial = polynomial
+    self.degree = self.polynomial.degree()
+    self.polynomial_ring = self.polynomial.parent()
+    self.base_ring = self.polynomial.base_ring()
+    self.projective_plane = ProjectiveSpace(self.polynomial_ring)
+    self.plane_curve = self.projective_plane.curve(self.polynomial)
+    self.standard_basis = self.polynomial_ring.gens()
 
 
-    def __repr__(self):
-        return f"Projective Plane Curve with defining polynomial {self.polynomial}"
+  def __repr__(self):
+    return f"Projective Plane Curve with defining polynomial {self.polynomial}"
 
 
-    def get_base_ring(self):
-        return self.base_ring
+  def get_base_ring(self):
+    return self.base_ring
 
 
-    def get_polynomial(self):
-        return self.polynomial
+  def get_polynomial(self):
+    return self.polynomial
 
 
-    def get_standard_basis(self):
-        return self.standard_basis
+  def get_standard_basis(self):
+    return self.standard_basis
 
 
-    def tangent_cone_at(self, P):
-        """
-        Return the tangent cone of self at P
-        """
-        return PPC_TangentCone(self, P)
+  def tangent_cone_at(self, P):
+    r"""
+    Return the tangent cone of self at P
+    """
+    return PPC_TangentCone(self, P)
 
 
-    def is_smooth(self):
-        return self.plane_curve.is_smooth()
+  def is_smooth(self):
+    return self.plane_curve.is_smooth()
 
 
-    def is_reduced(self):
-        return not any(multiplicity > 1 for factor, multiplicity in self._decompose)
+  def is_reduced(self):
+    return not any(multiplicity > 1 for factor, multiplicity in self._decompose)
 
 
-    def is_irreducible(self):
-        if len(self._decompose) > 1:
-            return False
-        return self.is_reduced()
+  def is_irreducible(self):
+    if len(self._decompose) > 1:
+      return False
+    return self.is_reduced()
 
 
-    def is_semistable(self):
-        if len(self.instabilities()) == 0:
-            return True
-        return False
+  def is_semistable(self):
+    r"""
+    Return True is self is semistable and False otherwise
+    """
+    if self.is_smooth():
+      return True
+    use_Mordant_criterion = False
+    Mordant_criterion_met = False
+    try:
+      alg_closure = self.base_ring.algebraic_closure()
+      if self.base_ring == alg_closure:
+        use_Mordant_criterion = True
+        delta = self.maximal_multiplicity()
+        s = self.singular_locus_dimension()
+        N = 2
+        if delta >= min(N + 1, s + 3):
+          Mordant_criterion_met = True
+    except NotImplementedError:
+      pass
+    if use_Mordant_criterion:
+      if Mordant_criterion_met:
+        return True
+    return (len(self.instabilities()) == 0)
 
 
-    def is_stable(self):
-        r"""
-        ToDo
-        """
+  def is_stable(self):
+    r"""
+    ToDo
+    """
+    use_Mordant_criterion = False
+    Mordant_criterion_met = False
+    try:
+      alg_closure = self.base_ring.algebraic_closure()
+      if self.base_ring == alg_closure:
+        use_Mordant_criterion = True
+        delta = self.maximal_multiplicity()
+        s = self.singular_locus_dimension()
+        N = 2
+      if delta > min(N + 1, s + 3):
+        Mordant_criterion_met = True
+    except NotImplementedError:
+      pass
+    if use_Mordant_criterion:
+      if Mordant_criterion_met:
+        return True
+    raise NotImplementedError
 
 
-    def reduced_subscheme(self):
-        r"""
-        Return the reduced subscheme of self as a projective plane curve
-        """
-        f = prod(factor for factor, multiplicity in self._decompose)
-        return ProjectivePlaneCurve(f)
+  def reduced_subscheme(self):
+    r"""
+    Return the reduced subscheme of self as a projective plane curve
+    """
+    f = prod(factor for factor, multiplicity in self._decompose)
+    return ProjectivePlaneCurve(f)
 
 
-    def irreducible_components(self):
-        return [ProjectivePlaneCurve(factor)
-                for factor, multiplicity in self._decompose]
+  def irreducible_components(self):
+    r"""
+    Return the list of irreducible components of self
+    """
+    return [ProjectivePlaneCurve(factor)
+            for factor, multiplicity in self._decompose]
 
 
-    def nonreduced_components(self):
-        return [(multiplicity, ProjectivePlaneCurve(factor))
-                for factor, multiplicity in self._decompose
-                if multiplicity > 1]
+  def nonreduced_components(self):
+    r"""
+    Return the list of nonreduced components of self
+    """
+    return [(multiplicity, ProjectivePlaneCurve(factor))
+            for factor, multiplicity in self._decompose
+            if multiplicity > 1]
 
 
-    def points_with_high_multiplicity(self):
-        """
-        Return a list of points on self with multiplicity > self.degree/2
-
-        OUTPUT:
-            [(point_1, m_1), (point_2, m_2), ...] - where m_i is the
-                                                    multiplicity of point_i
-        """
-
-        L = []
-        for P in self.plane_curve.singular_points():
-            m = self.plane_curve.multiplicity(P)
-            if m > self.degree / Integer(2):
-                L.append((P, m))
-        return L
+  def singular_points(self):
+    r"""
+    Return the list of singular points of self
+    """
+    return self.plane_curve.singular_points()
 
 
-    def lines_with_high_multiplicity(self):
-        """
-        Return a list of lines in self of multiplicity > 0
-
-        OUTPUT:
-            [(line_1, m_1, G_1), ...] - where m_i is the multiplicity of line_i,
-                                        and either line_i^m_i * G_i = self.polynomial
-                                        if 0 < m_i <= self.degree/3 or G_i = None else.
-        """
-
-        L = []
-        polynomial_factors = list(self.polynomial.factor())
-        for i, (factor, factor_multiplicity) in enumerate(polynomial_factors):
-            if factor.degree() > 1:
-                continue
-
-            if factor_multiplicity > self.degree / Integer(3):
-                L.append((factor, factor_multiplicity, None))
-
-            else:
-                G = Integer(1)
-                for j, (Gfactor, Gfactor_multiplicity) in enumerate(polynomial_factors):
-                    if j != i:
-                        G = G * Gfactor**Gfactor_multiplicity
-                L.append((factor, factor_multiplicity, G))
-
-        return L
+  def multiplicity(self, p):
+    r"""
+    Return the multiplicity of self at p, i.e. the degree of the
+    tangent cone at p
+    """
+    return self.plane_curve.multiplicity(p)
 
 
-    def pseudo_instabilities(self):
-        """
-        Return the list of all pseudo-instabilities.
+  def maximal_multiplicity(self):
+    r"""
+    Return maximal multiplicity of a rational point
 
-        MATHEMATICAL INTERPRETATION:
-            We will explain how to compute all such pseudo-instabilities and why there are
-            only finitely many of them.
-        """
-
-        list_of_pseu_inst = []
-
-        # CASES (b) and (d)
-        for P, m in self.points_with_high_multiplicity():
-            if m > 2 * self.degree / 3:  # CASE (b)
-                list_of_pseu_inst.append(PseudoInstability(self, Point = P))
-            elif m > self.degree / 2:  # CASE (d) 1/2
-                for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
-                    if L_multiplicity > m / 2:
-                        list_of_pseu_inst.append(PseudoInstability(self, P, L))
-
-        # CASES (a) and (c)
-        for L, L_multiplicity, G in self.lines_with_high_multiplicity():
-            if L_multiplicity > self.degree / Integer(3):  # CASE (a)
-                list_of_pseu_inst.append(PseudoInstability(self, Line = L))
-            else: # CASE (c) 1/2
-                L_curve = self.projective_plane.curve(L)
-                G_curve = self.projective_plane.curve(G)
-                for P in L_curve.intersection_points(G_curve):
-                    if L_curve.intersection_multiplicity(G_curve, P) > (self.degree - L_multiplicity) / Integer(2):
-                        list_of_pseu_inst.append(PseudoInstability(self, P, L))
-
-        return list_of_pseu_inst
+    MATHEMATICAL INTERPRETATION:
+    The maximal multiplicity of the scheme defined by self.polynomial at
+    a rational point P is sought. This occurs either:
+    (1) At a singular point P of the support (reduced subscheme).
+        The multiplicity of self.polynomial at P is computed.
+    (2) At a generic (smooth) point P of an irreducible component of the support.
+        If self.polynomial = ... * factor_i^e_i * ..., the multiplicity of self
+        at a generic point of the component defined by factor_i is e_i.
+    The method computes the maximum over all such values.
+    """
+    X_red_sing = self.reduced_subscheme().singular_points()
+    m1 = 1
+    m2 = 1
+    if X_red_sing:
+      m1 = max(self.multiplicity(p) for p in X_red_sing)
+    nonred_comp_mults = [mult for mult, comp in self.nonreduced_components()]
+    if nonred_comp_mults:
+      m2 = max(nonred_comp_mults)
+    return max(m1, m2)
 
 
-    def instabilities(self):
-        """
-        Return the list of all pseudo-instabilities which yield instabilities
-        """
+  def singular_locus_dimension(self):
+    r"""
+    Return the dimension of the singular locus of self
+    """
+    if self.is_smooth():
+      return -1
+    if self.is_reduced():
+      return 0
+    return 1
 
-        return [I for I in self.pseudo_instabilities() if I.is_instability()]
+
+  def maximal_multiplicity_points(self):
+    r"""
+    Return the list of points of maximal multiplicity
+    """
+    max_mult = self.maximal_multiplicity()
+    points_with_max_multiplicity = []
+
+    if self.base_ring.is_finite():
+      for p in self.singular_points():
+        if self.multiplicity(p) == max_mult:
+          points_with_max_multiplicity.append(p)
+      return points_with_max_multiplicity
+
+    if any(multiplicity == max_mult for multiplicity, component in self.nonreduced_components()):
+        raise NotImplementedError
+
+    for p in self.reduced_subscheme().singular_points():
+      if self.multiplicity(p) == max_mult:
+        points_with_max_multiplicity.append(p)
+    return points_with_max_multiplicity
 
 
-    @cached_property
-    def _decompose(self):
-        r"""
-        Return the factored form of self.polynomial.
-        """
-        return list(self.polynomial.factor())
+  def points_with_high_multiplicity(self):
+    r"""
+    Return a list of points on self with multiplicity > self.degree/2
+
+    OUTPUT:
+    [(point_1, m_1), (point_2, m_2), ...] - where m_i is the multiplicity of point_i
+    """
+    L = []
+    for P in self.plane_curve.singular_points():
+      m = self.plane_curve.multiplicity(P)
+      if m > self.degree / Integer(2):
+        L.append((P, m))
+    return L
+
+
+  def lines_with_high_multiplicity(self):
+    r"""
+    Return a list of lines in self of multiplicity > 0
+
+    OUTPUT:
+    [(line_1, m_1, G_1), ...] - where m_i is the multiplicity of line_i,
+                                and either line_i^m_i * G_i = self.polynomial
+                                if 0 < m_i <= self.degree/3 or G_i = None else.
+    """
+    L = []
+    polynomial_factors = list(self.polynomial.factor())
+    for i, (factor, factor_multiplicity) in enumerate(polynomial_factors):
+      if factor.degree() > 1:
+        continue
+      if factor_multiplicity > self.degree / Integer(3):
+        L.append((factor, factor_multiplicity, None))
+      else:
+        G = Integer(1)
+        for j, (Gfactor, Gfactor_multiplicity) in enumerate(polynomial_factors):
+          if j != i:
+            G = G * Gfactor**Gfactor_multiplicity
+        L.append((factor, factor_multiplicity, G))
+    return L
+
+
+  def pseudo_instabilities(self):
+    r"""
+    Return the list of all pseudo-instabilities.
+
+    MATHEMATICAL INTERPRETATION:
+    We will explain how to compute all such pseudo-instabilities and why there are
+    only finitely many of them.
+    """
+    list_of_pseu_inst = []
+    # CASES (b) and (d)
+    for P, m in self.points_with_high_multiplicity():
+      if m > 2 * self.degree / 3:  # CASE (b)
+        list_of_pseu_inst.append(PseudoInstability(self, Point = P))
+      elif m > self.degree / 2:  # CASE (d) 1/2
+        for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
+          if L_multiplicity > m / 2:
+            list_of_pseu_inst.append(PseudoInstability(self, P, L))
+
+    # CASES (a) and (c)
+    for L, L_multiplicity, G in self.lines_with_high_multiplicity():
+      if L_multiplicity > self.degree / Integer(3):  # CASE (a)
+        list_of_pseu_inst.append(PseudoInstability(self, Line = L))
+      else: # CASE (c) 1/2
+        L_curve = self.projective_plane.curve(L)
+        G_curve = self.projective_plane.curve(G)
+        for P in L_curve.intersection_points(G_curve):
+          if L_curve.intersection_multiplicity(G_curve, P) > (self.degree - L_multiplicity) / Integer(2):
+            list_of_pseu_inst.append(PseudoInstability(self, P, L))
+
+    return list_of_pseu_inst
+
+
+  def instabilities(self):
+    r"""
+    Return the list of all pseudo-instabilities which yield instabilities
+    """
+    return [I for I in self.pseudo_instabilities() if I.is_instability()]
+
+
+  @cached_property
+  def _decompose(self):
+    r"""
+    Return the factored form of self.polynomial.
+    """
+    return list(self.polynomial.factor())
 
 
 
