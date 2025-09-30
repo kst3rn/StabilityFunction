@@ -17,7 +17,8 @@ class SphericalStabilityFunction:
       raise ValueError
 
     self._homogeneous_form = homogeneous_form
-    self.dimension = homogeneous_form.parent().ngens()
+    self._dimension = homogeneous_form.parent().ngens()
+    self._base_ring = homogeneous_form.base_ring()
 
 
   def __call__(self, transformation_matrix, position=None):
@@ -44,6 +45,17 @@ class SphericalStabilityFunction:
     if position is None:
       return mu
     return mu(position)
+
+
+  def dimension(self):
+    return self._dimension
+
+
+  def base_ring(self):
+    return self._base_ring
+
+  def homogeneous_form(self):
+    return self._homogeneous_form
 
 
   def evaluate(self, transformation_matrix, position):
@@ -121,6 +133,30 @@ class SphericalStabilityFunction:
     return mu.active_functions(position)
 
 
+  def stability_status(self):
+    r"""
+    Return 'unstable', 'strictly semistable' or 'stable', depending on
+    whether the projective hypersurface defined by self.homogeneous_form()
+    is unstable, strictly semistable or stable, respectively.
+    """
+
+    R = self.base_ring()
+    F = self.homogeneous_form()
+    n = self.dimension() - 1
+    ult_matrices = _unipotent_lower_triangular_matrices(R, n)
+
+    signs = set()
+    for T in ult_matrices:
+      psi = ApartmentSphericalStabilityFunction(F, T)
+      apartment_sign = psi.sign_of_maximum()
+      if apartment_sign == 1:
+        return 'unstable'
+      signs.add(apartment_sign)
+    if max(signs) == 0:
+      return 'strictly semistable'
+    return 'stable'
+
+
   def plot_cartesian(self, transformation_matrix,
                      plot_individual_Li=True,
                      base_radius=1.0):
@@ -138,7 +174,7 @@ class SphericalStabilityFunction:
     transformation_matrix - invertible matrix over the base ring of
                             self._homogeneous_form.
     """
-    if self.dimension != 3:
+    if self.dimension() != 3:
       raise NotImplementedError(
           "This plotting method is implemented only for dimension 3 "
           "(homogeneous polynomials in 3 variables x0, x1, x2)."
@@ -169,7 +205,7 @@ class SphericalStabilityFunction:
     plot_individual_Li    - boolean, whether to plot individual L_i(theta) curves.
     """
 
-    if self.dimension != 3:
+    if self.dimension() != 3:
       raise NotImplementedError(
           "This plotting method is implemented only for dimension 3 "
           "(homogeneous polynomials in 3 variables x0, x1, x2)."
@@ -195,9 +231,10 @@ class ApartmentSphericalStabilityFunction:
   OUTPUT:
   The function
   H ---> \RR, w \mapsto min_{i \in J}(i_0*w_0 + ... + i_n*w_n) / ||w||
-  where H = {w \in \RR^{n+1} : w_0 + ... + w_n = 0} and J is the set of
-  multi indices corresponding to nonzero coefficients of the homogeneous
-  polynomial G = _apply_matrix(transformation_matrix, homogeneous_form).
+  where H = {w \in \RR^{n+1} : w_0 + ... + w_n = 0}, ||w|| is the euclidean
+  norn of w and J is the set of multi indices corresponding to nonzero
+  coefficients of the homogeneous polynomial
+  G = _apply_matrix(transformation_matrix, homogeneous_form).
 
   EXAMPLES:
   sage: R.<x0,x1,x2> = GF(3)[]
@@ -296,15 +333,15 @@ class ApartmentSphericalStabilityFunction:
 
     self._homogeneous_form = homogeneous_form
     self.transformation_matrix = transformation_matrix
-    self.dimension = homogeneous_form.parent().ngens()
+    self._dimension = homogeneous_form.parent().ngens()
     G = _apply_matrix(transformation_matrix, homogeneous_form)
-    self.multi_indices = list(G.dict().keys())
+    self._multi_indices = list(G.dict().keys())
 
 
   def __repr__(self):
     linear_functions = []
-    for multi_index in self.multi_indices:
-      L = sum(multi_index[i]*var('w'+str(i)) for i in range(self.dimension))
+    for multi_index in self.multi_indices():
+      L = sum(multi_index[i]*var('w'+str(i)) for i in range(self.dimension()))
       linear_functions.append(L)
     return "min" + str(tuple(linear_functions)) + "/||w||"
 
@@ -316,13 +353,21 @@ class ApartmentSphericalStabilityFunction:
     return self.evaluate(position)
 
 
+  def dimension(self):
+    return self._dimension
+
+
+  def multi_indices(self):
+    return self._multi_indices
+
+
   def evaluate(self, position):
     r"""
     Evaluate self at the point given by position.
 
     INPUT:
     position - either a list of rational numbers or an angle in radians,
-               if self.dimension == 3
+               if self.dimension() == 3
 
     EXAMPLES:
     sage: R.<x0,x1,x2> = GF(3)[]
@@ -361,7 +406,7 @@ class ApartmentSphericalStabilityFunction:
     -0.408248290463863
 
     MATHEMATICAL INTERPRETATION:
-    Assume self.dimension == 3.
+    Assume self.dimension() == 3.
     Let F = self._homogeneous_form \in K[x_0,x_1,x_2].
     Let d = F.degree().
     Let I = {i \in NN^3 : i_0 + i_1 + i_2 = d}.
@@ -398,13 +443,13 @@ class ApartmentSphericalStabilityFunction:
       if weight_vector_norm == 0:
         raise ValueError("Weight vector cannot be the zero vector (norm is zero).")
       L = []
-      for multi_index in self.multi_indices:
+      for multi_index in self.multi_indices():
         f = sum(multi_index[j] * weight_vector[j]
-                for j in range(self.dimension)) / weight_vector_norm
+                for j in range(self.dimension())) / weight_vector_norm
         L.append(f)
       return min(L)
 
-    if self.dimension != 3:
+    if self.dimension() != 3:
       raise NotImplementedError
     L_theta_coeffs = self._L_theta_coefficients()
     return min(coeff_dict['A_1'] * cos(position) + coeff_dict['A_2'] * sin(position)
@@ -453,14 +498,14 @@ class ApartmentSphericalStabilityFunction:
     if isinstance(position, list):
       weight_vector = [QQ(i) for i in position]
       weight_vector_norm = vector(QQ, weight_vector).norm()
-      for multi_index in self.multi_indices:
+      for multi_index in self.multi_indices():
         L_value = sum(multi_index[j] * weight_vector[j]
-                      for j in range(self.dimension)) / weight_vector_norm
+                      for j in range(self.dimension())) / weight_vector_norm
         if self_value == L_value:
           active_funcs.add(multi_index)
       return active_funcs
 
-    if self.dimension != 3:
+    if self.dimension() != 3:
       raise NotImplementedError
     L_theta_coeffs = self._L_theta_coefficients()
     for coeff_dict in L_theta_coeffs:
@@ -470,13 +515,81 @@ class ApartmentSphericalStabilityFunction:
     return active_funcs
 
 
+  def sign_of_maximum(self):
+    r"""
+    Return the sign on the maximal function value of self.
+
+    ToDo: simplify the code and the number of iterations as well as the
+    general complexity.
+    """
+
+    all_sings = set()
+    # positive faces
+    for p_position in range(self.dimension()):
+      MILP = MixedIntegerLinearProgram(solver='PPL')
+      v = MILP.new_variable()
+      t = v['minimum']
+      MILP.set_objective(t)
+
+      # Conditions to be on [-1,1]x...x[-1,1]x{1}x[-1,1]x...x[-1,1]
+      for i in range(self.dimension()):
+        if i == p_position:
+          MILP.add_constraint(v[i] == 1)
+        MILP.add_constraint(-1 <= v[i] <= 1)
+
+      # Condition to be in H
+      MILP.add_constraint(sum(v[i] for i in range(self.dimension())) == 0)
+
+      # All linear functions are bounded by minimum,
+      for multi_index in self.multi_indices():
+        lin_func = sum(Integer(index) * v[j] for j, index in enumerate(multi_index))
+        MILP.add_constraint(t <= lin_func)
+
+      MILP.solve()
+      values = MILP.get_values(v)
+      local_sign = sign(values['minimum'])
+      if local_sign == 1:
+        return 1
+      all_sings.add(local_sign)
+
+    # negative faces
+    for n_position in range(self.dimension()):
+      MILP = MixedIntegerLinearProgram(solver='PPL')
+      v = MILP.new_variable()
+      t = v['minimum']
+      MILP.set_objective(t)
+
+      # Conditions to be on [-1,1]x...x[-1,1]x{1}x[-1,1]x...x[-1,1]
+      for i in range(self.dimension()):
+        if i == n_position:
+          MILP.add_constraint(v[i] == -1)
+        MILP.add_constraint(-1 <= v[i] <= 1)
+
+      # Condition to be in H
+      MILP.add_constraint(sum(v[i] for i in range(self.dimension())) == 0)
+
+      # All linear functions are bounded by minimum,
+      for multi_index in self.multi_indices():
+        lin_func = sum(Integer(index) * v[j] for j, index in enumerate(multi_index))
+        MILP.add_constraint(t <= lin_func)
+
+      MILP.solve()
+      values = MILP.get_values(v)
+      local_sign = sign(values['minimum'])
+      if local_sign == 1:
+        return 1
+      all_sings.add(local_sign)
+
+    return max(all_sings)
+
+
   def derivative_plus(self, theta):
     r"""
     Compute the right-hand derivative f'_+(theta) of the function 
     f(theta) = min_k L_k(theta) for this apartment.
-    Only applicable if self.dimension == 3.
+    Only applicable if self.dimension() == 3.
     """
-    if self.dimension != 3:
+    if self.dimension() != 3:
       raise NotImplementedError("Derivative f'_+(theta) is only defined for dimension 3.")
 
     # Get the multi-index labels of the functions active at theta
@@ -487,7 +600,7 @@ class ApartmentSphericalStabilityFunction:
       # Depending on desired behavior, could return NaN, raise error, or handle.
       # If L_theta_coeffs is empty, active_functions would likely also indicate this.
       # For now, assume valid theta and non-empty set of L_k if this point is reached.
-      # Consider a case where self.multi_indices is empty (no terms in G).
+      # Consider a case where self.multi_indices() is empty (no terms in G).
       # evaluate() would return 0 or error for min of empty. active_functions would be empty.
       if not self._get_L_theta_coefficients(): # No L_k functions at all
           return S.NaN # Sage's Not a Number, or raise error
@@ -524,9 +637,9 @@ class ApartmentSphericalStabilityFunction:
     r"""
     Compute the left-hand derivative f'_-(theta) of the function 
     f(theta) = min_k L_k(theta) for this apartment.
-    Only applicable if self.dimension == 3.
+    Only applicable if self.dimension() == 3.
     """
-    if self.dimension != 3:
+    if self.dimension() != 3:
       raise NotImplementedError("Derivative f'_-(theta) is only defined for dimension 3.")
 
     active_labels_set = self.active_functions(theta)
@@ -599,7 +712,7 @@ class ApartmentSphericalStabilityFunction:
     This method plots the graph of the function
     [0, 2pi) ---> \RR, theta \mapsto min_{i \in J}(L_i(cos(theta), sin(theta))).
     """
-    if self.dimension != 3:
+    if self.dimension() != 3:
       raise NotImplementedError(
           "This plotting method is implemented only for dimension 3 "
           "(homogeneous polynomials in 3 variables x0, x1, x2)."
@@ -611,7 +724,7 @@ class ApartmentSphericalStabilityFunction:
     sqrt2 = math.sqrt(2)
     sqrt6 = math.sqrt(6)
 
-    for i_vec_sage in self.multi_indices:
+    for i_vec_sage in self.multi_indices():
       try:
         i_vec = [float(c) for c in i_vec_sage]
         i0, i1, i2 = i_vec
@@ -752,7 +865,7 @@ class ApartmentSphericalStabilityFunction:
     (i.e., at theta + pi with radius |f(theta)|), which is standard for
     matplotlib polar plots.
     """
-    if self.dimension != 3:
+    if self.dimension() != 3:
       raise NotImplementedError(
           "This plotting method is implemented only for dimension 3 "
           "(homogeneous polynomials in 3 variables x0, x1, x2)."
@@ -763,7 +876,7 @@ class ApartmentSphericalStabilityFunction:
     sqrt2 = math.sqrt(2)
     sqrt6 = math.sqrt(6)
 
-    for i_vec_sage in self.multi_indices:
+    for i_vec_sage in self.multi_indices():
       try:
         i_vec = [float(c) for c in i_vec_sage]
         i0, i1, i2 = i_vec
@@ -884,7 +997,7 @@ class ApartmentSphericalStabilityFunction:
     on the unit sphere
 
     MATHEMATICAL INTERPRETATION:
-    Assume self.dimension == 3.
+    Assume self.dimension() == 3.
     Let F = self._homogeneous_form \in K[x_0,x_1,x_2].
     Let d = F.degree().
     Let I = {i \in NN^3 : i_0 + i_1 + i_2 = d}.
@@ -916,14 +1029,14 @@ class ApartmentSphericalStabilityFunction:
     A_1 = (i_0 - i_1)/sqrt(2) and A_2 = (i_0 + i_1 - 2*i_2)/sqrt(6).
     """
 
-    if self.dimension != 3:
+    if self.dimension() != 3:
       raise NotImplementedError
 
     coeffs_L_theta = []
     sqrt2 = sqrt(QQ(2))
     sqrt6 = sqrt(QQ(6))
 
-    for _multi_index in self.multi_indices:
+    for _multi_index in self.multi_indices():
       multi_index = [QQ(c) for c in _multi_index]
       i0, i1, i2 = multi_index
       A_1 = (i0 - i1) / sqrt2
@@ -959,3 +1072,37 @@ def _apply_matrix(T, F, affine_patch = None):
     if affine_patch != None:
         generators[affine_patch] = F.parent()(1)
     return F(list( vector(generators) * T ))
+
+
+def _unipotent_lower_triangular_matrices(R, n):
+  r"""
+  Creates an iterator for all (n+1)x(n+1) unipotent lower triangular
+  matrices over the finite ring R.
+
+  INPUT:
+    K - finite ring
+    n - positive integer defining the matrix size (n+1)
+
+  YIELDS:
+    The next (n+1)x(n+1) unipotent lower triangular matrix
+  """
+  dim = n + 1
+  # The positions of the entries below the main diagonal are fixed.
+  # In 0-indexed coordinates, these are the positions (i, j) where i > j.
+  lower_triangular_indices = []
+  for i in range(dim):
+    for j in range(i):
+      lower_triangular_indices.append((i, j))
+  num_free_entries = len(lower_triangular_indices) # This is n*(n+1)/2
+
+  # Create an iterator over the Cartesian product R x R x ... x R.
+  combinations_iterator = R**num_free_entries
+
+  # Iterate through each unique combination of values
+  for combo in combinations_iterator:
+    # Start with a fresh identity matrix for each combination
+    M = identity_matrix(R, dim)
+    # Fill the lower triangular part with the values from the current combination
+    for i, pos in enumerate(lower_triangular_indices):
+      M[pos] = combo[i]
+    yield M
