@@ -35,15 +35,19 @@ class SphericalStabilityFunction:
 
     EXAMPLES:
     sage: R.<x0,x1,x2> = GF(3)[]
-    sage: F = x0^2 + x1^2 + x2^2
-    sage: mu = SphericalStabilityFunction(F)
-    sage: mu(matrix(GF(3), [[1,0,2],[1,1,0], [0,2,1]]))
-    'min(2*w0, w0 + w1, 2*w1, w0 + w2, w1 + w2, 2*w2)/||w||'
-    sage: mu(matrix(GF(3), [[1,0,2],[1,1,0],[0,2,1]]), [2,-1,-1])
+    sage: f = x0^2 + x1^2 + x2^2
+    sage: mu = SphericalStabilityFunction(f)
+    sage: T = matrix(GF(3), [[1,0,2],[1,1,0],[0,2,1]]); T
+    [1 0 2]
+    [1 1 0]
+    [0 2 1]
+    sage: mu(T)
+    min(2*w0, w0 + w1, 2*w1, w0 + w2, w1 + w2, 2*w2)/||w||
+    sage: mu(T, [2,-1,-1])
     -1/3*sqrt(6)
-    sage: mu(matrix(GF(3), [[1,0,2],[1,1,0],[0,2,1]]), 2)
+    sage: mu(T, 2)
     -2/3*sqrt(6)*sin(2)
-    sage: mu(matrix(GF(3), [[1,0,2],[1,1,0],[0,2,1]]), 3/2*pi)
+    sage: mu(T, 3/2*pi)
     -1/3*sqrt(6)
     """
     mu = ApartmentSphericalStabilityFunction(self._homogeneous_form,
@@ -77,11 +81,15 @@ class SphericalStabilityFunction:
 
     EXAMPLES:
     sage: R.<x0,x1,x2> = GF(3)[]
-    sage: F = x0^2 + x1^2 + x2^2
-    sage: mu = SphericalStabilityFunction(F)
-    sage: mu.evaluate(matrix([[1,0,2],[1,1,0],[0,2,1]]), [1,0,-1])
+    sage: f = x0^2 + x1^2 + x2^2
+    sage: mu = SphericalStabilityFunction(f)
+    sage: T = matrix(GF(3), [[1,0,2],[1,1,0],[0,2,1]]); T
+    [1 0 2]
+    [1 1 0]
+    [0 2 1]
+    sage: mu.evaluate(T, [1,0,-1])
     -sqrt(2)
-    sage: mu.evaluate(matrix([[1,0,2],[1,1,0],[0,2,1]]), [2,-1,-1])
+    sage: mu.evaluate(T, [2,-1,-1])
     -1/3*sqrt(6)
     """
     if not transformation_matrix.is_invertible():
@@ -148,20 +156,20 @@ class SphericalStabilityFunction:
     EXAMPLES:
     sage: R.<x0,x1,x2> = GF(17^3)[]
     sage: f = x0^3*(x0 + x1 + x2)
-    sage: psi = SphericalStabilityFunction(f)
-    sage: psi.stability_status()
+    sage: mu = SphericalStabilityFunction(f)
+    sage: mu.stability_status()
     'unstable'
 
     sage: R.<x0,x1,x2> = GF(2)[]
     sage: f = (x0^2 + x1*x2)^2
-    sage: psi = SphericalStabilityFunction(f)
-    sage: psi.stability_status()
+    sage: mu = SphericalStabilityFunction(f)
+    sage: mu.stability_status()
     'strictly semistable'
 
     sage: R.<x0,x1,x2> = GF(3)[]
     sage: f = x0*x1*x2*(x0 + x1 + x2)
-    sage: psi = SphericalStabilityFunction(f)
-    sage: psi.stability_status()
+    sage: mu = SphericalStabilityFunction(f)
+    sage: mu.stability_status()
     'stable'
     """
 
@@ -172,8 +180,8 @@ class SphericalStabilityFunction:
 
     signs = set()
     for T in ult_matrices:
-      psi = ApartmentSphericalStabilityFunction(F, T)
-      apartment_sign = psi.sign_of_maximum()
+      mu = ApartmentSphericalStabilityFunction(F, T)
+      apartment_sign = mu.sign_of_maximum()
       if apartment_sign == 1:
         return 'unstable'
       signs.add(apartment_sign)
@@ -374,6 +382,23 @@ class ApartmentSphericalStabilityFunction:
   def __call__(self, position):
     r"""
     Return self.evaluate(position).
+
+    EXAMPLES:
+    sage: R.<x0,x1,x2> = GF(3)[]
+    sage: f = x0^2 + x1^2 + x2^2
+    sage: T = matrix(GF(3), [[1,0,2],[1,1,0],[0,2,1]]); T
+    [1 0 2]
+    [1 1 0]
+    [0 2 1]
+    sage: mu = ApartmentSphericalStabilityFunction(f, T)
+    sage: mu
+    min(2*w0, w0 + w1, 2*w1, w0 + w2, w1 + w2, 2*w2)/||w||
+    sage: mu([2,-1,-1])
+    -1/3*sqrt(6)
+    sage: mu(2)
+    -2/3*sqrt(6)*sin(2)
+    sage: mu(3/2*pi)
+    -1/3*sqrt(6)
     """
     return self.evaluate(position)
 
@@ -558,8 +583,8 @@ class ApartmentSphericalStabilityFunction:
     [              1      5*z3^2 + 1               1]
     [              0               1 z3^2 + 2*z3 + 7]
     [              0               0               1]
-    sage: psi = ApartmentSphericalStabilityFunction(f, T)
-    sage: psi.sign_of_maximum()
+    sage: mu = ApartmentSphericalStabilityFunction(f, T)
+    sage: mu.sign_of_maximum()
     1
 
     sage: R.<x0,x1,x2> = GF(2)[]
@@ -568,15 +593,15 @@ class ApartmentSphericalStabilityFunction:
     [1 0 1]
     [0 1 0]
     [0 0 1]
-    sage: psi = ApartmentSphericalStabilityFunction(f, T)
-    sage: psi.sign_of_maximum()
+    sage: mu = ApartmentSphericalStabilityFunction(f, T)
+    sage: mu.sign_of_maximum()
     0
 
     sage: R.<x0,x1,x2> = GF(3)[]
     sage: f = x0*x1*x2*(x0 + x1 + x2)
     sage: T = identity_matrix(GF(3), 3)
-    sage: psi = ApartmentSphericalStabilityFunction(f, T)
-    sage: psi.sign_of_maximum()
+    sage: mu = ApartmentSphericalStabilityFunction(f, T)
+    sage: mu.sign_of_maximum()
     -1
     """
 
