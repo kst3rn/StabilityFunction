@@ -146,17 +146,17 @@ class SphericalStabilityFunction:
     is unstable, strictly semistable or stable, respectively.
 
     EXAMPLES:
-    sage: R.<x0,x1,x2> = GF(2)[]
-    sage: f = (x0^2 + x1*x2)^2
-    sage: psi = SphericalStabilityFunction(f)
-    sage: psi.stability_status()
-    'strictly semistable'
-
     sage: R.<x0,x1,x2> = GF(17^3)[]
     sage: f = x0^3*(x0 + x1 + x2)
     sage: psi = SphericalStabilityFunction(f)
     sage: psi.stability_status()
     'unstable'
+
+    sage: R.<x0,x1,x2> = GF(2)[]
+    sage: f = (x0^2 + x1*x2)^2
+    sage: psi = SphericalStabilityFunction(f)
+    sage: psi.stability_status()
+    'strictly semistable'
 
     sage: R.<x0,x1,x2> = GF(3)[]
     sage: f = x0*x1*x2*(x0 + x1 + x2)
@@ -542,12 +542,42 @@ class ApartmentSphericalStabilityFunction:
 
   def sign_of_maximum(self):
     r"""
-    Return the sign on the maximal function value of self.
+    Return the sign of the maximal value of self.
 
     ToDo: simplify the code and the number of iterations as well as the
     general complexity. Use for that the L1-morm condition ||w||_1 = 1,
     which can be realized by introducing positive and negative variables,
     w_i = w_i_pos - w_i_neg.
+
+    EXAMPLES:
+    sage: K = GF(17^3)
+    sage: a = K.gen()
+    sage: R.<x0,x1,x2> = K[]
+    sage: f = x0^3*(x0 + x1 + x2)
+    sage: T = matrix(K, [[1,5*a^2 + 1,1],[0,1,a^2 + 2*a + 7],[0,0,1]]); T
+    [              1      5*z3^2 + 1               1]
+    [              0               1 z3^2 + 2*z3 + 7]
+    [              0               0               1]
+    sage: psi = ApartmentSphericalStabilityFunction(f, T)
+    sage: psi.sign_of_maximum()
+    1
+
+    sage: R.<x0,x1,x2> = GF(2)[]
+    sage: f = (x0^2 + x1*x2)^2
+    sage: T = matrix(GF(2), [[1,0,1],[0,1,0],[0,0,1]]); T
+    [1 0 1]
+    [0 1 0]
+    [0 0 1]
+    sage: psi = ApartmentSphericalStabilityFunction(f, T)
+    sage: psi.sign_of_maximum()
+    0
+
+    sage: R.<x0,x1,x2> = GF(3)[]
+    sage: f = x0*x1*x2*(x0 + x1 + x2)
+    sage: T = identity_matrix(GF(3), 3)
+    sage: psi = ApartmentSphericalStabilityFunction(f, T)
+    sage: psi.sign_of_maximum()
+    -1
     """
 
     all_sings = set()
