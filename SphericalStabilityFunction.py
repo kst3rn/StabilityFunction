@@ -520,7 +520,9 @@ class ApartmentSphericalStabilityFunction:
     Return the sign on the maximal function value of self.
 
     ToDo: simplify the code and the number of iterations as well as the
-    general complexity.
+    general complexity. Use for that the L1-morm condition ||w||_1 = 1,
+    which can be realized by introducing positive and negative variables,
+    w_i = w_i_pos - w_i_neg.
     """
 
     all_sings = set()
