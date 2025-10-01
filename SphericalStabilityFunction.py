@@ -6,12 +6,18 @@ import matplotlib.pyplot as plt
 
 class SphericalStabilityFunction:
   r"""
-  Construct ...
+  Construct a concave piecewise affine function to the following conditions
+
+  INPUT:
+  homogeneous_form - homogeneous polynomial in K[x_0,...,x_n]
   """
 
   def __init__(self, homogeneous_form):
     r"""
-    Construct ...
+    Construct a concave piecewise affine function to the following conditions
+
+    INPUT:
+    homogeneous_form - homogeneous polynomial in K[x_0,...,x_n]
     """
     if not homogeneous_form.is_homogeneous():
       raise ValueError
@@ -138,6 +144,25 @@ class SphericalStabilityFunction:
     Return 'unstable', 'strictly semistable' or 'stable', depending on
     whether the projective hypersurface defined by self.homogeneous_form()
     is unstable, strictly semistable or stable, respectively.
+
+    EXAMPLES:
+    sage: R.<x0,x1,x2> = GF(2)[]
+    sage: f = (x0^2 + x1*x2)^2
+    sage: psi = SphericalStabilityFunction(f)
+    sage: psi.stability_status()
+    'strictly semistable'
+
+    sage: R.<x0,x1,x2> = GF(17^3)[]
+    sage: f = x0^3*(x0 + x1 + x2)
+    sage: psi = SphericalStabilityFunction(f)
+    sage: psi.stability_status()
+    'unstable'
+
+    sage: R.<x0,x1,x2> = GF(3)[]
+    sage: f = x0*x1*x2*(x0 + x1 + x2)
+    sage: psi = SphericalStabilityFunction(f)
+    sage: psi.stability_status()
+    'stable'
     """
 
     R = self.base_ring()
