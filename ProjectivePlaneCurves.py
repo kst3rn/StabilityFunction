@@ -462,6 +462,26 @@ class ProjectivePlaneCurve:
   def singular_locus_dimension(self):
     r"""
     Return the dimension of the singular locus of self.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x0*(x1 + x2)^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0*x1^2 + 2*x0*x1*x2 + x0*x2^2
+      sage: X.singular_locus_dimension()
+      1
+      sage:
+      sage: f = x0^2*x2 - x1^3
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x1^3 + x0^2*x2
+      sage: X.singular_locus_dimension()
+      0
+      sage:
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.singular_locus_dimension()
+      -1
     """
     if self.is_smooth():
       return -1
@@ -470,34 +490,76 @@ class ProjectivePlaneCurve:
     return 1
 
 
-  def maximal_multiplicity_points(self):
+  def maximal_multiplicity_points(self): # upgrade to infinite fields: add nonreduced components to the list
     r"""
-    Return the list of points of maximal multiplicity
+    Return the list of points of maximal multiplicity.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x0*(x1 + x2)^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0*x1^2 + 2*x0*x1*x2 + x0*x2^2
+      sage: X.maximal_multiplicity_points()
+      [(0 : -1 : 1)]
+
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = x0^3 * (x1 + x2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2
+      sage: X.maximal_multiplicity_points()
+      [(0 : 1 : 1)]
+      sage:
+      sage: f = (x0^2 + x1*x2)^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^2*x2^2
+      sage: X.maximal_multiplicity_points()
+      [(0 : 0 : 1), (0 : 1 : 0), (1 : 1 : 1)]
     """
     max_mult = self.maximal_multiplicity()
     points_with_max_multiplicity = []
 
     if self.base_ring.is_finite():
-      for p in self.singular_points():
-        if self.multiplicity(p) == max_mult:
-          points_with_max_multiplicity.append(p)
+      for P in self.singular_points():
+        if self.multiplicity(P) == max_mult:
+          points_with_max_multiplicity.append(P)
       return points_with_max_multiplicity
 
     if any(multiplicity == max_mult for multiplicity, component in self.nonreduced_components()):
         raise NotImplementedError
 
-    for p in self.reduced_subscheme().singular_points():
-      if self.multiplicity(p) == max_mult:
-        points_with_max_multiplicity.append(p)
+    for P in self.reduced_subscheme().singular_points():
+      if self.multiplicity(P) == max_mult:
+        points_with_max_multiplicity.append(P)
     return points_with_max_multiplicity
 
 
-  def points_with_high_multiplicity(self):
+  def points_with_high_multiplicity(self): # upgrade to infinite fields: add nonreduced components to the list
     r"""
-    Return a list of points on self with multiplicity > self.degree/2
+    Return a list of points on self with multiplicity > self.degree/2.
 
     OUTPUT:
     [(point_1, m_1), (point_2, m_2), ...] - where m_i is the multiplicity of point_i
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = x0^2 * (x1 + x2)^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^2*x1^2 + x0^2*x2^2
+      sage: X.points_with_high_multiplicity()
+      [((0 : 1 : 1), 4)]
+      sage: 
+      sage: f = (x0^2 + x1*x2)^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^2*x2^2
+      sage: X.points_with_high_multiplicity()
+      []
+      sage:
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = x0 * (x1 + x2)^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0*x1^2 + x0*x2^2
+      sage: X.points_with_high_multiplicity()
+      [((0 : 1 : 1), 3), ((1 : 0 : 0), 2), ((1 : 1 : 1), 2)]
     """
     L = []
     for P in self.plane_curve.singular_points():
@@ -509,12 +571,15 @@ class ProjectivePlaneCurve:
 
   def lines_with_high_multiplicity(self):
     r"""
-    Return a list of lines in self of multiplicity > 0
+    Return a list of lines in self of multiplicity > 0.
 
     OUTPUT:
     [(line_1, m_1, G_1), ...] - where m_i is the multiplicity of line_i,
                                 and either line_i^m_i * G_i = self.polynomial
                                 if 0 < m_i <= self.degree/3 or G_i = None else.
+
+    EXAMPLES:
+
     """
     L = []
     polynomial_factors = list(self.polynomial.factor())
