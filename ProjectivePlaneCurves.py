@@ -294,6 +294,7 @@ class ProjectivePlaneCurve:
     r"""
     Return the list of irreducible components of self.
 
+    EXAMPLES:
       sage: R.<x0,x1,x2> = GF(2^3)[]
       sage: f = x0^4 + x1^4 + x2^4
       sage: X = ProjectivePlaneCurve(f); X
@@ -408,18 +409,40 @@ class ProjectivePlaneCurve:
       sage: X.multiplicity(P)
       3
     """
-    return self.plane_curve.multiplicity(p)
+    return self.plane_curve.multiplicity(P)
 
 
   def maximal_multiplicity(self):
     r"""
     Return maximal multiplicity of a rational point.
 
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x0*(x1 + x2)^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0*x1^2 + 2*x0*x1*x2 + x0*x2^2
+      sage: X.maximal_multiplicity()
+      3
+      sage:
+      sage: X.multiplicity([1,1,-1])
+      2
+      sage: X.multiplicity([0,1,-1])
+      3
+
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = x0^3*(x1 + x2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2
+      sage: X.maximal_multiplicity()
+      4
+      sage:
+      sage: max(X.multiplicity(P) for P in X.singular_points())
+      4
+
     MATHEMATICAL INTERPRETATION:
     The maximal multiplicity of the scheme defined by self.polynomial at
     a rational point P is sought. This occurs either:
     (1) At a singular point P of the support (reduced subscheme).
-        The multiplicity of self.polynomial at P is computed.
     (2) At a generic (smooth) point P of an irreducible component of the support.
         If self.polynomial = ... * factor_i^e_i * ..., the multiplicity of self
         at a generic point of the component defined by factor_i is e_i.
@@ -429,7 +452,7 @@ class ProjectivePlaneCurve:
     m1 = 1
     m2 = 1
     if X_red_sing:
-      m1 = max(self.multiplicity(p) for p in X_red_sing)
+      m1 = max(self.multiplicity(P) for P in X_red_sing)
     nonred_comp_mults = [mult for mult, comp in self.nonreduced_components()]
     if nonred_comp_mults:
       m2 = max(nonred_comp_mults)
