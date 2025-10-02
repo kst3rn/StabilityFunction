@@ -18,7 +18,10 @@ class ProjectivePlaneCurve:
 
   def __init__(self, polynomial):
     r"""
-    Construct ...
+    Construct a projective plane curve to the following conditions
+
+    INPUT:
+    polynomial - homogeneous polynomial in K[x_0,...,x_n]
     """
 
     if not polynomial.is_homogeneous():
@@ -57,19 +60,131 @@ class ProjectivePlaneCurve:
   def tangent_cone_at(self, P):
     r"""
     Return the tangent cone of self at P
+
+    INPUT:
+    P - point on self
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = GF(3)[]
+      sage: f = x0^2*x2 - x1^3
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x1^3 + x0^2*x2
+      sage: P = [0,0,1]
+      sage: C = X.tangent_cone_at(P); C
+      Tangent cone of Projective Plane Curve with defining polynomial -x1^3 + x0^2*x2 at [0, 0, 1]
+      sage: C.get_polynomial()
+      x^2
+
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = (x0-3*x2)^2*x2 - (x1+5*x2)^3
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x1^3 + x0^2*x2 - 15*x1^2*x2 - 6*x0*x2^2 - 75*x1*x2^2 - 116*x2^3
+      sage: P = [3,-5,1]
+      sage: C = X.tangent_cone_at(P); C
+      Tangent cone of Projective Plane Curve with defining polynomial -x1^3 + x0^2*x2 - 15*x1^2*x2 - 6*x0*x2^2 - 75*x1*x2^2 - 116*x2^3 at [3, -5, 1]
+      sage: C.get_polynomial()
+      x^2
+
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x1^2*x2 - x0^3 - x0^2*x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x0^3 - x0^2*x2 + x1^2*x2
+      sage: P = [0,0,1]
+      sage: C = X.tangent_cone_at(P); C
+      Tangent cone of Projective Plane Curve with defining polynomial -x0^3 - x0^2*x2 + x1^2*x2 at [0, 0, 1]
+      sage: C.get_polynomial()
+      -x^2 + y^2
+
+      sage: R.<x0,x1,x2> = GF(7)[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: P = [1,2,4]
+      sage: C = X.tangent_cone_at(P); C
+      Tangent cone of Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4 at [2, 4, 1]
+      sage: C.get_polynomial()
+      -3*x - 3*y
     """
     return PPC_TangentCone(self, P)
 
 
   def is_smooth(self):
+    r"""
+    Return True if self is smooth and False otherwise.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x1^2*x2 - x0^3 - x0^2*x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x0^3 - x0^2*x2 + x1^2*x2
+      sage: X.is_smooth()
+      False
+
+      sage: R.<x0,x1,x2> = GF(7)[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.is_smooth()
+      True
+    """
     return self.plane_curve.is_smooth()
 
 
   def is_reduced(self):
+    r"""
+    Return True if self is reduced and False otherwise.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.is_reduced()
+      True
+
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.is_reduced()
+      False
+
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = (x0 + x1)^2*(x1 + x2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^2*x1 + 2*x0*x1^2 + x1^3 + x0^2*x2 + 2*x0*x1*x2 + x1^2*x2
+      sage: X.is_reduced()
+      False
+    """
     return not any(multiplicity > 1 for factor, multiplicity in self._decompose)
 
 
   def is_irreducible(self):
+    r"""
+    Return True if self is irreducible and False otherwise.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.is_irreducible()
+      True
+
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.is_irreducible()
+      False
+
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = (x0 + x1)*(x1 + x2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0*x1 + x1^2 + x0*x2 + x1*x2
+      sage: X.is_irreducible()
+      False
+    """
     if len(self._decompose) > 1:
       return False
     return self.is_reduced()
@@ -77,7 +192,29 @@ class ProjectivePlaneCurve:
 
   def is_semistable(self):
     r"""
-    Return True is self is semistable and False otherwise
+    Return True if self is semistable and False otherwise.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.is_semistable()
+      True
+
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.is_semistable()
+      False
+
+      sage: R.<x0,x1,x2> = GF(2^3)[]
+      sage: f = (x0^2 + x1*x2)^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^2*x2^2
+      sage: X.is_semistable()
+      True
     """
     if self.is_smooth():
       return True
@@ -125,7 +262,29 @@ class ProjectivePlaneCurve:
 
   def reduced_subscheme(self):
     r"""
-    Return the reduced subscheme of self as a projective plane curve
+    Return the reduced subscheme of self as a projective plane curve.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = GF(2^3)[]
+      sage: f = (x0^2 + x1*x2)^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^2*x2^2
+      sage: X.reduced_subscheme()
+      Projective Plane Curve with defining polynomial x0^2 + x1*x2
+
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.reduced_subscheme()
+      Projective Plane Curve with defining polynomial x0 + x1 + x2
+
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.reduced_subscheme()
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
     """
     f = prod(factor for factor, multiplicity in self._decompose)
     return ProjectivePlaneCurve(f)
@@ -133,7 +292,29 @@ class ProjectivePlaneCurve:
 
   def irreducible_components(self):
     r"""
-    Return the list of irreducible components of self
+    Return the list of irreducible components of self.
+
+      sage: R.<x0,x1,x2> = GF(2^3)[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.irreducible_components()
+      [Projective Plane Curve with defining polynomial x0 + x1 + x2]
+
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.irreducible_components()
+      [Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4]
+
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = (x0 + x1)*(x1 - x2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0*x1 + x1^2 - x0*x2 - x1*x2
+      sage: X.irreducible_components()
+      [Projective Plane Curve with defining polynomial -x1 + x2,
+       Projective Plane Curve with defining polynomial x0 + x1]
     """
     return [ProjectivePlaneCurve(factor)
             for factor, multiplicity in self._decompose]
@@ -141,7 +322,38 @@ class ProjectivePlaneCurve:
 
   def nonreduced_components(self):
     r"""
-    Return the list of nonreduced components of self
+    Return the list of nonreduced components with corresponding multiplicities
+    of self.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = (x0 + x1)*x2^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0*x2^2 + x1*x2^2
+      sage: X.nonreduced_components()
+      [(2, Projective Plane Curve with defining polynomial x2)]
+
+      sage: R.<x0,x1,x2> = GF(2^3)[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.nonreduced_components()
+      [(4, Projective Plane Curve with defining polynomial x0 + x1 + x2)]
+
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x0^3 * (x1 + x2)^2 * x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^3*x1^2*x2 + 2*x0^3*x1*x2^2 + x0^3*x2^3
+      sage: X.nonreduced_components()
+      [(2, Projective Plane Curve with defining polynomial x1 + x2),
+       (3, Projective Plane Curve with defining polynomial x0)]
+
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = (x0 + x1)*(x1 - x2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0*x1 + x1^2 - x0*x2 - x1*x2
+      sage: X.nonreduced_components()
+      []
     """
     return [(multiplicity, ProjectivePlaneCurve(factor))
             for factor, multiplicity in self._decompose
@@ -150,22 +362,58 @@ class ProjectivePlaneCurve:
 
   def singular_points(self):
     r"""
-    Return the list of singular points of self
+    Return the list of singular points of self.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.singular_points()
+      []
+
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.singular_points()
+      [(0 : 1 : 1), (1 : 0 : 1), (1 : 1 : 0)]
     """
     return self.plane_curve.singular_points()
 
 
-  def multiplicity(self, p):
+  def multiplicity(self, P):
     r"""
-    Return the multiplicity of self at p, i.e. the degree of the
-    tangent cone at p
+    Return the multiplicity of self at P, i.e. the degree of the
+    tangent cone at P.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: P = [0,0,1]
+      sage: f = x0*x2^2 + x0^2*x1
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^2*x1 + x0*x2^2
+      sage: X.multiplicity(P)
+      1
+      sage: 
+      sage: f = x0^2*x2^2 + x0^2*x1^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^2*x1^2 + x0^2*x2^2
+      sage: X.multiplicity(P)
+      2
+      sage: 
+      sage: f = x0^3*x2 + x0^2*x1^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^2*x1^2 + x0^3*x2
+      sage: X.multiplicity(P)
+      3
     """
     return self.plane_curve.multiplicity(p)
 
 
   def maximal_multiplicity(self):
     r"""
-    Return maximal multiplicity of a rational point
+    Return maximal multiplicity of a rational point.
 
     MATHEMATICAL INTERPRETATION:
     The maximal multiplicity of the scheme defined by self.polynomial at
@@ -190,7 +438,7 @@ class ProjectivePlaneCurve:
 
   def singular_locus_dimension(self):
     r"""
-    Return the dimension of the singular locus of self
+    Return the dimension of the singular locus of self.
     """
     if self.is_smooth():
       return -1
