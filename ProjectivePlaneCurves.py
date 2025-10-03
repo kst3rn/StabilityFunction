@@ -195,13 +195,34 @@ class ProjectivePlaneCurve:
     Return `True` if `self` is semistable and `False` otherwise.
 
     EXAMPLES:
+    A nodal cubic is semistable.
+      sage: R.<x0,x1,x2> = GF(3)[]
+      sage: f = x1^2*x2 + x0^3 + x0^2*x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^3 + x0^2*x2 + x1^2*x2
+      sage: X.is_semistable()
+      True
+
+    A cuspidal cubic is unstable.
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = x1^2*x2 + x0^3 + x0^2*x2
+      sage: X.is_semistable()
+      False
+      sage:
+      sage: R.<x0,x1,x2> = GF(3)[]
+      sage: f = x0^3 + x1^2 * x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^3 + x1^2*x2
+      sage: X.is_semistable()
+      False
+
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x0^4 + x1^4 + x2^4
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
       sage: X.is_semistable()
       True
-
+      sage:
       sage: R.<x0,x1,x2> = GF(2)[]
       sage: f = x0^4 + x1^4 + x2^4
       sage: X = ProjectivePlaneCurve(f); X
@@ -638,6 +659,13 @@ class ProjectivePlaneCurve:
       []
 
       sage: R.<x0,x1,x2> = GF(3)[]
+      sage: f = x0^3 + x1^3 + x0^2*x2 - x0*x2^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^3 + x1^3 + x0^2*x2 - x0*x2^2
+      sage: X.pseudo_instabilities()
+      [Pseudo-instability of Projective Plane Curve with defining polynomial x0^3 + x1^3 + x0^2*x2 - x0*x2^2 given by [2, 2, 1] and x0 + x2]
+
+      sage: R.<x0,x1,x2> = GF(2)[]
       sage: f = x0^3 * (x1 + x2)
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2
@@ -645,9 +673,20 @@ class ProjectivePlaneCurve:
       [Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 0, 1],
        Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 0],
        Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 1],
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 2, 1],
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 2, 1] and x1 + x2,
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 1] and x1 + x2,
        Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by x0]
+
+      sage: R.<x0,x1,x2> = GF(3)[]
+      sage: f = (x0 - x1)^2 * x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2
+      sage: X.pseudo_instabilities()
+      [Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [0, 0, 1] and x0 - x1,
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [1, 1, 0],
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [1, 1, 1] and x0 - x1,
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [2, 2, 1] and x0 - x1,
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [1, 1, 0] and x2,
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by x0 - x1]
 
     MATHEMATICAL INTERPRETATION:
     Give reference.
@@ -681,6 +720,48 @@ class ProjectivePlaneCurve:
     r"""
     Return a list of pseudo-instabilities of `self` which are
     instabilities.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = x0^3 + x1^2 * x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^3 + x1^2*x2
+      sage: X.instabilities()
+      [Pseudo-instability of Projective Plane Curve with defining polynomial x0^3 + x1^2*x2 given by [0, 0, 1] and x1]
+      sage: len(X.pseudo_instabilities())
+      1
+
+    There can be less instabilities than pseudo-instabilities as the following example shows.
+      sage: R.<x0,x1,x2> = GF(3)[]
+      sage: f = (x0 - x1)^2 * x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2
+      sage: X.instabilities()
+      [Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [0, 0, 1] and x0 - x1,
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [1, 1, 0],
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [1, 1, 0] and x2,
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by x0 - x1]
+      sage: len(X.pseudo_instabilities())
+      6
+
+    It can happen that none of the pseudo-instabilities is an instability.
+      sage: R.<x0,x1,x2> = GF(2^8)[]
+      sage: f = x0 * (x0^3 + x1^2*x2 + x0*x2^2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x0*x1^2*x2 + x0^2*x2^2
+      sage: X.instabilities()
+      []
+      sage: len(X.pseudo_instabilities())
+      1
+      sage:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x0 * x2 * (x1^2 + x0*x2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0*x1^2*x2 + x0^2*x2^2
+      sage: X.instabilities()
+      []
+      sage: len(X.pseudo_instabilities())
+      2
     """
     return [I for I in self.pseudo_instabilities() if I.is_instability()]
 
