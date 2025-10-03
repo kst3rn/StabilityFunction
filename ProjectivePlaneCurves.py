@@ -59,10 +59,10 @@ class ProjectivePlaneCurve:
 
   def tangent_cone_at(self, P):
     r"""
-    Return the tangent cone of self at P
+    Return the tangent cone of self at the point `P`.
 
     INPUT:
-    P - point on self
+    - ``P`` -- a point on `self`.
 
     EXAMPLES:
       sage: R.<x0,x1,x2> = GF(3)[]
@@ -110,7 +110,7 @@ class ProjectivePlaneCurve:
 
   def is_smooth(self):
     r"""
-    Return True if self is smooth and False otherwise.
+    Return `True` if `self` is smooth and `False` otherwise.
 
     EXAMPLES:
       sage: R.<x0,x1,x2> = QQ[]
@@ -132,7 +132,7 @@ class ProjectivePlaneCurve:
 
   def is_reduced(self):
     r"""
-    Return True if self is reduced and False otherwise.
+    Return `True` if `self` is reduced and `False` otherwise.
 
     EXAMPLES:
       sage: R.<x0,x1,x2> = QQ[]
@@ -161,7 +161,7 @@ class ProjectivePlaneCurve:
 
   def is_irreducible(self):
     r"""
-    Return True if self is irreducible and False otherwise.
+    Return `True` if `self` is irreducible and `False` otherwise.
 
     EXAMPLES:
       sage: R.<x0,x1,x2> = QQ[]
@@ -192,7 +192,7 @@ class ProjectivePlaneCurve:
 
   def is_semistable(self):
     r"""
-    Return True if self is semistable and False otherwise.
+    Return `True` if `self` is semistable and `False` otherwise.
 
     EXAMPLES:
       sage: R.<x0,x1,x2> = QQ[]
@@ -262,7 +262,7 @@ class ProjectivePlaneCurve:
 
   def reduced_subscheme(self):
     r"""
-    Return the reduced subscheme of self as a projective plane curve.
+    Return the reduced subscheme of `self` as a projective plane curve.
 
     EXAMPLES:
       sage: R.<x0,x1,x2> = GF(2^3)[]
@@ -292,7 +292,7 @@ class ProjectivePlaneCurve:
 
   def irreducible_components(self):
     r"""
-    Return the list of irreducible components of self.
+    Return the list of irreducible components of `self`.
 
     EXAMPLES:
       sage: R.<x0,x1,x2> = GF(2^3)[]
@@ -323,8 +323,12 @@ class ProjectivePlaneCurve:
 
   def nonreduced_components(self):
     r"""
-    Return the list of nonreduced components with corresponding multiplicities
-    of self.
+    Return the list of nonreduced components with corresponding
+    multiplicities of `self`.
+
+    OUTPUT:
+    A list of tuples `(m, Y)` where `Y` is an irreducible component
+    contained in `self` with multiplicity `m` such that m > 1.
 
     EXAMPLES:
       sage: R.<x0,x1,x2> = QQ[]
@@ -363,7 +367,7 @@ class ProjectivePlaneCurve:
 
   def singular_points(self):
     r"""
-    Return the list of singular points of self.
+    Return the list of singular points of `self`.
 
     EXAMPLES:
       sage: R.<x0,x1,x2> = QQ[]
@@ -385,8 +389,8 @@ class ProjectivePlaneCurve:
 
   def multiplicity(self, P):
     r"""
-    Return the multiplicity of self at P, i.e. the degree of the
-    tangent cone at P.
+    Return the multiplicity of `self` at the point `P`, i.e. the
+    degree of the tangent cone at `P`.
 
     EXAMPLES:
       sage: R.<x0,x1,x2> = QQ[]
@@ -414,7 +418,8 @@ class ProjectivePlaneCurve:
 
   def maximal_multiplicity(self):
     r"""
-    Return maximal multiplicity of a rational point.
+    Return the maximum of all multiplicities of a rational points
+    on `self`.
 
     EXAMPLES:
       sage: R.<x0,x1,x2> = QQ[]
@@ -461,7 +466,7 @@ class ProjectivePlaneCurve:
 
   def singular_locus_dimension(self):
     r"""
-    Return the dimension of the singular locus of self.
+    Return the dimension of the singular locus of `self`.
 
     EXAMPLES:
       sage: R.<x0,x1,x2> = QQ[]
@@ -535,10 +540,13 @@ class ProjectivePlaneCurve:
 
   def points_with_high_multiplicity(self): # upgrade to infinite fields: add nonreduced components to the list
     r"""
-    Return a list of points on self with multiplicity > self.degree/2.
+    Return a list of points on `self` with multiplicity strictly
+    greater than self.degree / 2.
 
     OUTPUT:
-    [(point_1, m_1), (point_2, m_2), ...] - where m_i is the multiplicity of point_i
+    A list of tuples `(P, m)` where `P` is a point contained in `self` with
+    multiplicity `m` such that
+    m > self.degree / 2.
 
     EXAMPLES:
       sage: R.<x0,x1,x2> = GF(2)[]
@@ -571,15 +579,35 @@ class ProjectivePlaneCurve:
 
   def lines_with_high_multiplicity(self):
     r"""
-    Return a list of lines in self of multiplicity > 0.
+    Return a list of lines contained in `self`.
 
     OUTPUT:
-    [(line_1, m_1, G_1), ...] - where m_i is the multiplicity of line_i,
-                                and either line_i^m_i * G_i = self.polynomial
-                                if 0 < m_i <= self.degree/3 or G_i = None else.
+    A list of triples `(L, m, G)` where `L` is a line contained
+    in `self` with multiplicity `m` such that either
+    0 < m <= self.degree / 3 and self.polynomial = L^m * G
+    or
+    G = None.
 
     EXAMPLES:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x0 * (x1 + x2)^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0*x1^2 + 2*x0*x1*x2 + x0*x2^2
+      sage: X.lines_with_high_multiplicity()
+      [(x0, 1, x1^2 + 2*x1*x2 + x2^2), (x1 + x2, 2, None)]
 
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = x0^2 * x1^3 * x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^2*x1^3*x2
+      sage: X.lines_with_high_multiplicity()
+      [(x2, 1, x0^2*x1^3), (x0, 2, x1^3*x2), (x1, 3, None)]
+      sage:
+      sage: f = x0
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0
+      sage: X.lines_with_high_multiplicity()
+      [(x0, 1, None)]
     """
     L = []
     polynomial_factors = list(self.polynomial.factor())
@@ -597,14 +625,34 @@ class ProjectivePlaneCurve:
     return L
 
 
-  def pseudo_instabilities(self):
+  def pseudo_instabilities(self): # Adjust nonreduced line
     r"""
-    Return the list of all pseudo-instabilities.
+    Return a list of pseudo-instabilities of `self`.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = (x0^2 + x1*x2)^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^2*x2^2
+      sage: X.pseudo_instabilities()
+      []
+
+      sage: R.<x0,x1,x2> = GF(3)[]
+      sage: f = x0^3 * (x1 + x2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2
+      sage: X.pseudo_instabilities()
+      [Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 0, 1],
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 0],
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 1],
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 2, 1],
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 2, 1] and x1 + x2,
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by x0]
 
     MATHEMATICAL INTERPRETATION:
-    We will explain how to compute all such pseudo-instabilities and why there are
-    only finitely many of them.
+    Give reference.
     """
+
     list_of_pseu_inst = []
     # CASES (b) and (d)
     for P, m in self.points_with_high_multiplicity():
@@ -631,7 +679,8 @@ class ProjectivePlaneCurve:
 
   def instabilities(self):
     r"""
-    Return the list of all pseudo-instabilities which yield instabilities
+    Return a list of pseudo-instabilities of `self` which are
+    instabilities.
     """
     return [I for I in self.pseudo_instabilities() if I.is_instability()]
 
