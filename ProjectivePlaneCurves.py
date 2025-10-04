@@ -1103,146 +1103,130 @@ class PPC_Instability:
 # ================== helper functions ==================
 
 def _min_index_of_nonzero_entry(L):
-    """
-    Return minimal integer i between 0 and len(L) with L[i] != 0
+  r"""
+  Return minimal integer i between 0 and len(L) with L[i] != 0
 
-    INPUT:
-        L - list of rational numbers
+  INPUT:
+  L - list of rational numbers
 
-    OUTPUT:
-        i - minimal integer between 0 and len(L) with L[i] != 0
-    """
-
-    return next((i for i in range(len(L)) if L[i] != 0), None)
+  OUTPUT:
+  i - minimal integer between 0 and len(L) with L[i] != 0
+  """
+  return next((i for i in range(len(L)) if L[i] != 0), None)
 
 
 def _max_index_of_nonzero_entry(L):
-    """
-    Return maximal integer i between 0 and len(L) with L[i] != 0
+  r"""
+  Return maximal integer i between 0 and len(L) with L[i] != 0
 
-    INPUT:
-        L - list of rational numbers
+  INPUT:
+  L - list of rational numbers
 
-    OUTPUT:
-        i - maximal integer between 0 and len(L) with L[i] != 0
-    """
-
-    return next((i for i in reversed(range(len(L))) if L[i] != 0), None)
+  OUTPUT:
+  i - maximal integer between 0 and len(L) with L[i] != 0
+  """
+  return next((i for i in reversed(range(len(L))) if L[i] != 0), None)
 
 
 def _normalize_by_first_nonzero_entry(L):
-    """
-    Return ...
-    """
-
-    i_min = _min_index_of_nonzero_entry(L)
-    first_nonzero_entry = L[i_min]
-
-    return (i_min, [x / first_nonzero_entry for x in L])
+  r"""
+  Return ...
+  """
+  i_min = _min_index_of_nonzero_entry(L)
+  first_nonzero_entry = L[i_min]
+  return (i_min, [x / first_nonzero_entry for x in L])
 
 
 def _normalize_by_last_nonzero_entry(L):
-    """
-    Return ...
-    """
-
-    i_max = _max_index_of_nonzero_entry(L)
-    last_nonzero_entry = L[i_max]
-
-    return (i_max, [x / last_nonzero_entry for x in L])
+  r"""
+  Return ...
+  """
+  i_max = _max_index_of_nonzero_entry(L)
+  last_nonzero_entry = L[i_max]
+  return (i_max, [x / last_nonzero_entry for x in L])
 
 
 def _apply_matrix(T, F, affine_patch = None):
-    """
-    Return F((x_0,...,x_n) * T) or its dehomogenization
-    at affine_patch, i.e. x_{affine_patch} = 1 if
-    affine_patch != None
+  r"""
+  Return F((x_0,...,x_n) * T) or its dehomogenization
+  at affine_patch, i.e. x_{affine_patch} = 1 if
+  affine_patch != None
 
-    INPUT:
-        T            - matrix over K
-        F            - polynomial in K[x_0,...,x_n]
-        affine_patch - integer between 0 and n
+  INPUT:
+  T            - matrix over K
+  F            - polynomial in K[x_0,...,x_n]
+  affine_patch - integer between 0 and n
 
-    OUTPUT:
-        F((x_0,...,x_n) * T) with x_{affine_patch} = 1 if
-        affine_patch != None
+  OUTPUT:
+  F((x_0,...,x_n) * T) with x_{affine_patch} = 1 if
+  affine_patch != None
 
-    MATHEMATICAL INTERPRETATION:
-        ToDo...
-    """
-
-    generators = list(F.parent().gens())
-    if affine_patch != None:
-        generators[affine_patch] = F.parent()(1)
-    return F(list( vector(generators) * T ))
+  MATHEMATICAL INTERPRETATION:
+  ToDo...
+  """
+  generators = list(F.parent().gens())
+  if affine_patch != None:
+    generators[affine_patch] = F.parent()(1)
+  return F(list( vector(generators) * T ))
 
 
 def _ult_line_transformation(base_field, Vector):
-    """
-    Return unipotent lower triangular matrix over base_field transforming
-    a line spanned by a standard basis vector to the line spanned by Vector
-    """
-
-    Vector = list(Vector)
-    T = identity_matrix(base_field, len(Vector))
-
-    # Find the maximal index, i_max, with Vector[i_max] != 0 and normalize by Vector[i_max]
-    i_max, normalized_Vector = _normalize_by_last_nonzero_entry(Vector)
-
-    T[i_max] = normalized_Vector
-
-    return matrix(base_field, T)
+  r"""
+  Return unipotent lower triangular matrix over base_field transforming
+  a line spanned by a standard basis vector to the line spanned by Vector
+  """
+  Vector = list(Vector)
+  T = identity_matrix(base_field, len(Vector))
+  # Find the maximal index, i_max, with Vector[i_max] != 0 and normalize by Vector[i_max]
+  i_max, normalized_Vector = _normalize_by_last_nonzero_entry(Vector)
+  T[i_max] = normalized_Vector
+  return matrix(base_field, T)
 
 
 def _uut_line_transformation(base_field, Vector):
-    """
-    Return unipotent upper triangular matrix over base_field transforming
-    a line spanned by a standard basis vector to the line spanned by Vector
-    """
-
-    Vector = list(Vector)
-    T = identity_matrix(base_field, len(Vector))
-
-    # Find the minimal index, i_min, with Vector[i_min] != 0 and normalize by Vector[i_min]
-    i_min, normalized_Vector = _normalize_by_first_nonzero_entry(Vector)
-
-    T[i_min] = normalized_Vector
-
-    return matrix(base_field, T)
+  r"""
+  Return unipotent upper triangular matrix over base_field transforming
+  a line spanned by a standard basis vector to the line spanned by Vector
+  """
+  Vector = list(Vector)
+  T = identity_matrix(base_field, len(Vector))
+  # Find the minimal index, i_min, with Vector[i_min] != 0 and normalize by Vector[i_min]
+  i_min, normalized_Vector = _normalize_by_first_nonzero_entry(Vector)
+  T[i_min] = normalized_Vector
+  return matrix(base_field, T)
 
 
 def _sorting_permutation_matrix(w):
-    """
-    Return permutation matrix, T, such that vector(w)*T is sorted in
-    decreasing order
+  r"""
+  Return permutation matrix, T, such that vector(w)*T is sorted in
+  decreasing order
 
-    INPUT:
-        w - vector over Rational Field
-    """
-    n = len(w)
-    if n == 0:
-        return identity_matrix(0)
+  INPUT:
+  w - vector over Rational Field
+  """
+  n = len(w)
+  if n == 0:
+    return identity_matrix(0)
 
-    # Create a list of (value, index) tuples
-    indexed_w = [(val, i) for i, val in enumerate(w)]
+  # Create a list of (value, index) tuples
+  indexed_w = [(val, i) for i, val in enumerate(w)]
 
-    # Sort the list in descending order based on the values
-    sorted_indexed_w = sorted(indexed_w, key=lambda x: x[0], reverse=True)
+  # Sort the list in descending order based on the values
+  sorted_indexed_w = sorted(indexed_w, key=lambda x: x[0], reverse=True)
 
-    # Extract the sorted indices
-    sorted_indices = [index for _, index in sorted_indexed_w]
+  # Extract the sorted indices
+  sorted_indices = [index for _, index in sorted_indexed_w]
 
-    # Create the permutation represented as a list.
-    permutation_list = [0] * n
-    for i, original_index in enumerate(sorted_indices):
-        permutation_list[original_index] = i
+  # Create the permutation represented as a list.
+  permutation_list = [0] * n
+  for i, original_index in enumerate(sorted_indices):
+    permutation_list[original_index] = i
 
-    # Create the permutation matrix.
-    permutation_matrix = zero_matrix(n)
-    for i, j in enumerate(permutation_list):
-        permutation_matrix[i, j] = 1
-
-    return permutation_matrix
+  # Create the permutation matrix.
+  permutation_matrix = zero_matrix(n)
+  for i, j in enumerate(permutation_list):
+    permutation_matrix[i, j] = 1
+  return permutation_matrix
 
 
 # def _ult_matrix_integralizator(ult_matrix, weight_vector):
@@ -1315,411 +1299,394 @@ def _sorting_permutation_matrix(w):
 
 
 def _integral_line_transformation(base_field, Vector, weight_vector):
-    """
-    Return unipotent matrix, T, over base_field transforming a line spanned
-    by a standard basis vector to the line spanned by Vector such that for
-    all indices i,j the implication
-        (weight_vector[j] - weight_vector[i] < 0) => (T[i][j] = 0)
-    holds
+  r"""
+  Return unipotent matrix, T, over base_field transforming a line spanned
+  by a standard basis vector to the line spanned by Vector such that for
+  all indices i,j the implication
+    (weight_vector[j] - weight_vector[i] < 0) => (T[i][j] = 0)
+  holds.
 
-    INPUT:
-        base_field      - field
-        Vector          - vector over field
-        weight_vector   - vector over Rational Field
+  INPUT:
+  base_field      - field
+  Vector          - vector over field
+  weight_vector   - vector over Rational Field
 
-    MATHEMATICAL INTERPRETATION:
-        First, let
-            K := base_field,
-            a = [a_0,...,a_n] := Vector,
-            w = [w_0,...,w_n] := weight_vector.
-        Let sigma be the permutation with
-            w_{sigma(0)} >= ... >= w_{sigma(n)}.
-        Let P be the matrix with columns given by
-            e_{sigma(0)},...,e_{sigma(n)},
-        where e_i is the i-th standard basis vector. Then we have
-            w * P = [w_{sigma(0)},...,w_{sigma(n)}],
-        i.e.
-            P = _sorting_permutation_matrix(w).
-        Let
-            v := w * P, i.e. v_j = w_{sigma(j)}.
-        Let
-            b := a * P, i.e. b_j = a_{sigma(j)}.
-        Let
-            T = _ult_line_transformation(K, b).
-        Since v is sorted in decreasing order and T is a lower
-        triangular matrix, we have the implications
-            (v_j - v_i < 0) => (j > i) => (T[i][j] = 0).
-        Let e_j be the standard basis vector with
-            e_j * T = b.
-        Since 
-            e_{sigma^{-1}} * P = e_j,
-            b * P^{-1} = a,
-        we have
-            e_{sigma^{-1}} * P * T * P^{-1} = a.
-        Moreover, the matrix
-            P^{-1} = P.transpose()
-        corresponds to the permutation sigma^{-1}, i.e. the columns
-        of P^{-1} are given by
-            e_{sigma^{-1}(0)},...,e_{sigma^{-1}(n)}
-        and therefore the (i,j)-th entry of
-            T * P^{-1}
-        is equal to
-            T[i][sigma^{-1}(j)].
-        Further, since
-            P = (P^{-1})^{-1} = (P^{-1}).transpose(),
-        the rows of P are given by
-            e_{sigma^{-1}(0)},...,e_{sigma^{-1}(n)}.
-        Thus, the (i,j) entry of
-            B = P * T * P^{-1}
-        is given by
-            B[i][j] = T[sigma^{-1}(i)][sigma^{-1}(j)].
-        Finally, since
-            v_{sigma^{-1}(j)} = w_j
-        we obtain the desired implication
-            (w_j - w_i < 0) => (B[i][j] = 0).
-        The matrix B is unipotent, since unipotent matrices form a
-        normal subgroup and T is unipotent.
-    """
+  MATHEMATICAL INTERPRETATION:
+  First, let
+    K := base_field,
+    a = [a_0,...,a_n] := Vector,
+    w = [w_0,...,w_n] := weight_vector.
+  Let sigma be the permutation with
+    w_{sigma(0)} >= ... >= w_{sigma(n)}.
+  Let P be the matrix with columns given by
+    e_{sigma(0)},...,e_{sigma(n)},
+  where e_i is the i-th standard basis vector. Then we have
+    w * P = [w_{sigma(0)},...,w_{sigma(n)}],
+  i.e.
+    P = _sorting_permutation_matrix(w).
+  Let
+    v := w * P, i.e. v_j = w_{sigma(j)}.
+  Let
+    b := a * P, i.e. b_j = a_{sigma(j)}.
+  Let
+    T = _ult_line_transformation(K, b).
+  Since v is sorted in decreasing order and T is a lower
+  triangular matrix, we have the implications
+    (v_j - v_i < 0) => (j > i) => (T[i][j] = 0).
+  Let e_j be the standard basis vector with
+    e_j * T = b.
+  Since
+    e_{sigma^{-1}} * P = e_j,
+    b * P^{-1} = a,
+  we have
+    e_{sigma^{-1}} * P * T * P^{-1} = a.
+  Moreover, the matrix
+    P^{-1} = P.transpose()
+  corresponds to the permutation sigma^{-1}, i.e. the columns
+  of P^{-1} are given by
+    e_{sigma^{-1}(0)},...,e_{sigma^{-1}(n)}
+  and therefore the (i,j)-th entry of
+    T * P^{-1}
+  is equal to
+    T[i][sigma^{-1}(j)].
+  Further, since
+    P = (P^{-1})^{-1} = (P^{-1}).transpose(),
+  the rows of P are given by
+    e_{sigma^{-1}(0)},...,e_{sigma^{-1}(n)}.
+  Thus, the (i,j) entry of
+    B = P * T * P^{-1}
+  is given by
+    B[i][j] = T[sigma^{-1}(i)][sigma^{-1}(j)].
+  Finally, since
+    v_{sigma^{-1}(j)} = w_j
+  we obtain the desired implication
+    (w_j - w_i < 0) => (B[i][j] = 0).
+  The matrix B is unipotent, since unipotent matrices form a
+  normal subgroup and T is unipotent.
+  """
 
-    # convert all entries to Rationals
-    for i, w in enumerate(weight_vector):
-        weight_vector[i] = QQ(w)
+  # convert all entries to Rationals
+  for i, w in enumerate(weight_vector):
+    weight_vector[i] = QQ(w)
 
-    permutation_matrix = _sorting_permutation_matrix(weight_vector)
-    T = _ult_line_transformation(base_field, vector(Vector) * permutation_matrix)
-
-    return permutation_matrix * T * permutation_matrix.transpose()
+  permutation_matrix = _sorting_permutation_matrix(weight_vector)
+  T = _ult_line_transformation(base_field, vector(Vector) * permutation_matrix)
+  return permutation_matrix * T * permutation_matrix.transpose()
 
 
 def _ult_plane_transformation(linear_form):
-    """
-    Return a list of unipotent lower triangular matrices with maximal
-    number of zeros which transform the plane defined by linear_form
-    to a plane defined by x_i = 0
+  r"""
+  Return a list of unipotent lower triangular matrices with maximal
+  number of zeros which transform the plane defined by linear_form
+  to a plane defined by x_i = 0
 
-    MATHEMATICAL INTERPRETATION:
-        First, let
-            L = linear_form .
-        Then we can write
-            L = A*x + B*y + C*z .
-        Depending on whether
-            A != 0 or A != 0 and B != 0 or A = 0 and B != 0 or A = 0 and B = 0
-        the unipotent lower triangular matrices with maximal number of zeros, T,
-        moving L to a coordinate axis, via L((x, y, z) * T), are given by the four
-        matrices:
+  MATHEMATICAL INTERPRETATION:
+  First, let
+    L = linear_form .
+  Then we can write
+    L = A*x + B*y + C*z .
+  Depending on whether
+    A != 0 or A != 0 and B != 0 or A = 0 and B != 0 or A = 0 and B = 0
+  the unipotent lower triangular matrices with maximal number of zeros, T,
+  moving L to a coordinate axis, via L((x, y, z) * T), are given by the
+  four matrices:
+    [[  1   0, 0],
+     [-B/A, 1, 0],
+     [-C/A, 0, 1 ]]
 
-            [[  1   0, 0],
-             [-B/A, 1, 0],
-             [-C/A, 0, 1 ]]
+    [[  1,    0,  0],
+     [-B/A,   1,  0],
+     [0,    -C/B, 1]]
 
-            [[  1,    0,  0],
-             [-B/A,   1,  0],
-             [0,    -C/B, 1]]
+    [[1,   0,  0],
+     [0,   1,  0],
+     [0, -C/B, 1]]
 
-            [[1,   0,  0],
-             [0,   1,  0],
-             [0, -C/B, 1]]
+    [[1, 0, 0],
+     [0, 1, 0],
+     [0, 0, 1]]
 
-            [[1, 0, 0],
-             [0, 1, 0],
-             [0, 0, 1]]
+  Note that in the case A != 0 and B != 0 both matrices
+    [[  1   0, 0],
+     [-B/A, 1, 0],
+     [-C/A, 0, 1 ]]
+  and
+    [[  1,    0,  0],
+     [-B/A,   1,  0],
+     [0,    -C/B, 1]]
+  are equal if and only if C = 0.
+  """
 
-        Note that in the case A != 0 and B != 0 both matrices
+  base_ring = linear_form.base_ring()
 
-            [[  1   0, 0],
-             [-B/A, 1, 0],
-             [-C/A, 0, 1 ]]
+  x0, x1, x2 = linear_form.parent().gens()
+  A = linear_form.monomial_coefficient(x0)
+  B = linear_form.monomial_coefficient(x1)
+  C = linear_form.monomial_coefficient(x2)
+  L = []
 
-        and
-
-            [[  1,    0,  0],
-             [-B/A,   1,  0],
-             [0,    -C/B, 1]]
-
-        are equal if and only if C = 0.
-    """
-
-    base_ring = linear_form.base_ring()
-
-    x0, x1, x2 = linear_form.parent().gens()
-    A = linear_form.monomial_coefficient(x0)
-    B = linear_form.monomial_coefficient(x1)
-    C = linear_form.monomial_coefficient(x2)
-    L = []
-
-    if A != 0:
-        T = [[1, 0, 0], [-B/A, 1, 0], [-C/A, 0, 1]]
-        T = matrix(base_ring, T)
-        L.append(T)
-        if B != 0 and C != 0:
-            T = [[1, 0, 0], [-B/A, 1, 0], [0, -C/B, 1]]
-            T = matrix(base_ring, T)
-            L.append(T)
-
-    elif B != 0:
-        T = [[1, 0, 0], [0, 1, 0], [0, -C/B, 1]]
-        T = matrix(base_ring, T)
-        L.append(T)
-
-    else:
-        T = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-        T = matrix(base_ring, T)
-        L.append(T)
-
-    return L
+  if A != 0:
+    T = [[1, 0, 0], [-B/A, 1, 0], [-C/A, 0, 1]]
+    T = matrix(base_ring, T)
+    L.append(T)
+    if B != 0 and C != 0:
+      T = [[1, 0, 0], [-B/A, 1, 0], [0, -C/B, 1]]
+      T = matrix(base_ring, T)
+      L.append(T)
+  elif B != 0:
+    T = [[1, 0, 0], [0, 1, 0], [0, -C/B, 1]]
+    T = matrix(base_ring, T)
+    L.append(T)
+  else:
+    T = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+    T = matrix(base_ring, T)
+    L.append(T)
+  return L
 
 
 def _uut_plane_transformation(linear_form):
-    """
-    Return a list of unipotent upper triangular matrices with maximal
-    number of zeros which transform the plane defined by linear_form
-    to a plane defined by x_i = 0
+  r"""
+  Return a list of unipotent upper triangular matrices with maximal
+  number of zeros which transform the plane defined by linear_form
+  to a plane defined by x_i = 0
 
-    MATHEMATICAL INTERPRETATION:
-        First, let
-            L = linear_form .
-        Then we can write
-            L = A*x + B*y + C*z .
-        Depending on whether
-            C != 0 or C != 0 and B != 0 or C = 0 and B != 0 or C = 0 and B = 0
-        the unipotent upper triangular matrices with maximal number of zeros, T,
-        moving L to a coordinate axis, via L((x, y, z) * T), are given by the four
-        matrices:
+  MATHEMATICAL INTERPRETATION:
+  First, let
+    L = linear_form .
+  Then we can write
+    L = A*x + B*y + C*z .
+  Depending on whether
+    C != 0 or C != 0 and B != 0 or C = 0 and B != 0 or C = 0 and B = 0
+  the unipotent upper triangular matrices with maximal number of zeros, T,
+  moving L to a coordinate axis, via L((x, y, z) * T), are given by the
+  four matrices:
+    [[1, 0, -A/C],
+     [0, 1, -B/C],
+     [0, 0,   1 ]]
 
-            [[1, 0, -A/C],
-             [0, 1, -B/C],
-             [0, 0,   1 ]]
+    [[1, -A/B,   0],
+     [0,   1,  -B/C],
+     [0,   0,    1]]
 
-            [[1, -A/B,   0],
-             [0,   1,  -B/C],
-             [0,   0,    1]]
+    [[1, -A/B, 0],
+     [0,   1,  0],
+     [0,   0,  1]]
 
-            [[1, -A/B, 0],
-             [0,   1,  0],
-             [0,   0,  1]]
+    [[1, 0, 0],
+     [0, 1, 0],
+     [0, 0, 1]]
 
-            [[1, 0, 0],
-             [0, 1, 0],
-             [0, 0, 1]]
+  Note that in the case C != 0 and B != 0 both matrices
+    [[1, 0, -A/C],
+     [0, 1, -B/C],
+     [0, 0,   1 ]]
+  and
+    [[1, -A/B,  0],
+     [0,   1, -B/C],
+     [0,   0,   1]]
+  are equal if and only if A = 0.
+  """
 
-        Note that in the case C != 0 and B != 0 both matrices
+  base_ring = linear_form.base_ring()
+  x0, x1, x2 = linear_form.parent().gens()
+  A = linear_form.monomial_coefficient(x0)
+  B = linear_form.monomial_coefficient(x1)
+  C = linear_form.monomial_coefficient(x2)
+  L = []
 
-            [[1, 0, -A/C],
-             [0, 1, -B/C],
-             [0, 0,   1 ]]
+  if C != 0:
+    T = [[1, 0, -A/C], [0, 1, -B/C], [0, 0, 1]]
+    T = matrix(base_ring, T)
+    L.append(T)
+    if B != 0 and A != 0:
+      T = [[1, -A/B, 0], [0, 1, -B/C], [0, 0, 1]]
+      T = matrix(base_ring, T)
+      L.append(T)
+  elif B != 0:
+    coordinate_axis_index = 1
+    T = [[1, -A/B, 0], [0, 1, 0], [0, 0, 1]]
+    T = matrix(base_ring, T)
+    L.append(T)
+  else:
+    coordinate_axis_index = 0
+    T = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+    T = matrix(base_ring, T)
+    L.append(T)
 
-        and
-
-            [[1, -A/B,  0],
-             [0,   1, -B/C],
-             [0,   0,   1]]
-
-        are equal if and only if A = 0.
-    """
-
-    base_ring = linear_form.base_ring()
-
-    x0, x1, x2 = linear_form.parent().gens()
-    A = linear_form.monomial_coefficient(x0)
-    B = linear_form.monomial_coefficient(x1)
-    C = linear_form.monomial_coefficient(x2)
-    L = []
-
-    if C != 0:
-        T = [[1, 0, -A/C], [0, 1, -B/C], [0, 0, 1]]
-        T = matrix(base_ring, T)
-        L.append(T)
-        if B != 0 and A != 0:
-            T = [[1, -A/B, 0], [0, 1, -B/C], [0, 0, 1]]
-            T = matrix(base_ring, T)
-            L.append(T)
-
-    elif B != 0:
-        coordinate_axis_index = 1
-        T = [[1, -A/B, 0], [0, 1, 0], [0, 0, 1]]
-        T = matrix(base_ring, T)
-        L.append(T)
-
-    else:
-        coordinate_axis_index = 0
-        T = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-        T = matrix(base_ring, T)
-        L.append(T)
-
-    return L
+  return L
 
 
 def _integral_plane_transformation(linear_form, weight_vector):
-    """
-    Return unipotent matrix, T, over base_field transforming a plane given
-    by x_i = 0 to the plane defined by linear_form = 0 such that for all
-    indices i,j the implication
-        (weight_vector[j] - weight_vector[i] < 0) => (T[i][j] = 0)
-    holds
+  r"""
+  Return unipotent matrix, T, over base_field transforming a plane given
+  by x_i = 0 to the plane defined by linear_form = 0 such that for all
+  indices i,j the implication
+    (weight_vector[j] - weight_vector[i] < 0) => (T[i][j] = 0)
+  holds.
 
-    INPUT:
-        linear_form     - linear form in K[x_0, x_1, x_2]
-        weight_vector   - tuple of rational numbers
+  INPUT:
+  linear_form     - linear form in K[x_0, x_1, x_2]
+  weight_vector   - tuple of rational numbers
 
-    MATHEMATICAL INTERPRETATION:
-        First, let
-            L = linear_form
-            w = [w_0,...,w_n] = weight_vector.
-        Let sigma be the permutation with
-            w_{sigma(0)} >= ... >= w_{sigma(n)}.
-        Let P be the matrix with columns given by
-            e_{sigma(0)},...,e_{sigma(n)},
-        where e_i is the i-th standard basis vector. Then we have
-            w * P = [w_{sigma(0)},...,w_{sigma(n)}],
-        i.e.
-            P = _sorting_permutation_matrix(w).
-        Let
-            v = w * P, i.e. v_j = w_{sigma(j)}.
-        Let
-            pL = L((x_0,x_1,x_2)*P^{-1}),
-        i.e.
-            pL = _apply_matrix(P.inverse(), L).
-        Let
-            T = _ult_plane_transformation(l)[0]
-        and
-            TpL = _apply_matrix(T, PL).
-        Since v is sorted in decreasing order and T is a lower
-        triangular matrix, we have the implications
-            (v_j - v_i < 0) => (j > i) => (T[i][j] = 0).
-        Let x_i be the generator with
-            TpL = a*x_i, a in K.
-        Since 
-            (x_0,x_1,x_2) * P = (x_{sigma(0)},x_{sigma(1)},x_{sigma(2)})
-        we have
-            TpL((x_0,x_1,x_2)*P) = a*x_{sigma(i)}.
-        Let
-            PTpL = _apply_matrix(P, TpL).
-        All in all,
-            PTpL = L((x_0,x_1,x_2)*P*T*P^{-1}),
-        i.e.
-            PTpL = _apply_matrix(P*T*P.inverse(), L).
-        Note, that the matrix
-            P^{-1} = P.transpose()
-        corresponds to the permutation sigma^{-1}, i.e. the columns
-        of P^{-1} are given by
-            e_{sigma^{-1}(0)},...,e_{sigma^{-1}(n)}
-        and therefore the (i,j)-th entry of
-            T * P^{-1}
-        is equal to
-            T[i][sigma^{-1}(j)].
-        Further, since
-            P = (P^{-1})^{-1} = (P^{-1}).transpose(),
-        the rows of P are given by
-            e_{sigma^{-1}(0)},...,e_{sigma^{-1}(n)}.
-        Thus, the (i,j) entry of
-            B = P * T * P^{-1}
-        is given by
-            B[i][j] = T[sigma^{-1}(i)][sigma^{-1}(j)].
-        Finally, since
-            v_{sigma^{-1}(j)} = w_j
-        we obtain the desired implication
-            (w_j - w_i < 0) => (B[i][j] = 0).
-        The matrix B is unipotent, since unipotent matrices form a
-        normal subgroup and T is unipotent.
-    """
+  MATHEMATICAL INTERPRETATION:
+  First, let
+    L = linear_form
+    w = [w_0,...,w_n] = weight_vector.
+  Let sigma be the permutation with
+    w_{sigma(0)} >= ... >= w_{sigma(n)}.
+  Let P be the matrix with columns given by
+    e_{sigma(0)},...,e_{sigma(n)},
+  where e_i is the i-th standard basis vector. Then we have
+    w * P = [w_{sigma(0)},...,w_{sigma(n)}],
+  i.e.
+    P = _sorting_permutation_matrix(w).
+  Let
+    v = w * P, i.e. v_j = w_{sigma(j)}.
+  Let
+    pL = L((x_0,x_1,x_2)*P^{-1}),
+  i.e.
+    pL = _apply_matrix(P.inverse(), L).
+  Let
+    T = _ult_plane_transformation(l)[0]
+  and
+    TpL = _apply_matrix(T, PL).
+  Since v is sorted in decreasing order and T is a lower
+  triangular matrix, we have the implications
+    (v_j - v_i < 0) => (j > i) => (T[i][j] = 0).
+  Let x_i be the generator with
+    TpL = a*x_i, a in K.
+  Since
+    (x_0,x_1,x_2) * P = (x_{sigma(0)},x_{sigma(1)},x_{sigma(2)})
+  we have
+    TpL((x_0,x_1,x_2)*P) = a*x_{sigma(i)}.
+  Let
+    PTpL = _apply_matrix(P, TpL).
+  All in all,
+    PTpL = L((x_0,x_1,x_2)*P*T*P^{-1}),
+  i.e.
+    PTpL = _apply_matrix(P*T*P.inverse(), L).
+  Note, that the matrix
+    P^{-1} = P.transpose()
+  corresponds to the permutation sigma^{-1}, i.e. the columns
+  of P^{-1} are given by
+    e_{sigma^{-1}(0)},...,e_{sigma^{-1}(n)}
+  and therefore the (i,j)-th entry of
+    T * P^{-1}
+  is equal to
+    T[i][sigma^{-1}(j)].
+  Further, since
+    P = (P^{-1})^{-1} = (P^{-1}).transpose(),
+  the rows of P are given by
+    e_{sigma^{-1}(0)},...,e_{sigma^{-1}(n)}.
+  Thus, the (i,j) entry of
+    B = P * T * P^{-1}
+  is given by
+    B[i][j] = T[sigma^{-1}(i)][sigma^{-1}(j)].
+  Finally, since
+    v_{sigma^{-1}(j)} = w_j
+  we obtain the desired implication
+    (w_j - w_i < 0) => (B[i][j] = 0).
+  The matrix B is unipotent, since unipotent matrices form a
+  normal subgroup and T is unipotent.
+  """
 
-    # convert all entries to Rationals
-    for i, w in enumerate(weight_vector):
-        weight_vector[i] = QQ(w)
+  # convert all entries to Rationals
+  for i, w in enumerate(weight_vector):
+    weight_vector[i] = QQ(w)
 
-    P = _sorting_permutation_matrix(weight_vector)
-    pL = _apply_matrix(P.transpose(), linear_form)
-    list_of_matrices = [P*T*P.transpose() for T in _ult_plane_transformation(pL)]
+  P = _sorting_permutation_matrix(weight_vector)
+  pL = _apply_matrix(P.transpose(), linear_form)
+  list_of_matrices = [P*T*P.transpose() for T in _ult_plane_transformation(pL)]
 
-    return list_of_matrices
+  return list_of_matrices
 
 
 def _ult_flag_transformation(Vector, linear_form):
-    """
-    Return unipotent lower triangular matrix transforming a flag given
-    by a line spanned by a standard basis vector e_j and a plane x_i = 0
-    to the line spanned by Vector and the plane given by linear_form = 0
+  r"""
+  Return unipotent lower triangular matrix transforming a flag given
+  by a line spanned by a standard basis vector e_j and a plane x_i = 0
+  to the line spanned by Vector and the plane given by linear_form = 0
 
-    INPUT:
-        Vector      - vector with 3 entries
-        linear_form - linear form with linear_form(Vector) = 0
+  INPUT:
+  Vector      - vector with 3 entries
+  linear_form - linear form with linear_form(Vector) = 0
 
-    OUTPUT:
-        T - unipotent lower triangular matrix with e_j*T = Vector and
-            _apply_matrix(T, linear_form) = x_i
+  OUTPUT:
+  T - unipotent lower triangular matrix with e_j*T = Vector and
+  _apply_matrix(T, linear_form) = x_i
 
-    MATHEMATICAL INTERPRETATION:
-        ...
-    """
+  MATHEMATICAL INTERPRETATION:
+  ...
+  """
 
-    Vector = list(Vector)
-    if linear_form(Vector) != 0:
-        raise ValueError
+  Vector = list(Vector)
+  if linear_form(Vector) != 0:
+    raise ValueError
 
-    base_field = linear_form.base_ring()
-    T1 = _ult_line_transformation(base_field, Vector)
-    T2 = _ult_plane_transformation(_apply_matrix(T1.inverse(), linear_form))[0]
+  base_field = linear_form.base_ring()
+  T1 = _ult_line_transformation(base_field, Vector)
+  T2 = _ult_plane_transformation(_apply_matrix(T1.inverse(), linear_form))[0]
 
-    return T2 * T1
+  return T2 * T1
 
 
 def _uut_flag_transformation(Vector, linear_form):
-    """
-    Return unipotent upper triangular matrix transforming a flag given
-    by a line spanned by a standard basis vector e_j and a plane x_i = 0
-    to the line spanned by Vector and the plane given by linear_form = 0
+  r"""
+  Return unipotent upper triangular matrix transforming a flag given
+  by a line spanned by a standard basis vector e_j and a plane x_i = 0
+  to the line spanned by Vector and the plane given by linear_form = 0
 
-    INPUT:
-        Vector      - vector with 3 entries
-        linear_form - linear form with linear_form(Vector) = 0
+  INPUT:
+  Vector      - vector with 3 entries
+  linear_form - linear form with linear_form(Vector) = 0
 
-    OUTPUT:
-        T - unipotent upper triangular matrix with e_j*T = Vector and
-            _apply_matrix(T, linear_form) = x_i
+  OUTPUT:
+  T - unipotent upper triangular matrix with e_j*T = Vector and
+  _apply_matrix(T, linear_form) = x_i
 
-    MATHEMATICAL INTERPRETATION:
-        ...
-    """
+  MATHEMATICAL INTERPRETATION:
+  ...
+  """
 
-    Vector = list(Vector)
-    if linear_form(Vector) != 0:
-        raise ValueError
+  Vector = list(Vector)
+  if linear_form(Vector) != 0:
+    raise ValueError
 
-    base_field = linear_form.base_ring()
-    T1 = _uut_line_transformation(base_field, Vector)
-    T2 = _uut_plane_transformation(_apply_matrix(T1.inverse(), linear_form))[0]
+  base_field = linear_form.base_ring()
+  T1 = _uut_line_transformation(base_field, Vector)
+  T2 = _uut_plane_transformation(_apply_matrix(T1.inverse(), linear_form))[0]
 
-    return T2 * T1
+  return T2 * T1
 
 
 def _integral_flag_transformation(Vector, linear_form, weight_vector):
-    """
-    Return unipotent matrix, T, transforming a flag given by a line spanned
-    by a standard basis vector e_j and a plane x_i = 0 to the line spanned
-    by Vector and the plane given by linear_form = 0 such that for all
-    indices i,j the implication
-        (weight_vector[j] - weight_vector[i] < 0) => (T[i][j] = 0)
-    holds
+  r"""
+  Return unipotent matrix, T, transforming a flag given by a line spanned
+  by a standard basis vector e_j and a plane x_i = 0 to the line spanned
+  by Vector and the plane given by linear_form = 0 such that for all
+  indices i,j the implication
+    (weight_vector[j] - weight_vector[i] < 0) => (T[i][j] = 0)
+  holds.
 
-    INPUT:
-        Vector        - vector with 3 entries
-        linear_form   - linear form with linear_form(Vector) = 0
-        weight_vector - tuple of rational numbers
+  INPUT:
+  Vector        - vector with 3 entries
+  linear_form   - linear form with linear_form(Vector) = 0
+  weight_vector - tuple of rational numbers
 
-    OUTPUT:
-        T - unipotent lower triangular matrix with e_j*T = Vector and
-            _apply_matrix(T, linear_form) = x_i
+  OUTPUT:
+  T - unipotent lower triangular matrix with e_j*T = Vector and
+  _apply_matrix(T, linear_form) = x_i
 
-    MATHEMATICAL INTERPRETATION:
-        ...
-    """
+  MATHEMATICAL INTERPRETATION:
+  ...
+  """
 
-    Vector = list(Vector)
-    if linear_form(Vector) != 0:
-        raise ValueError
+  Vector = list(Vector)
+  if linear_form(Vector) != 0:
+    raise ValueError
 
-    base_field = linear_form.base_ring()
-    T1 = _integral_line_transformation(base_field, Vector, weight_vector)
-    T2 = _integral_plane_transformation(_apply_matrix(T1.inverse(), linear_form), weight_vector)[0]
+  base_field = linear_form.base_ring()
+  T1 = _integral_line_transformation(base_field, Vector, weight_vector)
+  T2 = _integral_plane_transformation(_apply_matrix(T1.inverse(), linear_form), weight_vector)[0]
 
-    return T2 * T1
+  return T2 * T1
