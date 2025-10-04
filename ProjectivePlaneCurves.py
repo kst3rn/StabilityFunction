@@ -1080,25 +1080,23 @@ class PseudoInstability:
 
 class PPC_Instability:
 
-    def __init__(self, base_change_matrix, weight_vector, geometric_type = 'not specified'):
+  def __init__(self, base_change_matrix, weight_vector, geometric_type = 'not specified'):
 
-        self.base_change_matrix = base_change_matrix
-        self.weight_vector = weight_vector
-        self.geometric_type = geometric_type
-
-
-    def get_base_change_matrix(self):
-        return self.base_change_matrix
+    self.base_change_matrix = base_change_matrix
+    self.weight_vector = weight_vector
+    self.geometric_type = geometric_type
 
 
-
-    def get_weight_vector(self):
-        return self.weight_vector
-
+  def get_base_change_matrix(self):
+    return self.base_change_matrix
 
 
-    def get_geometric_type(self):
-        return self.geometric_type
+  def get_weight_vector(self):
+    return self.weight_vector
+
+
+  def get_geometric_type(self):
+    return self.geometric_type
 
 
 
