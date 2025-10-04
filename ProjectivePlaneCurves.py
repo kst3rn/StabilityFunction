@@ -923,159 +923,158 @@ class PPC_TangentCone:
 
 class PseudoInstability:
 
-    def __init__(self, projective_plane_curve, Point = None, Line = None):
-        if point == None and line == None:
-            raise ValueError
+  def __init__(self, projective_plane_curve, Point = None, Line = None):
+    if point == None and line == None:
+      raise ValueError
 
-        if Point != None:
-            Point = list(Point)
+    if Point != None:
+      Point = list(Point)
 
-        self.proj_plane_curve = projective_plane_curve
-        self.point = Point
-        self.line = Line
-        self.base_ring = self.proj_plane_curve.get_base_ring()
+    self.proj_plane_curve = projective_plane_curve
+    self.point = Point
+    self.line = Line
+    self.base_ring = self.proj_plane_curve.get_base_ring()
 
-    def __repr__(self):
-        if self.point == None:
-            return f"Pseudo-instability of {self.proj_plane_curve} given by {self.line}"
-        elif self.line == None:
-            return f"Pseudo-instability of {self.proj_plane_curve} given by {self.point}"
-        else:
-            return f"Pseudo-instability of {self.proj_plane_curve} given by {self.point} and {self.line}"
-
-
-    def flag(self):
-        """
-        Return the flag defining self
-        """
-        if self.point == None:
-            return self.line
-        elif self.line == None:
-            return self.point
-        return (self.point, self.line)
+  def __repr__(self):
+    if self.point == None:
+      return f"Pseudo-instability of {self.proj_plane_curve} given by {self.line}"
+    elif self.line == None:
+      return f"Pseudo-instability of {self.proj_plane_curve} given by {self.point}"
+    else:
+      return f"Pseudo-instability of {self.proj_plane_curve} given by {self.point} and {self.line}"
 
 
-    def point_transformation(self, matrix_form = 'uut'):
-        """
-        Return unipotent matrix transforming a standard basis vector to self.point
-        """
-
-        if self.point == None:
-            return identity_matrix(self.base_ring, 3)
-
-        if matrix_form == 'uut':
-            return _uut_line_transformation(self.base_ring, self.point)
-        elif matrix_form == 'ult':
-            return _ult_line_transformation(self.base_ring, self.point)
-        elif isinstance(matrix_form, list):
-            return _integral_line_transformation(self.base_ring, self.point, matrix_form)
-        else:
-            raise ValueError
+  def flag(self):
+    r"""
+    Return the flag defining self
+    """
+    if self.point == None:
+      return self.line
+    elif self.line == None:
+      return self.point
+    return (self.point, self.line)
 
 
-    def base_change_matrices(self, matrix_form = 'uut'):
-        """
-        Return unipotent matrix transforming a standard basis vector and the line
-        spanned by it to self.flag()
-        """
+  def point_transformation(self, matrix_form = 'uut'):
+    r"""
+    Return unipotent matrix transforming a standard basis vector to self.point
+    """
 
-        if self.point == None:
-            if matrix_form == 'uut':
-                return _uut_plane_transformation(self.line)
-            elif matrix_form == 'ult':
-                return _ult_plane_transformation(self.line)
-            elif isinstance(matrix_form, list):
-                return _integral_plane_transformation(self.line, matrix_form)
-            else:
-                raise ValueError
-        elif self.line == None:
-            return [self.point_transformation(matrix_form)]
-        else:
-            if matrix_form == 'uut':
-                return [_uut_flag_transformation(self.point, self.line)]
-            elif matrix_form == 'ult':
-                return [_ult_flag_transformation(self.point, self.line)]
-            elif isinstance(matrix_form, list):
-                return [_integral_flag_transformation(self.point, self.line, matrix_form)]
-            else:
-                raise ValueError
+    if self.point == None:
+      return identity_matrix(self.base_ring, 3)
+
+    if matrix_form == 'uut':
+      return _uut_line_transformation(self.base_ring, self.point)
+    elif matrix_form == 'ult':
+      return _ult_line_transformation(self.base_ring, self.point)
+    elif isinstance(matrix_form, list):
+      return _integral_line_transformation(self.base_ring, self.point, matrix_form)
+    else:
+      raise ValueError
 
 
-    def get_base_change_matrix(self, matrix_form = 'uut'):
-        return self.base_change_matrices(matrix_form)[0]
+  def base_change_matrices(self, matrix_form = 'uut'):
+    r"""
+    Return unipotent matrix transforming a standard basis vector and the line
+    spanned by it to self.flag()
+    """
+
+    if self.point == None:
+      if matrix_form == 'uut':
+        return _uut_plane_transformation(self.line)
+      elif matrix_form == 'ult':
+        return _ult_plane_transformation(self.line)
+      elif isinstance(matrix_form, list):
+        return _integral_plane_transformation(self.line, matrix_form)
+      else:
+        raise ValueError
+    elif self.line == None:
+      return [self.point_transformation(matrix_form)]
+    else:
+      if matrix_form == 'uut':
+        return [_uut_flag_transformation(self.point, self.line)]
+      elif matrix_form == 'ult':
+        return [_ult_flag_transformation(self.point, self.line)]
+      elif isinstance(matrix_form, list):
+        return [_integral_flag_transformation(self.point, self.line, matrix_form)]
+      else:
+        raise ValueError
 
 
-    def is_instability(self):
-        """
-        Return True or False depending on whether self corresponds to
-        an instability of self.proj_plane_curve or not
+  def get_base_change_matrix(self, matrix_form = 'uut'):
+    return self.base_change_matrices(matrix_form)[0]
 
-        MATHEMATICAL INTERPRETATION:
-            First, let
-                K = self.base_ring,
-                T = self.flag_transformation(),
-                F = self.proj_plane_curve.get_polynomial().
-            Furthermore, let
-                (x0, x1, x2) = self.proj_plane_curve.get_standard_basis()
-            and
-                G = F((x0,x1,x2)*T),
-            i.e.
-                G = _apply_matrix(T, F).
-            For a multi index set I subset NN^3 we can write
-                G = sum_{i in I} a_i x0^i0 * x1^i1 * x2^i2
-            with a_i != 0 for all i in I.
-            Note that with respect to the new basis (x0,x1,x2)*T the flag
-            (self.point, self.line) is given by (e_j, x_i). Thus, it yields
-            an instability, if there exists a balanced weight vector
-                (w0, w1, w2) in QQ^3, i.e. w0 + w1 + w2 = 0,
-            such that
-                i0*w0 + i1*w1 + i2*w2 > 0
-            for all i in I. 
-            REMARK. Any nonzero multiple of a balanced weight vector is again
-            a balanced weight vector. Thus, it suffices to consider
-                (w0, w1, w2) in QQ^3
-            wtih
-                -1 <= w0, w1, w2 <= 1.
-            Thus, we only have to maximize the function
-                min(i0*w0 + i1*w1 + i2*w2 : i in I)
-            under the constraints -1 <= w0, w1, w2 <= 1 and to check
-            whether the maximum is > 0 or not.
-            REMARK. If self.point or self.line is None, then self is an
-            instability, see [Proposition 2.6, SternWewers].
-        """
 
-        if self.point == None:
-            return True
+  def is_instability(self):
+    r"""
+    Return True or False depending on whether self corresponds to
+    an instability of self.proj_plane_curve or not
 
-        if self.line == None:
-            return True
+    MATHEMATICAL INTERPRETATION:
+    First, let
+      K = self.base_ring,
+      T = self.flag_transformation(),
+      F = self.proj_plane_curve.get_polynomial().
+    Furthermore, let
+      (x0, x1, x2) = self.proj_plane_curve.get_standard_basis()
+    and
+      G = F((x0,x1,x2)*T),
+    i.e.
+      G = _apply_matrix(T, F).
+    For a multi index set I subset NN^3 we can write
+      G = sum_{i in I} a_i x0^i0 * x1^i1 * x2^i2
+    with a_i != 0 for all i in I. Note that with respect to the new
+    basis (x0,x1,x2)*T the flag (self.point, self.line) is given by
+    (e_j, x_i). Thus, it yields an instability, if there exists a
+    balanced weight vector
+      (w0, w1, w2) in QQ^3, i.e. w0 + w1 + w2 = 0,
+    such that
+      i0*w0 + i1*w1 + i2*w2 > 0
+    for all i in I. 
+    REMARK. Any nonzero multiple of a balanced weight vector is again
+    a balanced weight vector. Thus, it suffices to consider
+      (w0, w1, w2) in QQ^3
+    wtih
+      -1 <= w0, w1, w2 <= 1.
+    Thus, we only have to maximize the function
+      min(i0*w0 + i1*w1 + i2*w2 : i in I)
+    under the constraints -1 <= w0, w1, w2 <= 1 and to check whether
+    the maximum is > 0 or not.
+    REMARK. If self.point or self.line is None, then self is an
+    instability, see [Proposition 2.6, SternWewers].
+    """
 
-        T = self.get_base_change_matrix()
-        F = self.proj_plane_curve.get_polynomial()
-        G = _apply_matrix(T, F)
+    if self.point == None:
+      return True
 
-        MILP = MixedIntegerLinearProgram(solver='PPL')
-        v = MILP.new_variable()
+    if self.line == None:
+      return True
 
-        t = v['maximum']
-        w0 = v['w0']
-        w1 = v['w1']
-        w2 = v['w2']
+    T = self.get_base_change_matrix()
+    F = self.proj_plane_curve.get_polynomial()
+    G = _apply_matrix(T, F)
 
-        MILP.set_objective(t)
+    MILP = MixedIntegerLinearProgram(solver='PPL')
+    v = MILP.new_variable()
 
-        MILP.add_constraint(-1 <= w0 <= 1)
-        MILP.add_constraint(-1 <= w1 <= 1)
-        MILP.add_constraint(-1 <= w1 <= 1)
-        MILP.add_constraint(w0 + w1 + w2 == 0)
+    t = v['maximum']
+    w0 = v['w0']
+    w1 = v['w1']
+    w2 = v['w2']
 
-        for i in G.dict():
-            MILP.add_constraint(t <= i[0] * w0 + i[1] * w1 + i[2] * w2)
+    MILP.set_objective(t)
 
-        MILP.solve()
-        values = MILP.get_values(v)
+    MILP.add_constraint(-1 <= w0 <= 1)
+    MILP.add_constraint(-1 <= w1 <= 1)
+    MILP.add_constraint(-1 <= w1 <= 1)
+    MILP.add_constraint(w0 + w1 + w2 == 0)
 
-        return values['maximum'] > 0
+    for i in G.dict():
+      MILP.add_constraint(t <= i[0] * w0 + i[1] * w1 + i[2] * w2)
+
+    MILP.solve()
+    values = MILP.get_values(v)
+    return values['maximum'] > 0
 
 
 
