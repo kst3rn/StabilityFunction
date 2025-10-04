@@ -111,6 +111,7 @@ class ProjectivePlaneCurve:
       sage: C.get_polynomial()
       -3*x - 3*y
     """
+
     return PPC_TangentCone(self, P)
 
 
@@ -133,6 +134,7 @@ class ProjectivePlaneCurve:
       sage: X.is_smooth()
       True
     """
+
     return self.plane_curve.is_smooth()
 
 
@@ -162,6 +164,7 @@ class ProjectivePlaneCurve:
       sage: X.is_reduced()
       False
     """
+
     return not any(multiplicity > 1 for factor, multiplicity in self._decompose)
 
 
@@ -191,6 +194,7 @@ class ProjectivePlaneCurve:
       sage: X.is_irreducible()
       False
     """
+
     if len(self._decompose) > 1:
       return False
     return self.is_reduced()
@@ -243,8 +247,10 @@ class ProjectivePlaneCurve:
       sage: X.is_semistable()
       True
     """
+
     if self.is_smooth():
       return True
+
     use_Mordant_criterion = False
     Mordant_criterion_met = False
     try:
@@ -261,6 +267,7 @@ class ProjectivePlaneCurve:
     if use_Mordant_criterion:
       if Mordant_criterion_met:
         return True
+
     return (len(self.instabilities()) == 0)
 
 
@@ -268,6 +275,7 @@ class ProjectivePlaneCurve:
     r"""
     ToDo
     """
+
     use_Mordant_criterion = False
     Mordant_criterion_met = False
     try:
@@ -277,8 +285,8 @@ class ProjectivePlaneCurve:
         delta = self.maximal_multiplicity()
         s = self.singular_locus_dimension()
         N = 2
-      if delta > min(N + 1, s + 3):
-        Mordant_criterion_met = True
+        if delta > min(N + 1, s + 3):
+          Mordant_criterion_met = True
     except NotImplementedError:
       pass
     if use_Mordant_criterion:
@@ -313,7 +321,9 @@ class ProjectivePlaneCurve:
       sage: X.reduced_subscheme()
       Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
     """
+
     f = prod(factor for factor, multiplicity in self._decompose)
+
     return ProjectivePlaneCurve(f)
 
 
@@ -344,6 +354,7 @@ class ProjectivePlaneCurve:
       [Projective Plane Curve with defining polynomial -x1 + x2,
        Projective Plane Curve with defining polynomial x0 + x1]
     """
+
     return [ProjectivePlaneCurve(factor)
             for factor, multiplicity in self._decompose]
 
@@ -387,6 +398,7 @@ class ProjectivePlaneCurve:
       sage: X.nonreduced_components()
       []
     """
+
     return [(multiplicity, ProjectivePlaneCurve(factor))
             for factor, multiplicity in self._decompose
             if multiplicity > 1]
@@ -411,6 +423,7 @@ class ProjectivePlaneCurve:
       sage: X.singular_points()
       [(0 : 1 : 1), (1 : 0 : 1), (1 : 1 : 0)]
     """
+
     return self.plane_curve.singular_points()
 
 
@@ -440,17 +453,18 @@ class ProjectivePlaneCurve:
       sage: X.multiplicity(P)
       3
     """
+
     return self.plane_curve.multiplicity(P)
 
 
   def maximal_multiplicity(self):
     r"""
-    Return the maximum of all multiplicities of a rational points
+    Return the maximum of all multiplicities of rational points
     on `self`.
 
     EXAMPLES:
       sage: R.<x0,x1,x2> = QQ[]
-      sage: f = x0*(x1 + x2)^2
+      sage: f = x0 * (x1 + x2)^2
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial x0*x1^2 + 2*x0*x1*x2 + x0*x2^2
       sage: X.maximal_multiplicity()
@@ -462,7 +476,7 @@ class ProjectivePlaneCurve:
       3
 
       sage: R.<x0,x1,x2> = GF(2)[]
-      sage: f = x0^3*(x1 + x2)
+      sage: f = x0^3 * (x1 + x2)
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2
       sage: X.maximal_multiplicity()
@@ -480,15 +494,15 @@ class ProjectivePlaneCurve:
         at a generic point of the component defined by factor_i is e_i.
     The method computes the maximum over all such values.
     """
+
     X_red_sing = self.reduced_subscheme().singular_points()
-    m1 = 1
-    m2 = 1
-    if X_red_sing:
-      m1 = max(self.multiplicity(P) for P in X_red_sing)
-    nonred_comp_mults = [mult for mult, comp in self.nonreduced_components()]
-    if nonred_comp_mults:
-      m2 = max(nonred_comp_mults)
-    return max(m1, m2)
+    max_sing_mult = max((self.multiplicity(P) for P in X_red_sing), default=1)
+
+    component_mults = [mult for mult, comp in self.nonreduced_components()]
+    max_comp_mult = max(component_mults, default=1)
+
+    return max(max_sing_mult, max_comp_mult)
+
 
 
   def singular_locus_dimension(self):
@@ -515,6 +529,7 @@ class ProjectivePlaneCurve:
       sage: X.singular_locus_dimension()
       -1
     """
+
     if self.is_smooth():
       return -1
     if self.is_reduced():
@@ -547,6 +562,7 @@ class ProjectivePlaneCurve:
       sage: X.maximal_multiplicity_points()
       [(0 : 0 : 1), (0 : 1 : 0), (1 : 1 : 1)]
     """
+
     max_mult = self.maximal_multiplicity()
     points_with_max_multiplicity = []
 
@@ -562,6 +578,7 @@ class ProjectivePlaneCurve:
     for P in self.reduced_subscheme().singular_points():
       if self.multiplicity(P) == max_mult:
         points_with_max_multiplicity.append(P)
+
     return points_with_max_multiplicity
 
 
@@ -596,11 +613,13 @@ class ProjectivePlaneCurve:
       sage: X.points_with_high_multiplicity()
       [((0 : 1 : 1), 3), ((1 : 0 : 0), 2), ((1 : 1 : 1), 2)]
     """
+
     L = []
     for P in self.plane_curve.singular_points():
       m = self.plane_curve.multiplicity(P)
       if m > self.degree / Integer(2):
         L.append((P, m))
+
     return L
 
 
@@ -636,11 +655,13 @@ class ProjectivePlaneCurve:
       sage: X.lines_with_high_multiplicity()
       [(x0, 1, None)]
     """
+
     L = []
     polynomial_factors = list(self.polynomial.factor())
     for i, (factor, factor_multiplicity) in enumerate(polynomial_factors):
       if factor.degree() > 1:
         continue
+
       if factor_multiplicity > self.degree / Integer(3):
         L.append((factor, factor_multiplicity, None))
       else:
@@ -649,6 +670,7 @@ class ProjectivePlaneCurve:
           if j != i:
             G = G * Gfactor**Gfactor_multiplicity
         L.append((factor, factor_multiplicity, G))
+
     return L
 
 
@@ -769,6 +791,7 @@ class ProjectivePlaneCurve:
       sage: len(X.pseudo_instabilities())
       2
     """
+
     return [I for I in self.pseudo_instabilities() if I.is_instability()]
 
 
@@ -785,6 +808,7 @@ class ProjectivePlaneCurve:
       sage: X._decompose
       [(x0, 1), (x1, 2), (x0*x1 + x2^2, 1)]
     """
+
     return list(self.polynomial.factor())
 
 
@@ -844,6 +868,7 @@ class PPC_TangentCone:
     f_homo_comp_dict = f.homogeneous_components()
     minimal_degree = min(f_homo_comp_dict.keys())
     tangent_cone_polynomial = f_homo_comp_dict[minimal_degree]
+
     return tangent_cone_polynomial
 
 
@@ -886,7 +911,6 @@ class PPC_TangentCone:
     T_inverse = T.inverse()
     F = self.projective_plane_curve.get_polynomial()
     f = _apply_matrix(T, F, self.affine_patch)
-
     f_homo_comp_dict = f.homogeneous_components()
     minimal_degree = min(f_homo_comp_dict.keys())
     tangent_cone_polynomial = f_homo_comp_dict[minimal_degree]
@@ -904,6 +928,7 @@ class PPC_TangentCone:
     for factor, factor_multiplicity in list(tangent_cone_polynomial.factor()):
       if factor.degree() == 1:
         L.append((factor, factor_multiplicity))
+
     return L
 
 
@@ -917,6 +942,7 @@ class PPC_TangentCone:
     for factor, factor_multiplicity in list(tangent_cone_polynomial.factor()):
       if factor.degree() == 1:
         L.append((factor, factor_multiplicity))
+
     return L
 
 
@@ -948,6 +974,7 @@ class PseudoInstability:
     r"""
     Return the flag defining self
     """
+
     if self.point == None:
       return self.line
     elif self.line == None:
@@ -1046,7 +1073,6 @@ class PseudoInstability:
 
     if self.point == None:
       return True
-
     if self.line == None:
       return True
 
@@ -1074,6 +1100,7 @@ class PseudoInstability:
 
     MILP.solve()
     values = MILP.get_values(v)
+
     return values['maximum'] > 0
 
 
@@ -1112,6 +1139,7 @@ def _min_index_of_nonzero_entry(L):
   OUTPUT:
   i - minimal integer between 0 and len(L) with L[i] != 0
   """
+
   return next((i for i in range(len(L)) if L[i] != 0), None)
 
 
@@ -1125,6 +1153,7 @@ def _max_index_of_nonzero_entry(L):
   OUTPUT:
   i - maximal integer between 0 and len(L) with L[i] != 0
   """
+
   return next((i for i in reversed(range(len(L))) if L[i] != 0), None)
 
 
@@ -1132,8 +1161,10 @@ def _normalize_by_first_nonzero_entry(L):
   r"""
   Return ...
   """
+
   i_min = _min_index_of_nonzero_entry(L)
   first_nonzero_entry = L[i_min]
+
   return (i_min, [x / first_nonzero_entry for x in L])
 
 
@@ -1141,8 +1172,10 @@ def _normalize_by_last_nonzero_entry(L):
   r"""
   Return ...
   """
+
   i_max = _max_index_of_nonzero_entry(L)
   last_nonzero_entry = L[i_max]
+
   return (i_max, [x / last_nonzero_entry for x in L])
 
 
@@ -1164,9 +1197,11 @@ def _apply_matrix(T, F, affine_patch = None):
   MATHEMATICAL INTERPRETATION:
   ToDo...
   """
+
   generators = list(F.parent().gens())
   if affine_patch != None:
     generators[affine_patch] = F.parent()(1)
+
   return F(list( vector(generators) * T ))
 
 
@@ -1175,11 +1210,13 @@ def _ult_line_transformation(base_field, Vector):
   Return unipotent lower triangular matrix over base_field transforming
   a line spanned by a standard basis vector to the line spanned by Vector
   """
+
   Vector = list(Vector)
   T = identity_matrix(base_field, len(Vector))
   # Find the maximal index, i_max, with Vector[i_max] != 0 and normalize by Vector[i_max]
   i_max, normalized_Vector = _normalize_by_last_nonzero_entry(Vector)
   T[i_max] = normalized_Vector
+
   return matrix(base_field, T)
 
 
@@ -1188,11 +1225,13 @@ def _uut_line_transformation(base_field, Vector):
   Return unipotent upper triangular matrix over base_field transforming
   a line spanned by a standard basis vector to the line spanned by Vector
   """
+
   Vector = list(Vector)
   T = identity_matrix(base_field, len(Vector))
   # Find the minimal index, i_min, with Vector[i_min] != 0 and normalize by Vector[i_min]
   i_min, normalized_Vector = _normalize_by_first_nonzero_entry(Vector)
   T[i_min] = normalized_Vector
+
   return matrix(base_field, T)
 
 
@@ -1204,6 +1243,7 @@ def _sorting_permutation_matrix(w):
   INPUT:
   w - vector over Rational Field
   """
+
   n = len(w)
   if n == 0:
     return identity_matrix(0)
@@ -1226,6 +1266,7 @@ def _sorting_permutation_matrix(w):
   permutation_matrix = zero_matrix(n)
   for i, j in enumerate(permutation_list):
     permutation_matrix[i, j] = 1
+
   return permutation_matrix
 
 
@@ -1371,6 +1412,7 @@ def _integral_line_transformation(base_field, Vector, weight_vector):
 
   permutation_matrix = _sorting_permutation_matrix(weight_vector)
   T = _ult_line_transformation(base_field, vector(Vector) * permutation_matrix)
+
   return permutation_matrix * T * permutation_matrix.transpose()
 
 
@@ -1418,7 +1460,6 @@ def _ult_plane_transformation(linear_form):
   """
 
   base_ring = linear_form.base_ring()
-
   x0, x1, x2 = linear_form.parent().gens()
   A = linear_form.monomial_coefficient(x0)
   B = linear_form.monomial_coefficient(x1)
@@ -1441,6 +1482,7 @@ def _ult_plane_transformation(linear_form):
     T = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
     T = matrix(base_ring, T)
     L.append(T)
+
   return L
 
 
