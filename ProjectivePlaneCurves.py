@@ -15,13 +15,19 @@ from sage.all import *
 
 
 class ProjectivePlaneCurve:
+  r"""
+  Construct a projective plane curve to the following conditions.
+
+  INPUT:
+  - ``polynomial`` -- homogeneous polynomial in K[x_0, x_1, x_2].
+  """
 
   def __init__(self, polynomial):
     r"""
-    Construct a projective plane curve to the following conditions
+    Construct a projective plane curve to the following conditions.
 
     INPUT:
-    polynomial - homogeneous polynomial in K[x_0,...,x_n]
+    - ``polynomial`` -- homogeneous polynomial in K[x_0, x_1, x_2].
     """
 
     if not polynomial.is_homogeneous():
@@ -770,131 +776,148 @@ class ProjectivePlaneCurve:
   def _decompose(self):
     r"""
     Return the factored form of self.polynomial.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x0 * x1^2 * (x0 * x1 + x2^2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^2*x1^3 + x0*x1^2*x2^2
+      sage: X._decompose
+      [(x0, 1), (x1, 2), (x0*x1 + x2^2, 1)]
     """
     return list(self.polynomial.factor())
 
 
 
 class PPC_TangentCone:
+  r"""
+  Construct the tangent cone of a projective plane curve at a point
+  to the following conditions.
 
-    def __init__(self, projective_plane_curve, Point):
-        """
-        At the moment only rational points are allowed
-        """
+  INPUT:
+  - ``projective_plane_curve`` -- a projective plane curve.
+  - ``P`` -- a point in the projective plane.
+  """
 
-        # Convert to list
-        Point = list(Point)
+  def __init__(self, projective_plane_curve, P):
+    r"""
+    Construct the tangent cone of a projective plane curve at a point
+    to the following conditions.
 
-        if projective_plane_curve.get_polynomial()(Point) != 0:
-            raise ValueError
+    INPUT:
+    - ``projective_plane_curve`` -- a projective plane curve.
+    - ``P`` -- a point in the projective plane.
+    """
 
-        self.projective_plane_curve = projective_plane_curve
-        self.base_ring = projective_plane_curve.get_base_ring()
-        self.polynomial_ring = PolynomialRing(self.base_ring, ['x', 'y'])
-        self.gen1, self.gen2 = self.polynomial_ring.gens()
+    # Convert to list
+    P = list(P)
+    if projective_plane_curve.get_polynomial()(P) != 0:
+      raise ValueError
 
-        # Coerce coordinates to self.base_ring
-        for i in range(3):
-            Point[i] = self.base_ring(Point[i])
+    self.projective_plane_curve = projective_plane_curve
+    self.base_ring = projective_plane_curve.get_base_ring()
+    self.polynomial_ring = PolynomialRing(self.base_ring, ['x', 'y'])
+    self.gen1, self.gen2 = self.polynomial_ring.gens()
 
-        # Find the maximal index, i_max, with Point[i_max] != 0 and normalize by Point[i_max]
-        self.affine_patch, self.normalized_point = _normalize_by_last_nonzero_entry(Point)
+    # Coerce coordinates to self.base_ring
+    for i in range(3):
+      P[i] = self.base_ring(P[i])
 
-
-    def __repr__(self):
-        return f"Tangent cone of {self.projective_plane_curve} at {self.normalized_point}"
-
-
-    def get_polynomial(self):
-
-        PPC_equation = self.projective_plane_curve.get_polynomial()
-        dehomogenization = [self.gen1, self.gen2]
-        dehomogenization.insert(self.affine_patch, self.polynomial_ring(0))
-        dehomogenization_translated = []
-
-        for i in range(3):
-            dehomogenization_translated.append(dehomogenization[i] + self.normalized_point[i])
-
-        f = PPC_equation(dehomogenization_translated)
-
-        f_homo_comp_dict = f.homogeneous_components()
-        minimal_degree = min(f_homo_comp_dict.keys())
-        tangent_cone_polynomial = f_homo_comp_dict[minimal_degree]
-
-        return tangent_cone_polynomial
+    # Find the maximal index, i_max, with P[i_max] != 0 and normalize by P[i_max]
+    self.affine_patch, self.normalized_point = _normalize_by_last_nonzero_entry(P)
 
 
-    def embedded_polynomial(self):
-        """
-        MATHEMATICAL INTERPRETATION:
-            First, let
-                F = self.projective_plane_curve.get_polynomial(),
-                K = self.projective_plane_curve.get_base_ring(),
-                P = self.normalized_point,
-                j = self.affine_patch,
-                x_0, x_1, x_2 = self.projective_plane_curve.get_standard_basis().
-            Then P[j] = 1 and for all j < i <= 2 we have
-                P[i] = 0.
-            Further, we set y_0 = x_0, y_1 = x_1, y_2 = x_2, y_j = 1 and 
-                f = F(y_0 + P[0]*y_j, y_1 + P[1]*y_j, y_2 + P[2]*y_j).
-            This is the dehomogenization of F to the affine patch j and the
-            subsequent translation of the point P to the origin in this affine
-            patch. Thus,
-                f = _apply_matrix(T, F, affine_patch = j)
-            with
-                T = _ult_line_transformation(K, P).
-            Now let TanCon be the homogeneous component of f of the lowest degree,
-            i.e. TanCon is the homogeneous polynomial defining the tangent cone of
-            self.projective_plane_curve at the point P. We view TanCon as a polynomial
-            in K[x_0, x_1, x_2], although it does not depend on x_j. Let e_j be the
-            j-th standard basis vector. Then we have
-                TanCon(e_j) = 0 and e_j*T = P.
-            Now we define
-                TanCon_P = TanCon(x_0 - P[0]*x_j, x_1 - P[1]*x_j, x_2 - P[2]*x_j),
-            i.e.
-                TanCon_P = _apply_matrix(T.inverse(), TanCan).
-            In particular,
-                TanCon_P(P) = TanCon(e_j) = 0.
-            Moreover, the dehomogenization of TanCon_P to the affine patch j is the
-            translation of TanCon from the origin to the point P.            
-        """
-
-        T = _ult_line_transformation(self.base_ring, self.normalized_point)
-        T_inverse = T.inverse()
-        F = self.projective_plane_curve.get_polynomial()
-        f = _apply_matrix(T, F, self.affine_patch)
-
-        f_homo_comp_dict = f.homogeneous_components()
-        minimal_degree = min(f_homo_comp_dict.keys())
-        tangent_cone_polynomial = f_homo_comp_dict[minimal_degree]
-
-        return _apply_matrix(T.inverse(), tangent_cone_polynomial)
+  def __repr__(self):
+    return f"Tangent cone of {self.projective_plane_curve} at {self.normalized_point}"
 
 
-    def get_lines(self):
-        """
-        Return linear factors of the polynomial self.get_polynomial()
-        """
+  def get_polynomial(self):
+    PPC_equation = self.projective_plane_curve.get_polynomial()
+    dehomogenization = [self.gen1, self.gen2]
+    dehomogenization.insert(self.affine_patch, self.polynomial_ring(0))
+    dehomogenization_translated = []
 
-        L = []
-        tangent_cone_polynomial = self.get_polynomial()
-        for factor, factor_multiplicity in list(tangent_cone_polynomial.factor()):
-            if factor.degree() == 1:
-                L.append((factor, factor_multiplicity))
-        return L
+    for i in range(3):
+      dehomogenization_translated.append(dehomogenization[i] + self.normalized_point[i])
+
+    f = PPC_equation(dehomogenization_translated)
+    f_homo_comp_dict = f.homogeneous_components()
+    minimal_degree = min(f_homo_comp_dict.keys())
+    tangent_cone_polynomial = f_homo_comp_dict[minimal_degree]
+    return tangent_cone_polynomial
 
 
-    def embedded_lines(self):
-        """
-        Return linear factors of the polynomial self.embedded_polynomial()
-        """
+  def embedded_polynomial(self):
+    r"""
+    MATHEMATICAL INTERPRETATION:
+    First, let
+      F = self.projective_plane_curve.get_polynomial(),
+      K = self.projective_plane_curve.get_base_ring(),
+      P = self.normalized_point,
+      j = self.affine_patch,
+      x_0, x_1, x_2 = self.projective_plane_curve.get_standard_basis().
+    Then P[j] = 1 and for all j < i <= 2 we have
+      P[i] = 0.
+    Further, we set y_0 = x_0, y_1 = x_1, y_2 = x_2, y_j = 1 and 
+      f = F(y_0 + P[0]*y_j, y_1 + P[1]*y_j, y_2 + P[2]*y_j).
+    This is the dehomogenization of F to the affine patch j and the
+    subsequent translation of the point P to the origin in this affine
+    patch. Thus,
+      f = _apply_matrix(T, F, affine_patch = j)
+    with
+      T = _ult_line_transformation(K, P).
+    Now let TanCon be the homogeneous component of f of the lowest degree,
+    i.e. TanCon is the homogeneous polynomial defining the tangent cone of
+    self.projective_plane_curve at the point P. We view TanCon as a polynomial
+    in K[x_0, x_1, x_2], although it does not depend on x_j. Let e_j be the
+    j-th standard basis vector. Then we have
+      TanCon(e_j) = 0 and e_j*T = P.
+    Now we define
+      TanCon_P = TanCon(x_0 - P[0]*x_j, x_1 - P[1]*x_j, x_2 - P[2]*x_j),
+    i.e.
+      TanCon_P = _apply_matrix(T.inverse(), TanCan).
+    In particular,
+      TanCon_P(P) = TanCon(e_j) = 0.
+    Moreover, the dehomogenization of TanCon_P to the affine patch j is the
+    translation of TanCon from the origin to the point P.            
+    """
 
-        L = []
-        tangent_cone_polynomial = self.embedded_polynomial()
-        for factor, factor_multiplicity in list(tangent_cone_polynomial.factor()):
-            if factor.degree() == 1:
-                L.append((factor, factor_multiplicity))
-        return L
+    T = _ult_line_transformation(self.base_ring, self.normalized_point)
+    T_inverse = T.inverse()
+    F = self.projective_plane_curve.get_polynomial()
+    f = _apply_matrix(T, F, self.affine_patch)
+
+    f_homo_comp_dict = f.homogeneous_components()
+    minimal_degree = min(f_homo_comp_dict.keys())
+    tangent_cone_polynomial = f_homo_comp_dict[minimal_degree]
+
+    return _apply_matrix(T.inverse(), tangent_cone_polynomial)
+
+
+  def get_lines(self):
+    r"""
+    Return linear factors of the polynomial self.get_polynomial()
+    """
+
+    L = []
+    tangent_cone_polynomial = self.get_polynomial()
+    for factor, factor_multiplicity in list(tangent_cone_polynomial.factor()):
+      if factor.degree() == 1:
+        L.append((factor, factor_multiplicity))
+    return L
+
+
+  def embedded_lines(self):
+    r"""
+    Return linear factors of the polynomial self.embedded_polynomial()
+    """
+
+    L = []
+    tangent_cone_polynomial = self.embedded_polynomial()
+    for factor, factor_multiplicity in list(tangent_cone_polynomial.factor()):
+      if factor.degree() == 1:
+        L.append((factor, factor_multiplicity))
+    return L
 
 
 
