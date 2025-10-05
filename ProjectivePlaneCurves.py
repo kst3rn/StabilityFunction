@@ -957,7 +957,8 @@ class PPC_TangentCone:
 
   def embedded_polynomial(self):
     r"""
-    Return ...
+    Return the defining polynomial of the embedding if `self` into
+    the projective plane at the point `self.normalized_point`.
 
     EXAMPLES:
     A nodal cubic with node at (2:1:1).
@@ -1120,6 +1121,11 @@ class PPC_TangentCone:
   def embedded_lines(self):
     r"""
     Return linear factors of the polynomial self.embedded_polynomial().
+
+    OUTPUT:
+    A list of tuples `(L, m)` where `L` is a line contained with
+    multiplicity `m`in the embedding of `self` into the projective
+    plane at the point `self.normalized_point`.
 
     EXAMPLES:
     A nodal cubic with node at (2:1:1).
