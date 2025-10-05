@@ -432,6 +432,9 @@ class ProjectivePlaneCurve:
     Return the multiplicity of `self` at the point `P`, i.e. the
     degree of the tangent cone at `P`.
 
+    INPUT:
+    - ``P`` -- a point on the projective plane.
+
     EXAMPLES:
       sage: R.<x0,x1,x2> = QQ[]
       sage: P = [0,0,1]
@@ -821,6 +824,23 @@ class PPC_TangentCone:
   INPUT:
   - ``projective_plane_curve`` -- a projective plane curve.
   - ``P`` -- a point in the projective plane.
+
+    EXAMPLES:
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (y-z)^2*z - (x-2*z)^3 - (x-2*z)^2*z
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x^3 + 5*x^2*z + y^2*z - 8*x*z^2 - 2*y*z^2 + 5*z^3
+      sage: P = [2,1,1]
+      sage: PPC_TangentCone(X, P)
+      Tangent cone of Projective Plane Curve with defining polynomial -x^3 + 5*x^2*z + y^2*z - 8*x*z^2 - 2*y*z^2 + 5*z^3 at [2, 1, 1]
+
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (y*z - x^2)*(y*z + x^2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x^4 + y^2*z^2
+      sage: P = [0,0,1]
+      sage: PPC_TangentCone(X, P)
+      Tangent cone of Projective Plane Curve with defining polynomial -x^4 + y^2*z^2 at [0, 0, 1]
   """
 
   def __init__(self, projective_plane_curve, P):
@@ -831,6 +851,23 @@ class PPC_TangentCone:
     INPUT:
     - ``projective_plane_curve`` -- a projective plane curve.
     - ``P`` -- a point in the projective plane.
+
+    EXAMPLES:
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (y-z)^2*z - (x-2*z)^3 - (x-2*z)^2*z
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x^3 + 5*x^2*z + y^2*z - 8*x*z^2 - 2*y*z^2 + 5*z^3
+      sage: P = [2,1,1]
+      sage: PPC_TangentCone(X, P)
+      Tangent cone of Projective Plane Curve with defining polynomial -x^3 + 5*x^2*z + y^2*z - 8*x*z^2 - 2*y*z^2 + 5*z^3 at [2, 1, 1]
+
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (y*z - x^2)*(y*z + x^2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x^4 + y^2*z^2
+      sage: P = [0,0,1]
+      sage: PPC_TangentCone(X, P)
+      Tangent cone of Projective Plane Curve with defining polynomial -x^4 + y^2*z^2 at [0, 0, 1]
     """
 
     # Convert to list
@@ -856,6 +893,52 @@ class PPC_TangentCone:
 
 
   def get_polynomial(self):
+    r"""
+    Return the defining polynomial of `self`.
+
+    EXAMPLES:
+      A nodal cubic with node at (2:1:1).
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (y-z)^2*z - (x-2*z)^3 - (x-2*z)^2*z
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x^3 + 5*x^2*z + y^2*z - 8*x*z^2 - 2*y*z^2 + 5*z^3
+      sage: P = [2,1,1]
+      sage: C = PPC_TangentCone(X, P); C
+      Tangent cone of Projective Plane Curve with defining polynomial -x^3 + 5*x^2*z + y^2*z - 8*x*z^2 - 2*y*z^2 + 5*z^3 at [2, 1, 1]
+      sage: h = C.get_polynomial(); h
+      -x^2 + y^2
+      sage: h.parent()
+      Multivariate Polynomial Ring in x, y over Rational Field
+      sage: h.factor()
+      (-1) * (x - y) * (x + y)
+
+    A cuspidal cubic with cusp at (2:1:1).
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (y-z)^2*z - (x-2*z)^3
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x^3 + 6*x^2*z + y^2*z - 12*x*z^2 - 2*y*z^2 + 9*z^3
+      sage: P = [2,1,1]
+      sage: C = PPC_TangentCone(X, P); C
+      Tangent cone of Projective Plane Curve with defining polynomial -x^3 + 6*x^2*z + y^2*z - 12*x*z^2 - 2*y*z^2 + 9*z^3 at [2, 1, 1]
+      sage: h = C.get_polynomial(); h
+      y^2
+      sage: h.parent()
+      Multivariate Polynomial Ring in x, y over Rational Field
+
+    A quartic with tacnode at (0:0:1).
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (y*z - x^2)*(y*z + x^2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x^4 + y^2*z^2
+      sage: P = [0,0,1]
+      sage: C = PPC_TangentCone(X, P); C
+      Tangent cone of Projective Plane Curve with defining polynomial -x^4 + y^2*z^2 at [0, 0, 1]
+      sage: h = C.get_polynomial(); h
+      y^2
+      sage: h.parent()
+      Multivariate Polynomial Ring in x, y over Rational Field
+    """
+
     PPC_equation = self.projective_plane_curve.get_polynomial()
     dehomogenization = [self.gen1, self.gen2]
     dehomogenization.insert(self.affine_patch, self.polynomial_ring(0))
@@ -874,6 +957,62 @@ class PPC_TangentCone:
 
   def embedded_polynomial(self):
     r"""
+    Return ...
+
+    EXAMPLES:
+    A nodal cubic with node at (2:1:1).
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (y-z)^2*z - (x-2*z)^3 - (x-2*z)^2*z
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x^3 + 5*x^2*z + y^2*z - 8*x*z^2 - 2*y*z^2 + 5*z^3
+      sage: P = [2,1,1]
+      sage: C = PPC_TangentCone(X, P); C
+      Tangent cone of Projective Plane Curve with defining polynomial -x^3 + 5*x^2*z + y^2*z - 8*x*z^2 - 2*y*z^2 + 5*z^3 at [2, 1, 1]
+      sage: h = C.embedded_polynomial(); h
+      -x^2 + y^2 + 4*x*z - 2*y*z - 3*z^2
+      sage: h(P)
+      0
+      sage: h.factor()
+      (-x + y + z) * (x + y - 3*z)
+      sage: h(x + 2, y + 1, 1)
+      -x^2 + y^2
+      sage: C.get_polynomial()
+      -x^2 + y^2
+
+    A cuspidal cubic with cusp at (2:1:1).
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (y-z)^2*z - (x-2*z)^3
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x^3 + 6*x^2*z + y^2*z - 12*x*z^2 - 2*y*z^2 + 9*z^3
+      sage: P = [2,1,1]
+      sage: C = PPC_TangentCone(X, P); C
+      Tangent cone of Projective Plane Curve with defining polynomial -x^3 + 6*x^2*z + y^2*z - 12*x*z^2 - 2*y*z^2 + 9*z^3 at [2, 1, 1]
+      sage: h = C.embedded_polynomial(); h
+      y^2 - 2*y*z + z^2
+      sage: h(P)
+      0
+      sage: h.factor()
+      (y - z)^2
+      sage: h(x + 2, y + 1, 1)
+      y^2
+      sage: C.get_polynomial()
+      y^2
+
+    A quartic with tacnode at (0:0:1).
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (y*z - x^2)*(y*z + x^2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x^4 + y^2*z^2
+      sage: P = [0,0,1]
+      sage: C = PPC_TangentCone(X, P); C
+      Tangent cone of Projective Plane Curve with defining polynomial -x^4 + y^2*z^2 at [0, 0, 1]
+      sage: h = C.embedded_polynomial(); h
+      y^2
+      sage: h(P)
+      0
+      sage: C.get_polynomial()
+      y^2
+
     MATHEMATICAL INTERPRETATION:
     First, let
       F = self.projective_plane_curve.get_polynomial(),
@@ -920,7 +1059,53 @@ class PPC_TangentCone:
 
   def get_lines(self):
     r"""
-    Return linear factors of the polynomial self.get_polynomial()
+    Return linear factors of the defining polynomial of `self`.
+
+    OUTPUT:
+    A list of tuples `(L, m)` where `L` is a line contained
+    in `self` with multiplicity `m`.
+
+    EXAMPLES:
+    A nodal cubic with node at (2:1:1).
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (y-z)^2*z - (x-2*z)^3 - (x-2*z)^2*z
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x^3 + 5*x^2*z + y^2*z - 8*x*z^2 - 2*y*z^2 + 5*z^3
+      sage: P = [2,1,1]
+      sage: C = PPC_TangentCone(X, P); C
+      Tangent cone of Projective Plane Curve with defining polynomial -x^3 + 5*x^2*z + y^2*z - 8*x*z^2 - 2*y*z^2 + 5*z^3 at [2, 1, 1]
+      sage: C.get_lines()
+      [(x - y, 1), (x + y, 1)]
+      sage: h = C.get_polynomial(); h
+      -x^2 + y^2
+      sage: h.factor()
+      (-1) * (x - y) * (x + y)
+
+    A cuspidal cubic with cusp at (2:1:1).
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (y-z)^2*z - (x-2*z)^3
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x^3 + 6*x^2*z + y^2*z - 12*x*z^2 - 2*y*z^2 + 9*z^3
+      sage: P = [2,1,1]
+      sage: C = PPC_TangentCone(X, P); C
+      Tangent cone of Projective Plane Curve with defining polynomial -x^3 + 6*x^2*z + y^2*z - 12*x*z^2 - 2*y*z^2 + 9*z^3 at [2, 1, 1]
+      sage: C.get_lines()
+      [(y, 2)]
+      sage: h = C.get_polynomial(); h
+      y^2
+
+    A quartic with tacnode at (0:0:1).
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (y*z - x^2)*(y*z + x^2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x^4 + y^2*z^2
+      sage: P = [0,0,1]
+      sage: C = PPC_TangentCone(X, P); C
+      Tangent cone of Projective Plane Curve with defining polynomial -x^4 + y^2*z^2 at [0, 0, 1]
+      sage: C.get_lines()
+      [(y, 2)]
+      sage: h = C.get_polynomial(); h
+      y^2
     """
 
     L = []
@@ -934,7 +1119,47 @@ class PPC_TangentCone:
 
   def embedded_lines(self):
     r"""
-    Return linear factors of the polynomial self.embedded_polynomial()
+    Return linear factors of the polynomial self.embedded_polynomial().
+
+    EXAMPLES:
+    A nodal cubic with node at (2:1:1).
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (y-z)^2*z - (x-2*z)^3 - (x-2*z)^2*z
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x^3 + 5*x^2*z + y^2*z - 8*x*z^2 - 2*y*z^2 + 5*z^3
+      sage: P = [2,1,1]
+      sage: C = PPC_TangentCone(X, P); C
+      Tangent cone of Projective Plane Curve with defining polynomial -x^3 + 5*x^2*z + y^2*z - 8*x*z^2 - 2*y*z^2 + 5*z^3 at [2, 1, 1]
+      sage: C.embedded_lines()
+      [(-x + y + z, 1), (x + y - 3*z, 1)]
+      sage: C.get_lines()
+      [(x - y, 1), (x + y, 1)]
+
+    A cuspidal cubic with cusp at (2:1:1).
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (y-z)^2*z - (x-2*z)^3
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x^3 + 6*x^2*z + y^2*z - 12*x*z^2 - 2*y*z^2 + 9*z^3
+      sage: P = [2,1,1]
+      sage: C = PPC_TangentCone(X, P); C
+      Tangent cone of Projective Plane Curve with defining polynomial -x^3 + 6*x^2*z + y^2*z - 12*x*z^2 - 2*y*z^2 + 9*z^3 at [2, 1, 1]
+      sage: C.embedded_lines()
+      [(y - z, 2)]
+      sage: C.get_lines()
+      [(y, 2)]
+
+    A quartic with tacnode at (0:0:1).
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (y*z - x^2)*(y*z + x^2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x^4 + y^2*z^2
+      sage: P = [0,0,1]
+      sage: C = PPC_TangentCone(X, P); C
+      Tangent cone of Projective Plane Curve with defining polynomial -x^4 + y^2*z^2 at [0, 0, 1]
+      sage: C.embedded_lines()
+      [(y, 2)]
+      sage: C.get_lines()
+      [(y, 2)]
     """
 
     L = []
