@@ -280,6 +280,12 @@ class ProjectivePlaneCurve:
     Return `True` if `self` is stable and `False` otherwise.
     """
 
+    if self.is_smooth():
+      return True
+
+    if not self.is_semistable():
+      return False
+
     # X_red is a conic.
     if self.degree() % 2 == 0:
       if self._decompose[0][1] == self.degree() / 2:
@@ -1335,7 +1341,7 @@ class PseudoInstability:
 
     MILP.add_constraint(-1 <= w0 <= 1)
     MILP.add_constraint(-1 <= w1 <= 1)
-    MILP.add_constraint(-1 <= w1 <= 1)
+    MILP.add_constraint(-1 <= w2 <= 1)
     MILP.add_constraint(w0 + w1 + w2 == 0)
 
     for i in G.dict():
@@ -1369,7 +1375,7 @@ class PseudoInstability:
     basis (x0,x1,x2)*T the flag (self.point, self.line) is given by
     (e_j, x_i). Thus, it yields an semiinstability, if there exists a
     balanced weight vector
-      (w0, w1, w2) in QQ^3, i.e. w0 + w1 + w2 = 0,
+      (w0, w1, w2) in QQ^3, i.e. w0 + w1 + w2 = 0 and w != (0,0,0),
     such that
       min(i0*w0 + i1*w1 + i2*w2 : i in I) = 0.
     REMARK. Any nonzero multiple of a balanced weight vector is again
@@ -1379,8 +1385,8 @@ class PseudoInstability:
       -1 <= w0, w1, w2 <= 1.
     Thus, we only have to maximize the function
       min(i0*w0 + i1*w1 + i2*w2 : i in I)
-    under the constraints -1 <= w0, w1, w2 <= 1 and to check whether
-    the maximum is 0 or not.
+    under the constraints -1 <= w0, w1, w2 <= 1 and ||w||_1 = 1 and to
+    check whether the maximum is 0 or not.
     """
 
     if self.point == None:
@@ -1392,28 +1398,31 @@ class PseudoInstability:
     F = self.proj_plane_curve.get_polynomial()
     G = _apply_matrix(T, F)
 
-    MILP = MixedIntegerLinearProgram(solver='PPL')
-    v = MILP.new_variable()
+    maxima_on_faces = []
+    # positive faces
+    for position in range(3):
+      for plus_minus in [Integer(-1), Integer(1)]:
+        MILP = MixedIntegerLinearProgram(solver='PPL')
+        v = MILP.new_variable()
+        t = v['minimum']
+        MILP.set_objective(t)
+        # Conditions to be on
+        # {1}x[-1,1]^2, [-1,1]x{1}x[-1,1], [-1,1]^2x{1},
+        # {-1}x[-1,1]^2, [-1,1]x{-1}x[-1,1], [-1,1]^2x{-1}
+        for i in range(3):
+          if i == position:
+            MILP.add_constraint(v[i] == plus_minus)
+          MILP.add_constraint(-1 <= v[i] <= 1)
+        # Condition to be in H
+        MILP.add_constraint(sum(v[i] for i in range(3)) == 0)
+        # All linear functions are bounded by minimum.
+        for exponent in G.exponents():
+          lin_func = sum(Integer(i_j) * v[j] for j, i_j in enumerate(exponent))
+          MILP.add_constraint(t <= lin_func)
 
-    t = v['maximum']
-    w0 = v['w0']
-    w1 = v['w1']
-    w2 = v['w2']
+        maxima_on_faces.append(MILP.solve())
 
-    MILP.set_objective(t)
-
-    MILP.add_constraint(-1 <= w0 <= 1)
-    MILP.add_constraint(-1 <= w1 <= 1)
-    MILP.add_constraint(-1 <= w1 <= 1)
-    MILP.add_constraint(w0 + w1 + w2 == 0)
-
-    for i in G.dict():
-      MILP.add_constraint(t <= i[0] * w0 + i[1] * w1 + i[2] * w2)
-
-    MILP.solve()
-    values = MILP.get_values(v)
-
-    return values['maximum'] == 0
+    return max(maxima_on_faces) == 0
 
 
 
