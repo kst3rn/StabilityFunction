@@ -280,25 +280,31 @@ class ProjectivePlaneCurve:
     Return `True` if `self` is stable and `False` otherwise.
     """
 
+    # X_red is a conic.
     if self.degree() % 2 == 0:
       if self._decompose[0][1] == self.degree() / 2:
         return False
 
+    # A line of multiplicity d/3.
     if self.degree() % 3 == 0:
       for Y, m in self._decompose:
         if Y.degree() == 1 and m == self.degree() / 3:
           return False
 
+    # A point of multiplicity 2d/3 or a point of multiplicity
+    # d/2 <= m <= 2d/3 and a line of multiplicity >= m/2.
     X_red_sing = self.reduced_subscheme().singular_points()
     for P in X_red_sing:
-      if self.multiplicity(P) == 2 * self.degree() / 3:
+      m = self.multiplicity(P)
+      if m == 2 * self.degree() / 3:
         return False
-      C = self.tangent_cone_at(P)
-      # ToDo
+      elif m >= self.degree() / 2:
+        for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
+          if L_multiplicity >= m / 2:
+            if PseudoInstability(self, P, L).is_semiinstability():
+              return False
 
-    raise NotImplementedError
-
-
+    return True
 
 
   def reduced_subscheme(self):
@@ -1339,6 +1345,75 @@ class PseudoInstability:
     values = MILP.get_values(v)
 
     return values['maximum'] > 0
+
+
+  def is_semiinstability(self):
+    r"""
+    Return `True` or `False` depending on whether `self` corresponds to
+    a semiinstability of self.proj_plane_curve or not.
+
+    MATHEMATICAL INTERPRETATION:
+    First, let
+      K = self.base_ring,
+      T = self.flag_transformation(),
+      F = self.proj_plane_curve.get_polynomial().
+    Furthermore, let
+      (x0, x1, x2) = self.proj_plane_curve.get_standard_basis()
+    and
+      G = F((x0,x1,x2)*T),
+    i.e.
+      G = _apply_matrix(T, F).
+    For a multi index set I subset NN^3 we can write
+      G = sum_{i in I} a_i x0^i0 * x1^i1 * x2^i2
+    with a_i != 0 for all i in I. Note that with respect to the new
+    basis (x0,x1,x2)*T the flag (self.point, self.line) is given by
+    (e_j, x_i). Thus, it yields an semiinstability, if there exists a
+    balanced weight vector
+      (w0, w1, w2) in QQ^3, i.e. w0 + w1 + w2 = 0,
+    such that
+      min(i0*w0 + i1*w1 + i2*w2 : i in I) = 0.
+    REMARK. Any nonzero multiple of a balanced weight vector is again
+    a balanced weight vector. Thus, it suffices to consider
+      (w0, w1, w2) in QQ^3
+    wtih
+      -1 <= w0, w1, w2 <= 1.
+    Thus, we only have to maximize the function
+      min(i0*w0 + i1*w1 + i2*w2 : i in I)
+    under the constraints -1 <= w0, w1, w2 <= 1 and to check whether
+    the maximum is 0 or not.
+    """
+
+    if self.point == None:
+      return True
+    if self.line == None:
+      return True
+
+    T = self.get_base_change_matrix()
+    F = self.proj_plane_curve.get_polynomial()
+    G = _apply_matrix(T, F)
+
+    MILP = MixedIntegerLinearProgram(solver='PPL')
+    v = MILP.new_variable()
+
+    t = v['maximum']
+    w0 = v['w0']
+    w1 = v['w1']
+    w2 = v['w2']
+
+    MILP.set_objective(t)
+
+    MILP.add_constraint(-1 <= w0 <= 1)
+    MILP.add_constraint(-1 <= w1 <= 1)
+    MILP.add_constraint(-1 <= w1 <= 1)
+    MILP.add_constraint(w0 + w1 + w2 == 0)
+
+    for i in G.dict():
+      MILP.add_constraint(t <= i[0] * w0 + i[1] * w1 + i[2] * w2)
+
+    MILP.solve()
+    values = MILP.get_values(v)
+
+    return values['maximum'] == 0
 
 
 
