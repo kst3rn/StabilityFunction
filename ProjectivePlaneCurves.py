@@ -39,7 +39,7 @@ class ProjectivePlaneCurve:
       raise ValueError
 
     self.polynomial = polynomial
-    self.degree = self.polynomial.degree()
+    self._degree = self.polynomial.degree()
     self.polynomial_ring = self.polynomial.parent()
     self.base_ring = self.polynomial.base_ring()
     self.projective_plane = ProjectiveSpace(self.polynomial_ring)
@@ -61,6 +61,10 @@ class ProjectivePlaneCurve:
 
   def get_standard_basis(self):
     return self.standard_basis
+
+
+  def degree(self):
+    return self._degree
 
 
   def tangent_cone_at(self, P):
@@ -275,6 +279,24 @@ class ProjectivePlaneCurve:
     r"""
     Return `True` if `self` is stable and `False` otherwise.
     """
+
+    if self.degree() % 2 == 0:
+      if self._decompose[0][1] == self.degree() / 2:
+        return False
+
+    if self.degree() % 3 == 0:
+      for Y, m in self._decompose:
+        if Y.degree() == 1 and m == self.degree() / 3:
+          return False
+
+    X_red_sing = self.reduced_subscheme().singular_points()
+    for P in X_red_sing:
+      if self.multiplicity(P) == 2 * self.degree() / 3:
+        return False
+      C = self.tangent_cone_at(P)
+      # ToDo
+
+    raise NotImplementedError
 
 
 
@@ -572,12 +594,12 @@ class ProjectivePlaneCurve:
   def points_with_high_multiplicity(self): # upgrade to infinite fields: add nonreduced components to the list
     r"""
     Return a list of points on `self` with multiplicity strictly
-    greater than self.degree / 2.
+    greater than self.degree() / 2.
 
     OUTPUT:
     A list of tuples `(P, m)` where `P` is a point contained in `self` with
     multiplicity `m` such that
-    m > self.degree / 2.
+    m > self.degree() / 2.
 
     EXAMPLES:
       sage: R.<x0,x1,x2> = GF(2)[]
@@ -604,7 +626,7 @@ class ProjectivePlaneCurve:
     L = []
     for P in self.plane_curve.singular_points():
       m = self.plane_curve.multiplicity(P)
-      if m > self.degree / Integer(2):
+      if m > self.degree() / Integer(2):
         L.append((P, m))
 
     return L
@@ -617,7 +639,7 @@ class ProjectivePlaneCurve:
     OUTPUT:
     A list of triples `(L, m, G)` where `L` is a line contained
     in `self` with multiplicity `m` such that either
-    0 < m <= self.degree / 3 and self.polynomial = L^m * G
+    0 < m <= self.degree() / 3 and self.polynomial = L^m * G
     or
     G = None.
 
@@ -649,7 +671,7 @@ class ProjectivePlaneCurve:
       if factor.degree() > 1:
         continue
 
-      if factor_multiplicity > self.degree / Integer(3):
+      if factor_multiplicity > self.degree() / Integer(3):
         L.append((factor, factor_multiplicity, None))
       else:
         G = Integer(1)
@@ -710,22 +732,22 @@ class ProjectivePlaneCurve:
     list_of_pseu_inst = []
     # CASES (b) and (d)
     for P, m in self.points_with_high_multiplicity():
-      if m > 2 * self.degree / 3:  # CASE (b)
+      if m > 2 * self.degree() / 3:  # CASE (b)
         list_of_pseu_inst.append(PseudoInstability(self, Point = P))
-      elif m > self.degree / 2:  # CASE (d) 1/2
+      elif m > self.degree() / 2:  # CASE (d) 1/2
         for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
           if L_multiplicity > m / 2:
             list_of_pseu_inst.append(PseudoInstability(self, P, L))
 
     # CASES (a) and (c)
     for L, L_multiplicity, G in self.lines_with_high_multiplicity():
-      if L_multiplicity > self.degree / Integer(3):  # CASE (a)
+      if L_multiplicity > self.degree() / Integer(3):  # CASE (a)
         list_of_pseu_inst.append(PseudoInstability(self, Line = L))
       else: # CASE (c) 1/2
         L_curve = self.projective_plane.curve(L)
         G_curve = self.projective_plane.curve(G)
         for P in L_curve.intersection_points(G_curve):
-          if L_curve.intersection_multiplicity(G_curve, P) > (self.degree - L_multiplicity) / Integer(2):
+          if L_curve.intersection_multiplicity(G_curve, P) > (self.degree() - L_multiplicity) / Integer(2):
             list_of_pseu_inst.append(PseudoInstability(self, P, L))
 
     return list_of_pseu_inst
