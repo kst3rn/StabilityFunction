@@ -273,26 +273,10 @@ class ProjectivePlaneCurve:
 
   def is_stable(self):
     r"""
-    ToDo
+    Return `True` if `self` is stable and `False` otherwise.
     """
 
-    use_Mordant_criterion = False
-    Mordant_criterion_met = False
-    try:
-      alg_closure = self.base_ring.algebraic_closure()
-      if self.base_ring == alg_closure:
-        use_Mordant_criterion = True
-        delta = self.maximal_multiplicity()
-        s = self.singular_locus_dimension()
-        N = 2
-        if delta > min(N + 1, s + 3):
-          Mordant_criterion_met = True
-    except NotImplementedError:
-      pass
-    if use_Mordant_criterion:
-      if Mordant_criterion_met:
-        return True
-    raise NotImplementedError
+
 
 
   def reduced_subscheme(self):
