@@ -1332,7 +1332,7 @@ class PseudoInstability:
     MILP = MixedIntegerLinearProgram(solver='PPL')
     v = MILP.new_variable()
 
-    t = v['maximum']
+    t = v['minimum']
     w0 = v['w0']
     w1 = v['w1']
     w2 = v['w2']
@@ -1350,7 +1350,7 @@ class PseudoInstability:
     MILP.solve()
     values = MILP.get_values(v)
 
-    return values['maximum'] > 0
+    return values['minimum'] > 0
 
 
   def is_semiinstability(self):
@@ -1385,14 +1385,9 @@ class PseudoInstability:
       -1 <= w0, w1, w2 <= 1.
     Thus, we only have to maximize the function
       min(i0*w0 + i1*w1 + i2*w2 : i in I)
-    under the constraints -1 <= w0, w1, w2 <= 1 and ||w||_1 = 1 and to
-    check whether the maximum is 0 or not.
+    under the constraint ||w||_1 = 1 and to check whether the
+    maximum is 0 or not.
     """
-
-    if self.point == None:
-      return True
-    if self.line == None:
-      return True
 
     T = self.get_base_change_matrix()
     F = self.proj_plane_curve.get_polynomial()
