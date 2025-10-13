@@ -641,7 +641,7 @@ class ApartmentSphericalStabilityFunction:
       t = v['minimum']
       MILP.set_objective(t)
 
-      # Conditions to be on [-1,1]x...x[-1,1]x{1}x[-1,1]x...x[-1,1]
+      # Conditions to be on [-1,1]x...x[-1,1]x{-1}x[-1,1]x...x[-1,1]
       for i in range(self.dimension()):
         if i == n_position:
           MILP.add_constraint(v[i] == -1)
