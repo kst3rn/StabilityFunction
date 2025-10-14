@@ -750,45 +750,44 @@ class ProjectivePlaneCurve:
 
   def flags(self):
     r"""
-    Return a list of pseudo-instabilities of `self`.
+    Return a generator object of flags attached to `self`.
 
     EXAMPLES:
-      sage: R.<x0,x1,x2> = GF(2)[]
+    A properly semistable quartic.
+      sage: R.<x0,x1,x2> = QQ[]
       sage: f = (x0^2 + x1*x2)^2
       sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^4 + x1^2*x2^2
-      sage: X.pseudo_instabilities()
+      Projective Plane Curve with defining polynomial x0^4 + 2*x0^2*x1*x2 + x1^2*x2^2
+      sage: list(X.flags())
       []
 
+    A properly semistable cubic.
       sage: R.<x0,x1,x2> = GF(3)[]
       sage: f = x0^3 + x1^3 + x0^2*x2 - x0*x2^2
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial x0^3 + x1^3 + x0^2*x2 - x0*x2^2
-      sage: X.pseudo_instabilities()
-      [Pseudo-instability of Projective Plane Curve with defining polynomial x0^3 + x1^3 + x0^2*x2 - x0*x2^2 given by [2, 2, 1] and x0 + x2]
+      sage: list(X.flags())
+      [Flag attached to Projective Plane Curve with defining polynomial x0^3 + x1^3 + x0^2*x2 - x0*x2^2 given by [2, 2, 1] and x0 + x2]
 
+    An unstable quartic.
       sage: R.<x0,x1,x2> = GF(2)[]
       sage: f = x0^3 * (x1 + x2)
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2
-      sage: X.pseudo_instabilities()
-      [Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 0, 1],
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 0],
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 1],
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 1] and x1 + x2,
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by x0]
+      sage: list(X.flags())
+      [Flag attached to Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 1],
+       Flag attached to Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 1] and x1 + x2,
+       Flag attached to Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by x0]
 
-      sage: R.<x0,x1,x2> = GF(3)[]
+    An unstable cubic.
+      sage: R.<x0,x1,x2> = QQ[]
       sage: f = (x0 - x1)^2 * x2
       sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2
-      sage: X.pseudo_instabilities()
-      [Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [0, 0, 1] and x0 - x1,
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [1, 1, 0],
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [1, 1, 1] and x0 - x1,
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [2, 2, 1] and x0 - x1,
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [1, 1, 0] and x2,
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by x0 - x1]
+      Projective Plane Curve with defining polynomial x0^2*x2 - 2*x0*x1*x2 + x1^2*x2
+      sage: list(X.flags())
+      [Flag attached to Projective Plane Curve with defining polynomial x0^2*x2 - 2*x0*x1*x2 + x1^2*x2 given by [1, 1, 0],
+       Flag attached to Projective Plane Curve with defining polynomial x0^2*x2 - 2*x0*x1*x2 + x1^2*x2 given by [1, 1, 0] and x2,
+       Flag attached to Projective Plane Curve with defining polynomial x0^2*x2 - 2*x0*x1*x2 + x1^2*x2 given by x0 - x1]
 
     MATHEMATICAL INTERPRETATION:
     Give reference.
