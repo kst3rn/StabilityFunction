@@ -220,6 +220,8 @@ class ProjectivePlaneCurve:
     A cuspidal cubic is unstable.
       sage: R.<x0,x1,x2> = GF(2)[]
       sage: f = x1^2*x2 + x0^3 + x0^2*x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^3 + x0^2*x2 + x1^2*x2
       sage: X.is_semistable()
       False
       sage:
@@ -261,6 +263,39 @@ class ProjectivePlaneCurve:
   def is_stable(self):
     r"""
     Return `True` if `self` is stable and `False` otherwise.
+
+    EXAMPLES:
+    A smooth curve is stable.
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.is_stable()
+      True
+
+    A singular but stable curve.
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x0^4 + x0*x1^2*x2 + x0*x1*x2^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x0*x1^2*x2 + x0*x1*x2^2
+      sage: X.is_stable()
+      True
+
+    A nonreduced but stable curve.
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = (x0^4 + x1^3*x2 + x2^4)^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^8 + 2*x0^4*x1^3*x2 + x1^6*x2^2 + 2*x0^4*x2^4 + 2*x1^3*x2^5 + x2^8
+      sage: X.is_stable()
+      True
+
+    A properly semistable curve.
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = (x0^2 + x1*x2)^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + 2*x0^2*x1*x2 + x1^2*x2^2
+      sage: X.is_stable()
+      False
     """
 
     if self.is_smooth():
