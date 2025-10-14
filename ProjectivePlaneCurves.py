@@ -210,7 +210,7 @@ class ProjectivePlaneCurve:
 
     EXAMPLES:
     A nodal cubic is semistable.
-      sage: R.<x0,x1,x2> = GF(3)[]
+      sage: R.<x0,x1,x2> = QQ[]
       sage: f = x1^2*x2 + x0^3 + x0^2*x2
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial x0^3 + x0^2*x2 + x1^2*x2
@@ -244,10 +244,10 @@ class ProjectivePlaneCurve:
       sage: X.is_semistable()
       False
 
-      sage: R.<x0,x1,x2> = GF(2^3)[]
+      sage: R.<x0,x1,x2> = QQ[]
       sage: f = (x0^2 + x1*x2)^2
       sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^4 + x1^2*x2^2
+      Projective Plane Curve with defining polynomial x0^4 + 2*x0^2*x1*x2 + x1^2*x2^2
       sage: X.is_semistable()
       True
     """
@@ -255,11 +255,7 @@ class ProjectivePlaneCurve:
     if self.is_smooth():
       return True
 
-    for flag in self.flags():
-      if flag.is_unstable():
-        return False
-
-    return True
+    return all(not flag.is_unstable() for flag in self.flags())
 
 
   def is_stable(self):
