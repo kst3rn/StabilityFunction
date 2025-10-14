@@ -255,24 +255,11 @@ class ProjectivePlaneCurve:
     if self.is_smooth():
       return True
 
-    use_Mordant_criterion = False
-    Mordant_criterion_met = False
-    try:
-      alg_closure = self.base_ring.algebraic_closure()
-      if self.base_ring == alg_closure:
-        use_Mordant_criterion = True
-        delta = self.maximal_multiplicity()
-        s = self.singular_locus_dimension()
-        N = 2
-        if delta >= min(N + 1, s + 3):
-          Mordant_criterion_met = True
-    except NotImplementedError:
-      pass
-    if use_Mordant_criterion:
-      if Mordant_criterion_met:
-        return True
+    for flag in self.flags():
+      if flag.is_unstable():
+        return False
 
-    return (len(self.instabilities()) == 0)
+    return True
 
 
   def is_stable(self):
@@ -307,7 +294,7 @@ class ProjectivePlaneCurve:
       elif m >= self.degree() / 2:
         for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
           if L_multiplicity >= m / 2:
-            if PseudoInstability(self, P, L).is_semiinstability():
+            if FlagOfLinearSpaces(self, P, L).is_semiinstability():
               return False
 
     return True
@@ -695,7 +682,7 @@ class ProjectivePlaneCurve:
     return L
 
 
-  def pseudo_instabilities(self): # Adjust nonreduced line
+  def _pseudo_instabilities(self): # Adjust nonreduced line
     r"""
     Return a list of pseudo-instabilities of `self`.
 
@@ -745,24 +732,93 @@ class ProjectivePlaneCurve:
     # CASES (b) and (d)
     for P, m in self.points_with_high_multiplicity():
       if m > 2 * self.degree() / 3:  # CASE (b)
-        list_of_pseu_inst.append(PseudoInstability(self, Point = P))
+        list_of_pseu_inst.append(FlagOfLinearSpaces(self, Point = P))
       elif m > self.degree() / 2:  # CASE (d) 1/2
         for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
           if L_multiplicity > m / 2:
-            list_of_pseu_inst.append(PseudoInstability(self, P, L))
+            list_of_pseu_inst.append(FlagOfLinearSpaces(self, P, L))
 
     # CASES (a) and (c)
     for L, L_multiplicity, G in self.lines_with_high_multiplicity():
       if L_multiplicity > self.degree() / Integer(3):  # CASE (a)
-        list_of_pseu_inst.append(PseudoInstability(self, Line = L))
+        list_of_pseu_inst.append(FlagOfLinearSpaces(self, Line = L))
       else: # CASE (c) 1/2
         L_curve = self.projective_plane.curve(L)
         G_curve = self.projective_plane.curve(G)
         for P in L_curve.intersection_points(G_curve):
           if L_curve.intersection_multiplicity(G_curve, P) > (self.degree() - L_multiplicity) / Integer(2):
-            list_of_pseu_inst.append(PseudoInstability(self, P, L))
+            list_of_pseu_inst.append(FlagOfLinearSpaces(self, P, L))
 
     return list_of_pseu_inst
+
+
+  def flags(self):
+    r"""
+    Return a list of pseudo-instabilities of `self`.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = (x0^2 + x1*x2)^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^2*x2^2
+      sage: X.pseudo_instabilities()
+      []
+
+      sage: R.<x0,x1,x2> = GF(3)[]
+      sage: f = x0^3 + x1^3 + x0^2*x2 - x0*x2^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^3 + x1^3 + x0^2*x2 - x0*x2^2
+      sage: X.pseudo_instabilities()
+      [Pseudo-instability of Projective Plane Curve with defining polynomial x0^3 + x1^3 + x0^2*x2 - x0*x2^2 given by [2, 2, 1] and x0 + x2]
+
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = x0^3 * (x1 + x2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2
+      sage: X.pseudo_instabilities()
+      [Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 0, 1],
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 0],
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 1],
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 1] and x1 + x2,
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by x0]
+
+      sage: R.<x0,x1,x2> = GF(3)[]
+      sage: f = (x0 - x1)^2 * x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2
+      sage: X.pseudo_instabilities()
+      [Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [0, 0, 1] and x0 - x1,
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [1, 1, 0],
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [1, 1, 1] and x0 - x1,
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [2, 2, 1] and x0 - x1,
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [1, 1, 0] and x2,
+       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by x0 - x1]
+
+    MATHEMATICAL INTERPRETATION:
+    Give reference.
+    """
+
+    X_red_sing = self.reduced_subscheme().singular_points()
+    # CASES (b) and (d)
+    for P in X_red_sing:
+      m = self.multiplicity(P)
+      if m > 2 * self.degree() / 3:  # CASE (b)
+        yield FlagOfLinearSpaces(self, Point = P)
+      elif m > self.degree() / 2:  # CASE (d) 1/2
+        for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
+          if L_multiplicity > m / 2:
+            yield FlagOfLinearSpaces(self, P, L)
+
+    # CASES (a) and (c)
+    for L, L_multiplicity, G in self.lines_with_high_multiplicity():
+      if L_multiplicity > self.degree() / 3:  # CASE (a)
+        yield FlagOfLinearSpaces(self, Line = L)
+      else: # CASE (c) 1/2
+        L_curve = self.projective_plane.curve(L)
+        G_curve = self.projective_plane.curve(G)
+        for P in L_curve.intersection_points(G_curve):
+          if L_curve.intersection_multiplicity(G_curve, P) > (self.degree() - L_multiplicity) / 2:
+            yield FlagOfLinearSpaces(self, P, L)
 
 
   def instabilities(self):
@@ -813,7 +869,7 @@ class ProjectivePlaneCurve:
       2
     """
 
-    return [I for I in self.pseudo_instabilities() if I.is_instability()]
+    return [I for I in self.flags() if I.is_unstable()]
 
 
   @cached_property
@@ -1196,7 +1252,7 @@ class PPC_TangentCone:
 
 
 
-class PseudoInstability:
+class FlagOfLinearSpaces:
 
   def __init__(self, projective_plane_curve, Point = None, Line = None):
     if point == None and line == None:
@@ -1212,11 +1268,11 @@ class PseudoInstability:
 
   def __repr__(self):
     if self.point == None:
-      return f"Pseudo-instability of {self.proj_plane_curve} given by {self.line}"
+      return f"Flag attached to {self.proj_plane_curve} given by {self.line}"
     elif self.line == None:
-      return f"Pseudo-instability of {self.proj_plane_curve} given by {self.point}"
+      return f"Flag attached to {self.proj_plane_curve} given by {self.point}"
     else:
-      return f"Pseudo-instability of {self.proj_plane_curve} given by {self.point} and {self.line}"
+      return f"Flag attached to {self.proj_plane_curve} given by {self.point} and {self.line}"
 
 
   def flag(self):
@@ -1281,7 +1337,7 @@ class PseudoInstability:
     return self.base_change_matrices(matrix_form)[0]
 
 
-  def is_instability(self):
+  def is_unstable(self):
     r"""
     Return True or False depending on whether self corresponds to
     an instability of self.proj_plane_curve or not
