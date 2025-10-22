@@ -257,7 +257,26 @@ class ProjectivePlaneCurve:
     if self.is_smooth():
       return True
 
-    return all(not flag.is_unstable() for flag in self.flags())
+    # Search for a line of multiplicity > d/3.
+    for Y, m in self._decompose:
+      if Y.degree() == 1 and m > self.degree() / 3:
+        return False
+
+    # Search for a point of multiplicity > 2d/3 or a point
+    # of multiplicity d/3 < m <= 2d/3 and a line in the
+    # tangent cone of multiplicity >= m/2.
+    X_red_sing = self.reduced_subscheme().singular_points()
+    for P in X_red_sing:
+      m = self.multiplicity(P)
+      if m > 2 * self.degree() / 3:
+        return False
+      elif m > self.degree() / 3:
+        for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
+          if L_mult > m / 2:
+            if FlagOfLinearSpaces(self, P, L).is_unstable():
+              return False
+
+    return True
 
 
   def is_stable(self):
@@ -306,25 +325,27 @@ class ProjectivePlaneCurve:
 
     # X_red is a conic.
     if self.degree() % 2 == 0:
-      if self._decompose[0][1] == self.degree() / 2:
+      G, m = self._decompose[0]
+      if m == self.degree() / 2 and G.degree() == 2:
         return False
 
-    # A line of multiplicity d/3.
+    # Search for a line of multiplicity d/3.
     if self.degree() % 3 == 0:
       for Y, m in self._decompose:
         if Y.degree() == 1 and m == self.degree() / 3:
           return False
 
-    # A point of multiplicity 2d/3 or a point of multiplicity
-    # d/2 <= m <= 2d/3 and a line of multiplicity >= m/2.
+    # Search for point of multiplicity 2d/3 or a point
+    # of multiplicity d/3 < m <= 2d/3 and a line in the
+    # tangent cone of multiplicity >= m/2.
     X_red_sing = self.reduced_subscheme().singular_points()
     for P in X_red_sing:
       m = self.multiplicity(P)
       if m == 2 * self.degree() / 3:
         return False
-      elif m >= self.degree() / 2:
-        for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
-          if L_multiplicity >= m / 2:
+      elif m > self.degree() / 3:
+        for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
+          if L_mult >= m / 2:
             if FlagOfLinearSpaces(self, P, L).is_semiinstability():
               return False
 
