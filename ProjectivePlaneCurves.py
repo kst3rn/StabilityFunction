@@ -352,6 +352,100 @@ class ProjectivePlaneCurve:
     return True
 
 
+  def elementary_instability_direction(self, shape):
+    r"""
+    Return the element `lambda` of the base ring of `self` such
+    that `self` has an instability diagonalized by the basis
+    corresponding to the elementary matrix `T_{ij}(lambda)` where
+    i, j = shape.
+
+    INPUT:
+    - ``shape`` -- a pair `(i, j)` of distinct integers in {0, 1, 2}.
+
+    OUTPUT:
+    - ``lambda`` -- an element of self.get_base_ring() such that there
+                    is an instability diagonalized by the basis
+                    (x_0, x_1, x_2) * T_{ij}(lambda),
+                    where
+                    i = shape[0],
+                    j = shape[1],
+                    (x_0, x_1, x_2) = self.get_standard_basis(),
+                    and `T_{ij}(lambda)` is the elementary matrix with
+                    `lambda` at the (i,j)-th position.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = x1^2*x2 + x0^3 + x0^2*x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^3 + x0^2*x2 + x1^2*x2
+      sage: X.elementary_instability_direction((1,0))
+      1
+      sage: X.elementary_instability_direction((2,0))
+      None
+      sage: X.elementary_instability_direction((2,1))
+      None
+
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x1^2*x2 - x0^3
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x0^3 + x1^2*x2
+      sage: X.elementary_instability_direction((1,0))
+      None
+      sage: X.elementary_instability_direction((2,0))
+      0
+      sage: X.elementary_instability_direction((2,1))
+      None
+
+    WARNING:
+    This method does not search for instabilities that are
+    diagonalized by self.get_standard_basis().
+    """
+
+    if shape[0] == shape[1]:
+      raise ValueError(f"The entries of {shape} must be distinct.")
+
+    i, j = shape
+    k = 3 - i - j
+    x_i = self.get_standard_basis()[i]
+    x_j = self.get_standard_basis()[j]
+    x_k = self.get_standard_basis()[k]
+
+    # Search for a line of multiplicity > d/3.
+    for G, m in self._decompose:
+      if G.degree() == 1 and m > self.degree() / 3:
+        G_vars = set(G.variables())
+        if G_vars == {x_j, x_i}:
+          return G[x_i] / G[x_j]
+        if m > 2 * self.degree() / 3 and G_vars.issupset({x_j, x_i}):
+          return G[x_i] / G[x_j]
+
+    # Search for a point of multiplicity > 2d/3 or a point
+    # of multiplicity d/3 < m <= 2d/3 and a line in the
+    # tangent cone of multiplicity >= m/2.
+    X_red_sing = self.reduced_subscheme().singular_points()
+    for P in X_red_sing:
+      m = self.multiplicity(P)
+      if m > 2 * self.degree() / 3 and P[j] != 0 and P[i] != 0 and P[k] == 0:
+        return -P[j] / P[i]
+      elif m > self.degree() / 3:
+        for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
+          if L_mult > m / 2 and FlagOfLinearSpaces(self, P, L).is_unstable():
+            L_vars = set(L.variables())
+            if L_vars == {x_j, x_i}:
+              lambda_L = L[x_i] / L[x_j]
+              if P[j] == 0 and P[i] == 0:
+                return lambda_L
+              elif P[k] == 0 and P[i] != 0:
+                lambda_P = -P[j] / P[i]
+                if lambda_L == lambda_P:
+                  return lambda_L
+            elif L_vars == {x_k}:
+              if P[i] != 0 and P[k] == 0:
+                return -P[j] / P[i]
+
+    return None
+
+
   def reduced_subscheme(self):
     r"""
     Return the reduced subscheme of `self` as a projective plane curve.
