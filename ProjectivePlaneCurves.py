@@ -578,6 +578,15 @@ class ProjectivePlaneCurve:
     return self.plane_curve.singular_points()
 
 
+  def is_A2_singularity(self, P):
+    r"""
+    Return `True` if `P` is a singular point of type A2
+    in the Arnold's notation and `False` otherwise.
+    """
+
+    raise NotImplementedError
+
+
   def multiplicity(self, P):
     r"""
     Return the multiplicity of `self` at the point `P`, i.e. the
