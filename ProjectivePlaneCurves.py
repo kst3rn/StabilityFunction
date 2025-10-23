@@ -582,9 +582,79 @@ class ProjectivePlaneCurve:
     r"""
     Return `True` if `P` is a singular point of type A2
     in the Arnold's notation and `False` otherwise.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x1^2*x2 - x0^3
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x0^3 + x1^2*x2
+      sage: X.is_A2_singularity([0,0,1])
+      True
+
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x1^2*x2 - x0^3 - x0^2*x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x0^3 - x0^2*x2 + x1^2*x2
+      sage: X.is_A2_singularity([0,0,1])
+      False
+
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = (x1*x2 + x0^2)*(x1*x2 - x0^2)
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x0^4 + x1^2*x2^2
+      sage: X.is_A2_singularity([0,0,1])
+      False
+
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = (x0^2 + x1*x2)^2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^2*x2^2
+      sage: X.is_A2_singularity([0,0,1])
+      False
     """
 
-    raise NotImplementedError
+    if self.multiplicity(P) != 2:
+      return False
+
+    TC = self.tangent_cone_at(P)
+    if len(TC.get_lines()) != 1:
+      return False
+
+    components_count = 0
+    P_list = list(P)
+    for G, m in self._decompose:
+      if G(P_list) == 0:
+        if m >= 2:
+          return False
+        components_count += 1
+    if components_count >= 2:
+      return False
+
+    F = self.get_polynomial()
+    R = PolynomialRing(self.get_base_ring(), 'x,y')
+    x, y = R.gens()
+
+    if P[2] != 0:
+      P1 = [P[0] / P[2], P[1] / P[2], 1]
+      f = F(x + P1[0], y + P1[1], 1)
+    elif P[1] != 0:
+      P1 = [P[0] / P[1], 1, 0]
+      f = F(x + P1[0], 1, y)
+    elif P[0] != 0:
+      f = F(1, x, y)
+    else:
+      ValueError(f"{P} does not define a point on the projective plane")
+
+    f = R(f)
+    AA = AffineSpace(R)
+    C = AA.curve(f)
+    P = AA(0,0)
+    B = C.blowup(P)
+    C_tilde = B[0][0]
+    AA_tilde = C_tilde.ambient_space()
+    Q = AA_tilde(0,0)
+
+    return C_tilde.is_smooth(Q)
 
 
   def multiplicity(self, P):
