@@ -1767,11 +1767,15 @@ def _ult_line_transformation(base_field, coordinates):
     [  1   0   0]
     [  0   1   0]
     [a/c b/c   1]
+    sage: c * vector([0,0,1]) * T
+    (a, b, c)
     sage:
     sage: T = _ult_line_transformation(K, [a,b,0]); T
     [  1   0   0]
     [a/b   1   0]
     [  0   0   1]
+    sage: b * vector([0,1,0]) * T
+    (a, b, 0)
     sage:
     sage: T = _ult_line_transformation(K, [a,0,0]); T
     [1 0 0]
@@ -1803,11 +1807,15 @@ def _uut_line_transformation(base_field, coordinates):
     [  1 b/a c/a]
     [  0   1   0]
     [  0   0   1]
+    sage: a * vector([1,0,0]) * T
+    (a, b, c)
     sage:
     sage: T = _uut_line_transformation(K, [0,b,c]); T
     [  1   0   0]
     [  0   1 c/b]
     [  0   0   1]
+    sage: b * vector([0,1,0]) * T
+    (0, b, c)
     sage:
     sage: T = _uut_line_transformation(K, [0,0,c]); T
     [1 0 0]
@@ -2008,45 +2016,34 @@ def _integral_line_transformation(base_field, Vector, weight_vector):
 
 def _ult_plane_transformation(linear_form):
   r"""
-  Return a list of unipotent lower triangular matrices with maximal
-  number of zeros which transform the plane defined by linear_form
-  to a plane defined by x_i = 0
+  Return a unipotent lower triangular matrix with maximal
+  number of zeros which transform `linear_form` to some `x_i`.
 
-  MATHEMATICAL INTERPRETATION:
-  First, let
-    L = linear_form .
-  Then we can write
-    L = A*x + B*y + C*z .
-  Depending on whether
-    A != 0 or A != 0 and B != 0 or A = 0 and B != 0 or A = 0 and B = 0
-  the unipotent lower triangular matrices with maximal number of zeros, T,
-  moving L to a coordinate axis, via L((x, y, z) * T), are given by the
-  four matrices:
-    [[  1   0, 0],
-     [-B/A, 1, 0],
-     [-C/A, 0, 1 ]]
-
-    [[  1,    0,  0],
-     [-B/A,   1,  0],
-     [0,    -C/B, 1]]
-
-    [[1,   0,  0],
-     [0,   1,  0],
-     [0, -C/B, 1]]
-
-    [[1, 0, 0],
-     [0, 1, 0],
-     [0, 0, 1]]
-
-  Note that in the case A != 0 and B != 0 both matrices
-    [[  1   0, 0],
-     [-B/A, 1, 0],
-     [-C/A, 0, 1 ]]
-  and
-    [[  1,    0,  0],
-     [-B/A,   1,  0],
-     [0,    -C/B, 1]]
-  are equal if and only if C = 0.
+  EXAMPLES:
+    sage: K.<A,B,C> = QQ[]
+    sage: K = K.fraction_field()
+    sage: R.<x0,x1,x2> = K[]
+    sage: L = A*x0 + B*x1 + C*x2
+    sage: T = _ult_plane_transformation(L); T
+    [     1      0      0]
+    [(-B)/A      1      0]
+    [(-C)/A      0      1]
+    sage: L(list(vector([x0,x1,x2]) * T))
+    A*x0
+    sage: 
+    sage: L = B*x1 + C*x2
+    sage: T = _ult_plane_transformation(L); T
+    [     1      0      0]
+    [     0      1      0]
+    [     0 (-C)/B      1]
+    sage: L(list(vector([x0,x1,x2]) * T))
+    B*x1
+    sage:
+    sage: L = C*x2
+    sage: T = _ult_plane_transformation(L); T
+    [1 0 0]
+    [0 1 0]
+    [0 0 1]
   """
 
   base_ring = linear_form.base_ring()
@@ -2054,69 +2051,47 @@ def _ult_plane_transformation(linear_form):
   A = linear_form.monomial_coefficient(x0)
   B = linear_form.monomial_coefficient(x1)
   C = linear_form.monomial_coefficient(x2)
-  L = []
 
   if A != 0:
     T = [[1, 0, 0], [-B/A, 1, 0], [-C/A, 0, 1]]
-    T = matrix(base_ring, T)
-    L.append(T)
-    if B != 0 and C != 0:
-      T = [[1, 0, 0], [-B/A, 1, 0], [0, -C/B, 1]]
-      T = matrix(base_ring, T)
-      L.append(T)
+    return matrix(base_ring, T)
   elif B != 0:
     T = [[1, 0, 0], [0, 1, 0], [0, -C/B, 1]]
-    T = matrix(base_ring, T)
-    L.append(T)
+    return matrix(base_ring, T)
   else:
-    T = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-    T = matrix(base_ring, T)
-    L.append(T)
-
-  return L
+    return identity_matrix(base_ring, 3)
 
 
 def _uut_plane_transformation(linear_form):
   r"""
-  Return a list of unipotent upper triangular matrices with maximal
-  number of zeros which transform the plane defined by linear_form
-  to a plane defined by x_i = 0
+  Return a unipotent upper triangular matrix with maximal
+  number of zeros which transform `linear_form` to some `x_i`.
 
-  MATHEMATICAL INTERPRETATION:
-  First, let
-    L = linear_form .
-  Then we can write
-    L = A*x + B*y + C*z .
-  Depending on whether
-    C != 0 or C != 0 and B != 0 or C = 0 and B != 0 or C = 0 and B = 0
-  the unipotent upper triangular matrices with maximal number of zeros, T,
-  moving L to a coordinate axis, via L((x, y, z) * T), are given by the
-  four matrices:
-    [[1, 0, -A/C],
-     [0, 1, -B/C],
-     [0, 0,   1 ]]
-
-    [[1, -A/B,   0],
-     [0,   1,  -B/C],
-     [0,   0,    1]]
-
-    [[1, -A/B, 0],
-     [0,   1,  0],
-     [0,   0,  1]]
-
-    [[1, 0, 0],
-     [0, 1, 0],
-     [0, 0, 1]]
-
-  Note that in the case C != 0 and B != 0 both matrices
-    [[1, 0, -A/C],
-     [0, 1, -B/C],
-     [0, 0,   1 ]]
-  and
-    [[1, -A/B,  0],
-     [0,   1, -B/C],
-     [0,   0,   1]]
-  are equal if and only if A = 0.
+  EXAMPLES:
+    sage: K.<A,B,C> = QQ[]
+    sage: K = K.fraction_field()
+    sage: R.<x0,x1,x2> = K[]
+    sage: L = A*x0 + B*x1 + C*x2
+    sage: T = _uut_plane_transformation(L); T
+    [     1      0 (-A)/C]
+    [     0      1 (-B)/C]
+    [     0      0      1]
+    sage: L(list(vector([x0,x1,x2]) * T))
+    C*x2
+    sage:
+    sage: L = A*x0 + B*x1
+    sage: T = _uut_plane_transformation(L); T
+    [     1 (-A)/B      0]
+    [     0      1      0]
+    [     0      0      1]
+    sage: L(list(vector([x0,x1,x2]) * T))
+    B*x1
+    sage:
+    sage: L = A*x0
+    sage: T = _uut_plane_transformation(L); T
+    [1 0 0]
+    [0 1 0]
+    [0 0 1]
   """
 
   base_ring = linear_form.base_ring()
@@ -2124,28 +2099,15 @@ def _uut_plane_transformation(linear_form):
   A = linear_form.monomial_coefficient(x0)
   B = linear_form.monomial_coefficient(x1)
   C = linear_form.monomial_coefficient(x2)
-  L = []
 
   if C != 0:
     T = [[1, 0, -A/C], [0, 1, -B/C], [0, 0, 1]]
-    T = matrix(base_ring, T)
-    L.append(T)
-    if B != 0 and A != 0:
-      T = [[1, -A/B, 0], [0, 1, -B/C], [0, 0, 1]]
-      T = matrix(base_ring, T)
-      L.append(T)
+    return matrix(base_ring, T)
   elif B != 0:
-    coordinate_axis_index = 1
     T = [[1, -A/B, 0], [0, 1, 0], [0, 0, 1]]
-    T = matrix(base_ring, T)
-    L.append(T)
+    return matrix(base_ring, T)
   else:
-    coordinate_axis_index = 0
-    T = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-    T = matrix(base_ring, T)
-    L.append(T)
-
-  return L
+    return identity_matrix(base_ring, 3)
 
 
 def _integral_plane_transformation(linear_form, weight_vector):
