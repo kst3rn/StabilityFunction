@@ -1676,7 +1676,8 @@ def _max_index_of_nonzero_entry(L):
 
 def _normalize_by_first_nonzero_entry(L):
   r"""
-  Return ...
+  Return the pair (i, [L[0] / L[i], ..., L[n] / L[i]]),
+  where n = len(L) and i = _min_index_of_nonzero_entry(L).
   """
 
   i_min = _min_index_of_nonzero_entry(L)
@@ -1687,7 +1688,8 @@ def _normalize_by_first_nonzero_entry(L):
 
 def _normalize_by_last_nonzero_entry(L):
   r"""
-  Return ...
+  Return the pair (i, [L[0] / L[i], ..., L[n] / L[i]]),
+  where n = len(L) and i = _max_index_of_nonzero_entry(L).
   """
 
   i_max = _max_index_of_nonzero_entry(L)
@@ -1696,30 +1698,59 @@ def _normalize_by_last_nonzero_entry(L):
   return (i_max, [x / last_nonzero_entry for x in L])
 
 
-def _apply_matrix(T, F, affine_patch = None):
+def _apply_matrix(T, F, i = None):
   r"""
   Return F((x_0,...,x_n) * T) or its dehomogenization
-  at affine_patch, i.e. x_{affine_patch} = 1 if
-  affine_patch != None
+  at `i`, i.e. x_{i} = 1 if `i` is not `None`.
 
   INPUT:
-  T            - matrix over K
-  F            - polynomial in K[x_0,...,x_n]
-  affine_patch - integer between 0 and n
+  - ``T`` -- matrix over K.
+  - ``F`` -- polynomial in K[x_0,...,x_n].
+  - ``i`` -- an integer between 0 and n.
 
   OUTPUT:
-  F((x_0,...,x_n) * T) with x_{affine_patch} = 1 if
-  affine_patch != None
+  F((x_0,...,x_n) * T) with x_i = 1 if `i` is not `None`.
 
-  MATHEMATICAL INTERPRETATION:
-  ToDo...
+  EXAMPLES:
+    sage: K.<t00,t01,t02,t10,t11,t12,t20,t21,t22> = QQ[]
+    sage: R.<x0,x1,x2> = K[]
+    sage: T = matrix(K, [[t00,t01,t02],[t10,t11,t12],[t20,t21,t22]]); T
+    [t00 t01 t02]
+    [t10 t11 t12]
+    [t20 t21 t22]
+    sage: _apply_matrix(T, x0)
+    t00*x0 + t10*x1 + t20*x2
+    sage: _apply_matrix(T, x1)
+    t01*x0 + t11*x1 + t21*x2
+    sage: _apply_matrix(T, x2)
+    t02*x0 + t12*x1 + t22*x2
+
+    sage: _apply_matrix(T, x0, 1)
+    t00*x0 + t20*x2 + t10
+
+    sage: _apply_matrix(T, x0 + x1)
+    (t00 + t01)*x0 + (t10 + t11)*x1 + (t20 + t21)*x2
+
+    sage: R.<x0,x1,x2> = QQ[]
+    sage: F = x0*(x1 - 2*x0)*(x2 - 3*x0)
+    sage: T = matrix(QQ, [[1,2,3],[0,1,0],[0,0,1]]); T
+    [1 2 3]
+    [0 1 0]
+    [0 0 1]
+    sage: _apply_matrix(T, F)
+    x0*x1*x2
+
+    sage: _apply_matrix(T, F, 0)
+    x1*x2
+    sage: _apply_matrix(T, F, 1)
+    x0*x2
   """
 
   generators = list(F.parent().gens())
-  if affine_patch != None:
-    generators[affine_patch] = F.parent()(1)
+  if i != None:
+    generators[i] = F.parent()(1)
 
-  return F(list( vector(generators) * T ))
+  return F(list(vector(generators) * T))
 
 
 def _ult_line_transformation(base_field, Vector):
