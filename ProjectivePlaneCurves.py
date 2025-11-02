@@ -620,18 +620,18 @@ class ProjectivePlaneCurve:
     if len(TC.get_lines()) != 1:
       return False
 
-    components_count = 0
+    components = []
     P_list = list(P)
     for G, m in self._decompose:
       if G(P_list) == 0:
         if m >= 2:
           return False
-        components_count += 1
-    if components_count >= 2:
+        components.append(G)
+    if len(components) >= 2:
       return False
 
-    F = self.get_polynomial()
-    R = PolynomialRing(self.get_base_ring(), 'x,y')
+    F = components[0]
+    R = PolynomialRing(F.base_ring(), 'x,y')
     x, y = R.gens()
 
     if P[2] != 0:
@@ -655,6 +655,28 @@ class ProjectivePlaneCurve:
     Q = AA_tilde(0,0)
 
     return C_tilde.is_smooth(Q)
+
+
+  def cusps(self):
+    r"""
+    Return the list of all A2 cusps singularities on `self`.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = (x2*x1^2 - x0^3) * (x2*(x1 - x2)^2 - (x0 - x2)^3) * ((x1 - x2)^2 - x0^2)
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.cusps()
+      [(0 : 0 : 1)]
+      sage:
+      sage: f = (x2*x1^2 - x0^3) * (x2*x1^2 - (x0 - x2)^3) * ((x1 - 2*x2)^2 - x0^2)
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.cusps()
+      [(0 : 0 : 1), (1 : 0 : 1)]
+    """
+
+    X_red_sing = self.reduced_subscheme().singular_points()
+
+    return [P for P in X_red_sing if self.is_A2_singularity(P)]
 
 
   def multiplicity(self, P):
