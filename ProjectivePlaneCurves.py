@@ -1753,30 +1753,72 @@ def _apply_matrix(T, F, i = None):
   return F(list(vector(generators) * T))
 
 
-def _ult_line_transformation(base_field, Vector):
+def _ult_line_transformation(base_field, coordinates):
   r"""
-  Return unipotent lower triangular matrix over base_field transforming
-  a line spanned by a standard basis vector to the line spanned by Vector
+  Return a unipotent lower triangular matrix over `base_field`
+  transforming the line spanned by a standard basis vector to
+  the line spanned by the vector with coordinates given by
+  `coordinates`.
+
+  EXAMPLES:
+    sage: K.<a,b,c> = QQ[]
+    sage: K = K.fraction_field()
+    sage: T = _ult_line_transformation(K, [a,b,c]); T
+    [  1   0   0]
+    [  0   1   0]
+    [a/c b/c   1]
+    sage:
+    sage: T = _ult_line_transformation(K, [a,b,0]); T
+    [  1   0   0]
+    [a/b   1   0]
+    [  0   0   1]
+    sage:
+    sage: T = _ult_line_transformation(K, [a,0,0]); T
+    [1 0 0]
+    [0 1 0]
+    [0 0 1]
   """
 
-  Vector = list(Vector)
+  Vector = [base_field(x) for x in coordinates]
   T = identity_matrix(base_field, len(Vector))
-  # Find the maximal index, i_max, with Vector[i_max] != 0 and normalize by Vector[i_max]
+  # Find the maximal index, i_max, with Vector[i_max] != 0
+  # and normalize by Vector[i_max]
   i_max, normalized_Vector = _normalize_by_last_nonzero_entry(Vector)
   T[i_max] = normalized_Vector
 
   return matrix(base_field, T)
 
 
-def _uut_line_transformation(base_field, Vector):
+def _uut_line_transformation(base_field, coordinates):
   r"""
-  Return unipotent upper triangular matrix over base_field transforming
-  a line spanned by a standard basis vector to the line spanned by Vector
+  Return a unipotent upper triangular matrix over `base_field`
+  transforming the line spanned by a standard basis vector to
+  the line spanned by the vector with coordinates given by
+  `coordinates`.
+
+  EXAMPLES:
+    sage: K.<a,b,c> = QQ[]
+    sage: K = K.fraction_field()
+    sage: T = _uut_line_transformation(K, [a,b,c]); T
+    [  1 b/a c/a]
+    [  0   1   0]
+    [  0   0   1]
+    sage:
+    sage: T = _uut_line_transformation(K, [0,b,c]); T
+    [  1   0   0]
+    [  0   1 c/b]
+    [  0   0   1]
+    sage:
+    sage: T = _uut_line_transformation(K, [0,0,c]); T
+    [1 0 0]
+    [0 1 0]
+    [0 0 1]
   """
 
-  Vector = list(Vector)
+  Vector = [base_field(x) for x in coordinates]
   T = identity_matrix(base_field, len(Vector))
-  # Find the minimal index, i_min, with Vector[i_min] != 0 and normalize by Vector[i_min]
+  # Find the minimal index, i_min, with Vector[i_min] != 0
+  # and normalize by Vector[i_min]
   i_min, normalized_Vector = _normalize_by_first_nonzero_entry(Vector)
   T[i_min] = normalized_Vector
 
