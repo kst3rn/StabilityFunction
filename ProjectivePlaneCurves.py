@@ -11,6 +11,7 @@
 
 
 from functools import cached_property
+from functools import cache
 from sage.all import *
 
 
@@ -119,6 +120,7 @@ class ProjectivePlaneCurve:
     return PPC_TangentCone(self, P)
 
 
+  @cache
   def is_smooth(self):
     r"""
     Return `True` if `self` is smooth and `False` otherwise.
@@ -265,7 +267,7 @@ class ProjectivePlaneCurve:
     # Search for a point of multiplicity > 2d/3 or a point
     # of multiplicity d/3 < m <= 2d/3 and a line in the
     # tangent cone of multiplicity >= m/2.
-    X_red_sing = self.reduced_subscheme().singular_points()
+    X_red_sing = self._reduced_singular_points
     for P in X_red_sing:
       m = self.multiplicity(P)
       if m > 2 * self.degree() / 3:
@@ -338,7 +340,7 @@ class ProjectivePlaneCurve:
     # Search for point of multiplicity 2d/3 or a point
     # of multiplicity d/3 < m <= 2d/3 and a line in the
     # tangent cone of multiplicity >= m/2.
-    X_red_sing = self.reduced_subscheme().singular_points()
+    X_red_sing = self._reduced_singular_points
     for P in X_red_sing:
       m = self.multiplicity(P)
       if m == 2 * self.degree() / 3:
@@ -422,7 +424,7 @@ class ProjectivePlaneCurve:
     # Search for a point of multiplicity > 2d/3 or a point
     # of multiplicity d/3 < m <= 2d/3 and a line in the
     # tangent cone of multiplicity >= m/2.
-    X_red_sing = self.reduced_subscheme().singular_points()
+    X_red_sing = self._reduced_singular_points
     for P in X_red_sing:
       m = self.multiplicity(P)
       if m > 2 * self.degree() / 3 and P[j] != 0 and P[i] != 0 and P[k] == 0:
@@ -649,7 +651,7 @@ class ProjectivePlaneCurve:
     The method computes the maximum over all such values.
     """
 
-    X_red_sing = self.reduced_subscheme().singular_points()
+    X_red_sing = self._reduced_singular_points
     max_sing_mult = max((self.multiplicity(P) for P in X_red_sing), default=1)
 
     component_mults = [mult for mult, comp in self.nonreduced_components()]
@@ -943,7 +945,7 @@ class ProjectivePlaneCurve:
     Give reference.
     """
 
-    X_red_sing = self.reduced_subscheme().singular_points()
+    X_red_sing = self._reduced_singular_points
     # CASES (b) and (d)
     for P in X_red_sing:
       m = self.multiplicity(P)
@@ -1032,6 +1034,16 @@ class ProjectivePlaneCurve:
     """
 
     return list(self.polynomial.factor())
+
+
+  @cached_property
+  def _reduced_singular_points(self):
+    r"""
+    Return the list of singular points of the reduced subscheme
+    of `self`.
+    """
+
+    return self.reduced_subscheme().singular_points()
 
 
 
