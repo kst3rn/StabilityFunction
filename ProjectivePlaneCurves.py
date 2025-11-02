@@ -396,7 +396,7 @@ class ProjectivePlaneCurve:
       sage: X.elementary_instability_direction((2,1))
       None
 
-    WARNING:
+    REMARK:
     This method does not search for instabilities that are
     diagonalized by self.get_standard_basis().
     """
@@ -1756,9 +1756,8 @@ def _apply_matrix(T, F, i = None):
 def _ult_line_transformation(base_field, coordinates):
   r"""
   Return a unipotent lower triangular matrix over `base_field`
-  transforming the line spanned by a standard basis vector to
-  the line spanned by the vector with coordinates given by
-  `coordinates`.
+  transforming the line spanned by some standard basis vector
+  to the line spanned by the vector defined by `coordinates`.
 
   EXAMPLES:
     sage: K.<a,b,c> = QQ[]
@@ -1796,9 +1795,8 @@ def _ult_line_transformation(base_field, coordinates):
 def _uut_line_transformation(base_field, coordinates):
   r"""
   Return a unipotent upper triangular matrix over `base_field`
-  transforming the line spanned by a standard basis vector to
-  the line spanned by the vector with coordinates given by
-  `coordinates`.
+  transforming the line spanned by some standard basis vector
+  to the line spanned by the vector defined by `coordinates`.
 
   EXAMPLES:
     sage: K.<a,b,c> = QQ[]
@@ -2017,7 +2015,7 @@ def _integral_line_transformation(base_field, Vector, weight_vector):
 def _ult_plane_transformation(linear_form):
   r"""
   Return a unipotent lower triangular matrix with maximal
-  number of zeros which transform `linear_form` to some `x_i`.
+  number of zeros which transforms `linear_form` to some `x_i`.
 
   EXAMPLES:
     sage: K.<A,B,C> = QQ[]
@@ -2065,7 +2063,7 @@ def _ult_plane_transformation(linear_form):
 def _uut_plane_transformation(linear_form):
   r"""
   Return a unipotent upper triangular matrix with maximal
-  number of zeros which transform `linear_form` to some `x_i`.
+  number of zeros which transforms `linear_form` to some `x_i`.
 
   EXAMPLES:
     sage: K.<A,B,C> = QQ[]
@@ -2184,22 +2182,19 @@ def _integral_plane_transformation(linear_form, weight_vector):
   normal subgroup and T is unipotent.
   """
 
-  # convert all entries to Rationals
-  for i, w in enumerate(weight_vector):
-    weight_vector[i] = QQ(w)
-
-  P = _sorting_permutation_matrix(weight_vector)
+  weight_vector_qq = [QQ(w) for w in weight_vector]
+  P = _sorting_permutation_matrix(weight_vector_qq)
   pL = _apply_matrix(P.transpose(), linear_form)
-  list_of_matrices = [P*T*P.transpose() for T in _ult_plane_transformation(pL)]
+  T = _ult_plane_transformation(pL)
 
-  return list_of_matrices
+  return P * T * P.transpose()
 
 
 def _ult_flag_transformation(Vector, linear_form):
   r"""
-  Return unipotent lower triangular matrix transforming a flag given
+  Return a unipotent lower triangular matrix transforming a flag given
   by a line spanned by a standard basis vector e_j and a plane x_i = 0
-  to the line spanned by Vector and the plane given by linear_form = 0
+  to the line spanned by Vector and the plane given by linear_form = 0.
 
   INPUT:
   Vector      - vector with 3 entries
@@ -2215,11 +2210,11 @@ def _ult_flag_transformation(Vector, linear_form):
 
   Vector = list(Vector)
   if linear_form(Vector) != 0:
-    raise ValueError
+    raise ValueError(f"{linear_form} must be zero at {Vector}")
 
-  base_field = linear_form.base_ring()
-  T1 = _ult_line_transformation(base_field, Vector)
-  T2 = _ult_plane_transformation(_apply_matrix(T1.inverse(), linear_form))[0]
+  base_ring = linear_form.base_ring()
+  T1 = _ult_line_transformation(base_ring, Vector)
+  T2 = _ult_plane_transformation(_apply_matrix(T1, linear_form))
 
   return T2 * T1
 
@@ -2228,7 +2223,7 @@ def _uut_flag_transformation(Vector, linear_form):
   r"""
   Return unipotent upper triangular matrix transforming a flag given
   by a line spanned by a standard basis vector e_j and a plane x_i = 0
-  to the line spanned by Vector and the plane given by linear_form = 0
+  to the line spanned by Vector and the plane given by linear_form = 0.
 
   INPUT:
   Vector      - vector with 3 entries
@@ -2248,7 +2243,7 @@ def _uut_flag_transformation(Vector, linear_form):
 
   base_field = linear_form.base_ring()
   T1 = _uut_line_transformation(base_field, Vector)
-  T2 = _uut_plane_transformation(_apply_matrix(T1.inverse(), linear_form))[0]
+  T2 = _uut_plane_transformation(_apply_matrix(T1, linear_form))
 
   return T2 * T1
 
