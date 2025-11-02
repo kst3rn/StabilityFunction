@@ -2204,8 +2204,48 @@ def _ult_flag_transformation(Vector, linear_form):
   T - unipotent lower triangular matrix with e_j*T = Vector and
   _apply_matrix(T, linear_form) = x_i
 
-  MATHEMATICAL INTERPRETATION:
-  ...
+  EXAMPLES:
+    sage: K.<a,b,c,A,B,C> = QQ[]
+    sage: K = K.fraction_field()
+    sage: R.<x0,x1,x2> = K[]
+    sage: P = [a,b,c]
+    sage: L = A*x0 + B*x1 - (a*A/c + b*B/c)*x2
+    sage: L(P)
+    0
+    sage: T = _ult_flag_transformation(P, L); T
+    [     1      0      0]
+    [(-B)/A      1      0]
+    [   a/c    b/c      1]
+    sage: c * vector([0,0,1]) * T
+    (a, b, c)
+    sage: L(list(vector([x0,x1,x2]) * T))
+    A*x0
+    sage:
+    sage: P = [a,b,0]
+    sage: L = A*x0 - (a*A/b)*x1 + C*x2
+    sage: L(P)
+    0
+    sage: T = _ult_flag_transformation(P, L); T
+    [     1      0      0]
+    [   a/b      1      0]
+    [(-C)/A      0      1]
+    sage: b * vector([0,1,0]) * T
+    (a, b, 0)
+    sage: L(list(vector([x0,x1,x2]) * T))
+    A*x0
+    sage:
+    sage: P = [a,0,0]
+    sage: L = B*x1 + C*x2
+    sage: L(P)
+    0
+    sage: T = _ult_flag_transformation(P, L); T
+    [     1      0      0]
+    [     0      1      0]
+    [     0 (-C)/B      1]
+    sage: a * vector([1,0,0]) * T
+    (a, 0, 0)
+    sage: L(list(vector([x0,x1,x2]) * T))
+    B*x1
   """
 
   Vector = list(Vector)
@@ -2221,7 +2261,7 @@ def _ult_flag_transformation(Vector, linear_form):
 
 def _uut_flag_transformation(Vector, linear_form):
   r"""
-  Return unipotent upper triangular matrix transforming a flag given
+  Return a unipotent upper triangular matrix transforming a flag given
   by a line spanned by a standard basis vector e_j and a plane x_i = 0
   to the line spanned by Vector and the plane given by linear_form = 0.
 
@@ -2233,8 +2273,48 @@ def _uut_flag_transformation(Vector, linear_form):
   T - unipotent upper triangular matrix with e_j*T = Vector and
   _apply_matrix(T, linear_form) = x_i
 
-  MATHEMATICAL INTERPRETATION:
-  ...
+  EXAMPLES:
+    sage: K.<a,b,c,A,B,C> = QQ[]
+    sage: K = K.fraction_field()
+    sage: R.<x0,x1,x2> = K[]
+    sage: P = [a,b,c]
+    sage: L = -(b*B/a + c*C/a)*x0 + B*x1 + C*x2
+    sage: L(P)
+    0
+    sage: T = _uut_flag_transformation(P, L); T
+    [     1    b/a    c/a]
+    [     0      1 (-B)/C]
+    [     0      0      1]
+    sage: a * vector([1,0,0]) * T
+    (a, b, c)
+    sage: L(list(vector([x0,x1,x2]) * T))
+    C*x2
+    sage:
+    sage: P = [0,b,c]
+    sage: L = A*x0 - (c*C/b)*x1 + C*x2
+    sage: L(P)
+    0
+    sage: T = _uut_flag_transformation(P, L); T
+    [     1      0 (-A)/C]
+    [     0      1    c/b]
+    [     0      0      1]
+    sage: b * vector([0,1,0]) * T
+    (0, b, c)
+    sage: L(list(vector([x0,x1,x2]) * T))
+    C*x2
+    sage:
+    sage: P = [0,0,c]
+    sage: L = A*x0 + B*x1
+    sage: L(P)
+    0
+    sage: T = _uut_flag_transformation(P, L); T
+    [     1 (-A)/B      0]
+    [     0      1      0]
+    [     0      0      1]
+    sage: c * vector([0,0,1]) * T
+    (0, 0, c)
+    sage: L(list(vector([x0,x1,x2]) * T))
+    B*x1
   """
 
   Vector = list(Vector)
