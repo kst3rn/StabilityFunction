@@ -1441,67 +1441,161 @@ class PPC_TangentCone:
     return L
 
 
+class ProjectiveFlag:
+  r"""
+  Construct a projective flag to the following conditions.
 
-class FlagOfLinearSpaces:
+  INPUT:
+  - ``projective_point`` -- a point in the projective plane.
+  - ``linear_form`` -- a linear form defining a line in the projective plane.
+  """
 
-  def __init__(self, projective_plane_curve, Point = None, Line = None):
-    if point == None and line == None:
-      raise ValueError
+  def __init__(self, projective_point=None, linear_form=None):
+    r"""
+    Construct a projective flag to the following conditions.
 
-    if Point != None:
-      Point = list(Point)
+    INPUT:
+    - ``projective_point`` -- a point in the projective plane.
+    - ``linear_form`` -- a linear form defining a line in the projective plane.
 
-    self.proj_plane_curve = projective_plane_curve
-    self.point = Point
-    self.line = Line
-    self.base_ring = self.proj_plane_curve.get_base_ring()
+    EXAMPLES:
+      sage: ProjectiveFlag([1,2,3])
+      Projective flag given by [1, 2, 3]
+
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: ProjectiveFlag(linear_form = x0 + 2*x1 - x2)
+      Projective flag given by x0 + 2*x1 - x2
+      sage:
+      sage: ProjectiveFlag([1,1,3], x0 + 2*x1 - x2)
+      Projective flag given by [1, 1, 3] and x0 + 2*x1 - x2
+    """
+
+    if projective_point is None and linear_form is None:
+      raise ValueError("Both arguments are None")
+
+    if projective_point is not None and linear_form is not None:
+      if linear_form(projective_point) != 0:
+        raise ValueError(
+          f"{projective_point} is not a point on the projective line given by {linear_form}")
+
+    if projective_point is not None:
+      self.point = list(projective_point)
+    else:
+      self.point = None
+    self.line = linear_form
+
 
   def __repr__(self):
     if self.point == None:
-      return f"Flag attached to {self.proj_plane_curve} given by {self.line}"
+      return f"Projective flag given by {self.line}"
     elif self.line == None:
-      return f"Flag attached to {self.proj_plane_curve} given by {self.point}"
+      return f"Projective flag given by {self.point}"
     else:
-      return f"Flag attached to {self.proj_plane_curve} given by {self.point} and {self.line}"
+      return f"Projective flag given by {self.point} and {self.line}"
 
 
-  def flag(self):
+  def base_change_matrix(self, matrix_form = 'uut'):
     r"""
-    Return the flag defining self
+    Return a unipotent matrix transforming a flag given by some
+    standard basis vector e_j and some line x_i = 0 to `self`.
+
+    INPUT:
+    - ``matrix_form`` -- a list of rational numbers or one of the strings 'ult', 'uut'.
+
+    OUTPUT:
+    A unipotent matrix.
+
+    EXAMPLES:
+      sage: K.<a,b,c,A,B,C> = QQ[]
+      sage: K = K.fraction_field()
+      sage: R.<x0,x1,x2> = K[]
+      sage: P = [a,b,c]
+      sage: L = A*x0 + B*x1 - (a*A/c + b*B/c)*x2
+      sage: L(P)
+      0
+      sage: F = ProjectiveFlag(P, L)
+      sage: T = F.base_change_matrix('ult')
+      sage: T = F.base_change_matrix('ult'); T
+      [     1      0      0]
+      [(-B)/A      1      0]
+      [   a/c    b/c      1]
+      sage: c * vector([0,0,1]) * T
+      (a, b, c)
+      sage: L(list(vector([x0,x1,x2]) * T))
+      A*x0
+      sage:
+      sage: P = [a,b,0]
+      sage: L = A*x0 - (a*A/b)*x1 + C*x2
+      sage: L(P)
+      0
+      sage: F = ProjectiveFlag(P, L)
+      sage: T = F.base_change_matrix('ult'); T
+      [     1      0      0]
+      [   a/b      1      0]
+      [(-C)/A      0      1]
+      sage: b * vector([0,1,0]) * T
+      (a, b, 0)
+      sage: L(list(vector([x0,x1,x2]) * T))
+      A*x0
+      sage:
+      sage: P = [a,0,0]
+      sage: L = B*x1 + C*x2
+      sage: L(P)
+      0
+      sage: F = ProjectiveFlag(P, L)
+      sage: T = F.base_change_matrix('ult'); T
+      [     1      0      0]
+      [     0      1      0]
+      [     0 (-C)/B      1]
+      sage: a * vector([1,0,0]) * T
+      (a, 0, 0)
+      sage: L(list(vector([x0,x1,x2]) * T))
+      B*x1
+      sage:
+      sage: P = [a,b,c]
+      sage: L = -(b*B/a + c*C/a)*x0 + B*x1 + C*x2
+      sage: L(P)
+      0
+      sage: F = ProjectiveFlag(P, L)
+      sage: T = F.base_change_matrix('uut'); T
+      [     1    b/a    c/a]
+      [     0      1 (-B)/C]
+      [     0      0      1]
+      sage: a * vector([1,0,0]) * T
+      (a, b, c)
+      sage: L(list(vector([x0,x1,x2]) * T))
+      C*x2
+      sage:
+      sage: P = [0,b,c]
+      sage: L = A*x0 - (c*C/b)*x1 + C*x2
+      sage: L(P)
+      0
+      sage: F = ProjectiveFlag(P, L)
+      sage: T = F.base_change_matrix('uut'); T
+      [     1      0 (-A)/C]
+      [     0      1    c/b]
+      [     0      0      1]
+      sage: b * vector([0,1,0]) * T
+      (0, b, c)
+      sage: L(list(vector([x0,x1,x2]) * T))
+      C*x2
+      sage:
+      sage: P = [0,0,c]
+      sage: L = A*x0 + B*x1
+      sage: L(P)
+      0
+      sage: F = ProjectiveFlag(P, L)
+      sage: T = F.base_change_matrix('uut'); T
+      [     1 (-A)/B      0]
+      [     0      1      0]
+      [     0      0      1]
+      sage: c * vector([0,0,1]) * T
+      (0, 0, c)
+      sage: L(list(vector([x0,x1,x2]) * T))
+      B*x1
     """
 
-    if self.point == None:
-      return self.line
-    elif self.line == None:
-      return self.point
-    return (self.point, self.line)
-
-
-  def point_transformation(self, matrix_form = 'uut'):
-    r"""
-    Return unipotent matrix transforming a standard basis vector to self.point
-    """
-
-    if self.point == None:
-      return identity_matrix(self.base_ring, 3)
-
-    if matrix_form == 'uut':
-      return _uut_line_transformation(self.base_ring, self.point)
-    elif matrix_form == 'ult':
-      return _ult_line_transformation(self.base_ring, self.point)
-    elif isinstance(matrix_form, list):
-      return _integral_line_transformation(self.base_ring, self.point, matrix_form)
-    else:
-      raise ValueError
-
-
-  def base_change_matrices(self, matrix_form = 'uut'):
-    r"""
-    Return unipotent matrix transforming a standard basis vector and the line
-    spanned by it to self.flag()
-    """
-
-    if self.point == None:
+    if self.point is None:
       if matrix_form == 'uut':
         return _uut_plane_transformation(self.line)
       elif matrix_form == 'ult':
@@ -1510,27 +1604,35 @@ class FlagOfLinearSpaces:
         return _integral_plane_transformation(self.line, matrix_form)
       else:
         raise ValueError
-    elif self.line == None:
-      return [self.point_transformation(matrix_form)]
+    elif self.line is None:
+      base_ring = self.line.base_ring()
+      if matrix_form == 'uut':
+        return _uut_line_transformation(base_ring, self.point)
+      elif matrix_form == 'ult':
+        return _ult_line_transformation(base_ring, self.point)
+      elif isinstance(matrix_form, list):
+        return _integral_line_transformation(base_ring, self.point, matrix_form)
+      else:
+        raise ValueError
     else:
       if matrix_form == 'uut':
-        return [_uut_flag_transformation(self.point, self.line)]
+        return _uut_flag_transformation(self.point, self.line)
       elif matrix_form == 'ult':
-        return [_ult_flag_transformation(self.point, self.line)]
+        return _ult_flag_transformation(self.point, self.line)
       elif isinstance(matrix_form, list):
-        return [_integral_flag_transformation(self.point, self.line, matrix_form)]
+        return _integral_flag_transformation(self.point, self.line, matrix_form)
       else:
         raise ValueError
 
 
-  def get_base_change_matrix(self, matrix_form = 'uut'):
-    return self.base_change_matrices(matrix_form)[0]
-
-
-  def is_unstable(self):
+  def is_unstable(self, projective_plane_curve):
     r"""
-    Return True or False depending on whether self corresponds to
-    an instability of self.proj_plane_curve or not
+    Return `True` or `False` depending on whether the base
+    change matrix `self.base_change_matrix()` gives rise to
+    an instability of `projective_plane_curve`.
+
+    INPUT:
+    - ``projective_plane_curve`` -- a projective plane curve.
 
     MATHEMATICAL INTERPRETATION:
     First, let
@@ -1562,29 +1664,24 @@ class FlagOfLinearSpaces:
       min(i0*w0 + i1*w1 + i2*w2 : i in I)
     under the constraints -1 <= w0, w1, w2 <= 1 and to check whether
     the maximum is > 0 or not.
-    REMARK. If self.point or self.line is None, then self is an
-    instability, see [Proposition 2.6, SternWewers].
     """
 
-    if self.point == None:
-      return True
-    if self.line == None:
-      return True
+    if not isinstance(projective_plane_curve, ProjectivePlaneCurve):
+      raise TypeError
 
-    T = self.get_base_change_matrix()
-    F = self.proj_plane_curve.get_polynomial()
+    T = self.base_change_matrix()
+    F = projective_plane_curve.get_polynomial()
     G = _apply_matrix(T, F)
 
     MILP = MixedIntegerLinearProgram(solver='PPL')
-    v = MILP.new_variable()
 
+    v = MILP.new_variable()
     t = v['minimum']
     w0 = v['w0']
     w1 = v['w1']
     w2 = v['w2']
 
     MILP.set_objective(t)
-
     MILP.add_constraint(-1 <= w0 <= 1)
     MILP.add_constraint(-1 <= w1 <= 1)
     MILP.add_constraint(-1 <= w2 <= 1)
@@ -1599,10 +1696,14 @@ class FlagOfLinearSpaces:
     return values['minimum'] > 0
 
 
-  def is_semiinstability(self):
+  def is_semiunstable(self, projective_plane_curve):
     r"""
-    Return `True` or `False` depending on whether `self` corresponds to
-    a semiinstability of self.proj_plane_curve or not.
+    Return `True` or `False` depending on whether the base
+    change matrix `self.base_change_matrix()` gives rise to
+    an semiinstability of `projective_plane_curve`.
+
+    INPUT:
+    - ``projective_plane_curve`` -- a projective plane curve.
 
     MATHEMATICAL INTERPRETATION:
     First, let
@@ -1628,18 +1729,21 @@ class FlagOfLinearSpaces:
     a balanced weight vector. Thus, it suffices to consider
       (w0, w1, w2) in QQ^3
     wtih
-      -1 <= w0, w1, w2 <= 1.
+      ||w||_1 = 1.
     Thus, we only have to maximize the function
       min(i0*w0 + i1*w1 + i2*w2 : i in I)
-    under the constraint ||w||_1 = 1 and to check whether the
+    on the boundary of the cube [-1, 1]^3 and to check whether the
     maximum is 0 or not.
     """
 
-    T = self.get_base_change_matrix()
-    F = self.proj_plane_curve.get_polynomial()
+    if not isinstance(projective_plane_curve, ProjectivePlaneCurve):
+      raise TypeError
+
+    T = self.base_change_matrix()
+    F = projective_plane_curve.get_polynomial()
     G = _apply_matrix(T, F)
 
-    maxima_on_faces = []
+    maximum_is_zero = False
     # positive faces
     for position in range(3):
       for plus_minus in [Integer(-1), Integer(1)]:
@@ -1654,16 +1758,19 @@ class FlagOfLinearSpaces:
           if i == position:
             MILP.add_constraint(v[i] == plus_minus)
           MILP.add_constraint(-1 <= v[i] <= 1)
-        # Condition to be in H
+        # Condition to be in the zero space
         MILP.add_constraint(sum(v[i] for i in range(3)) == 0)
         # All linear functions are bounded by minimum.
         for exponent in G.exponents():
           lin_func = sum(Integer(i_j) * v[j] for j, i_j in enumerate(exponent))
           MILP.add_constraint(t <= lin_func)
+        max_value = MILP.solve()
+        if max_value > 0:
+          return False
+        elif max_value == 0:
+          maximum_is_zero = True
 
-        maxima_on_faces.append(MILP.solve())
-
-    return max(maxima_on_faces) == 0
+    return maximum_is_zero
 
 
 
