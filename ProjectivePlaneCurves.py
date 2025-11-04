@@ -330,7 +330,7 @@ class ProjectivePlaneCurve:
       elif m > self.degree() / 3:
         for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
           if L_mult >= m / 2:
-            if FlagOfLinearSpaces(self, P, L).is_semiinstability():
+            if ProjectiveFlag(P, L).is_semiunstable(self):
               return False
 
     return True
@@ -367,7 +367,7 @@ class ProjectivePlaneCurve:
     # Search for a line of multiplicity > d/3.
     for Y, m in self._decompose:
       if Y.degree() == 1 and m > self.degree() / 3:
-        return FlagOfLinearSpaces(self, Point = None, Line = Y)
+        return ProjectiveFlag(None, Y)
 
     # Search for a point of multiplicity > 2d/3 or a point
     # of multiplicity d/3 < m <= 2d/3 and a line in the
@@ -376,12 +376,12 @@ class ProjectivePlaneCurve:
     for P in X_red_sing:
       m = self.multiplicity(P)
       if m > 2 * self.degree() / 3:
-        return FlagOfLinearSpaces(self, Point = P)
+        return ProjectiveFlag(P, None)
       elif m > self.degree() / 3:
         for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
           if L_mult > m / 2:
-            P_on_L_flag = FlagOfLinearSpaces(self, P, L)
-            if P_on_L_flag.is_unstable():
+            P_on_L_flag = ProjectiveFlag(P, L)
+            if P_on_L_flag.is_unstable(self):
               return P_on_L_flag
 
     return None
@@ -464,7 +464,7 @@ class ProjectivePlaneCurve:
         return -P[j] / P[i]
       elif m > self.degree() / 3:
         for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
-          if L_mult > m / 2 and FlagOfLinearSpaces(self, P, L).is_unstable():
+          if L_mult > m / 2 and ProjectiveFlag(P, L).is_unstable(self):
             L_vars = set(L.variables())
             if L_vars == {x_j, x_i}:
               lambda_L = L[x_i] / L[x_j]
@@ -913,22 +913,22 @@ class ProjectivePlaneCurve:
     # CASES (b) and (d)
     for P, m in self.points_with_high_multiplicity():
       if m > 2 * self.degree() / 3:  # CASE (b)
-        list_of_pseu_inst.append(FlagOfLinearSpaces(self, Point = P))
+        list_of_pseu_inst.append(ProjectiveFlag(P, None))
       elif m > self.degree() / 2:  # CASE (d) 1/2
         for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
           if L_multiplicity > m / 2:
-            list_of_pseu_inst.append(FlagOfLinearSpaces(self, P, L))
+            list_of_pseu_inst.append(ProjectiveFlag(P, L))
 
     # CASES (a) and (c)
     for L, L_multiplicity, G in self.lines_with_high_multiplicity():
       if L_multiplicity > self.degree() / Integer(3):  # CASE (a)
-        list_of_pseu_inst.append(FlagOfLinearSpaces(self, Line = L))
+        list_of_pseu_inst.append(ProjectiveFlag(None, L))
       else: # CASE (c) 1/2
         L_curve = self.projective_plane.curve(L)
         G_curve = self.projective_plane.curve(G)
         for P in L_curve.intersection_points(G_curve):
           if L_curve.intersection_multiplicity(G_curve, P) > (self.degree() - L_multiplicity) / Integer(2):
-            list_of_pseu_inst.append(FlagOfLinearSpaces(self, P, L))
+            list_of_pseu_inst.append(ProjectiveFlag(P, L))
 
     return list_of_pseu_inst
 
@@ -983,22 +983,22 @@ class ProjectivePlaneCurve:
     for P in X_red_sing:
       m = self.multiplicity(P)
       if m > 2 * self.degree() / 3:  # CASE (b)
-        yield FlagOfLinearSpaces(self, Point = P)
+        yield ProjectiveFlag(P, None)
       elif m > self.degree() / 2:  # CASE (d) 1/2
         for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
           if L_multiplicity > m / 2:
-            yield FlagOfLinearSpaces(self, P, L)
+            yield ProjectiveFlag(P, L)
 
     # CASES (a) and (c)
     for L, L_multiplicity, G in self.lines_with_high_multiplicity():
       if L_multiplicity > self.degree() / 3:  # CASE (a)
-        yield FlagOfLinearSpaces(self, Line = L)
+        yield ProjectiveFlag(None, L)
       else: # CASE (c) 1/2
         L_curve = self.projective_plane.curve(L)
         G_curve = self.projective_plane.curve(G)
         for P in L_curve.intersection_points(G_curve):
           if L_curve.intersection_multiplicity(G_curve, P) > (self.degree() - L_multiplicity) / 2:
-            yield FlagOfLinearSpaces(self, P, L)
+            yield ProjectiveFlag(P, L)
 
 
   def instabilities(self):
@@ -1221,7 +1221,7 @@ class PPC_TangentCone:
 
   def embedded_polynomial(self):
     r"""
-    Return the defining polynomial of the embedding if `self` into
+    Return the defining polynomial of the embedding of `self` into
     the projective plane at the point `self.normalized_point`.
 
     EXAMPLES:
@@ -1473,13 +1473,14 @@ class ProjectiveFlag:
     if projective_point is None and linear_form is None:
       raise ValueError("Both arguments are None")
 
-    if projective_point is not None and linear_form is not None:
-      if linear_form(projective_point) != 0:
+    if projective_point is not None:
+      proj_P_list = list(projective_point)
+      if linear_form is not None and linear_form(proj_P_list) != 0:
         raise ValueError(
           f"{projective_point} is not a point on the projective line given by {linear_form}")
 
     if projective_point is not None:
-      self.point = list(projective_point)
+      self.point = proj_P_list
     else:
       self.point = None
     self.line = linear_form
