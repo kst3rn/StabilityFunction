@@ -354,6 +354,55 @@ class ProjectivePlaneCurve:
     return True
 
 
+  def instability(self):
+    r"""
+    Return an instability of `self` or `None` if `self` is
+    semistable.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x1^2*x2 - x0^3 - x0^2*x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x0^3 - x0^2*x2 + x1^2*x2
+      sage: X.instability()
+      sage:
+
+      sage: R.<x0,x1,x2> = GF(3)[]
+      sage: f = x0^3 + x1^2 * x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^3 + x1^2*x2
+      sage: X.instability()
+      Flag attached to Projective Plane Curve with defining polynomial x0^3 + x1^2*x2 given by [0, 0, 1] and x1
+
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.instability()
+      Flag attached to Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4 given by x0 + x1 + x2
+    """
+
+    # Search for a line of multiplicity > d/3.
+    for Y, m in self._decompose:
+      if Y.degree() == 1 and m > self.degree() / 3:
+        return FlagOfLinearSpaces(self, Point = None, Line = Y)
+
+    # Search for a point of multiplicity > 2d/3 or a point
+    # of multiplicity d/3 < m <= 2d/3 and a line in the
+    # tangent cone of multiplicity >= m/2.
+    X_red_sing = self._reduced_singular_points
+    for P in X_red_sing:
+      m = self.multiplicity(P)
+      if m > 2 * self.degree() / 3:
+        return FlagOfLinearSpaces(self, Point = P)
+      elif m > self.degree() / 3:
+        for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
+          if L_mult > m / 2:
+            P_on_L_flag = FlagOfLinearSpaces(self, P, L)
+            if P_on_L_flag.is_unstable():
+              return P_on_L_flag
+
+
   def elementary_instability_direction(self, shape):
     r"""
     Return the element `lambda` of the base ring of `self` such
