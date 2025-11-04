@@ -258,26 +258,8 @@ class ProjectivePlaneCurve:
 
     if self.is_smooth():
       return True
-
-    # Search for a line of multiplicity > d/3.
-    for Y, m in self._decompose:
-      if Y.degree() == 1 and m > self.degree() / 3:
-        return False
-
-    # Search for a point of multiplicity > 2d/3 or a point
-    # of multiplicity d/3 < m <= 2d/3 and a line in the
-    # tangent cone of multiplicity >= m/2.
-    X_red_sing = self._reduced_singular_points
-    for P in X_red_sing:
-      m = self.multiplicity(P)
-      if m > 2 * self.degree() / 3:
-        return False
-      elif m > self.degree() / 3:
-        for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
-          if L_mult > m / 2:
-            if FlagOfLinearSpaces(self, P, L).is_unstable():
-              return False
-
+    elif self.instability() is not None:
+      return False
     return True
 
 
@@ -401,6 +383,8 @@ class ProjectivePlaneCurve:
             P_on_L_flag = FlagOfLinearSpaces(self, P, L)
             if P_on_L_flag.is_unstable():
               return P_on_L_flag
+
+    return None
 
 
   def elementary_instability_direction(self, shape):
