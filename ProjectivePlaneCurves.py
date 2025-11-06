@@ -354,14 +354,14 @@ class ProjectivePlaneCurve:
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial x0^3 + x1^2*x2
       sage: X.instability()
-      Flag attached to Projective Plane Curve with defining polynomial x0^3 + x1^2*x2 given by [0, 0, 1] and x1
+      Projective flag given by [0, 0, 1] and x1
 
       sage: R.<x0,x1,x2> = GF(2)[]
       sage: f = x0^4 + x1^4 + x2^4
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
       sage: X.instability()
-      Flag attached to Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4 given by x0 + x1 + x2
+      Projective flag given by x0 + x1 + x2
     """
 
     # Search for a line of multiplicity > d/3.
@@ -952,7 +952,7 @@ class ProjectivePlaneCurve:
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial x0^3 + x1^3 + x0^2*x2 - x0*x2^2
       sage: list(X.flags())
-      [Flag attached to Projective Plane Curve with defining polynomial x0^3 + x1^3 + x0^2*x2 - x0*x2^2 given by [2, 2, 1] and x0 + x2]
+      [Projective flag given by [2, 2, 1] and x0 + x2]
 
     An unstable quartic.
       sage: R.<x0,x1,x2> = GF(2)[]
@@ -960,9 +960,9 @@ class ProjectivePlaneCurve:
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2
       sage: list(X.flags())
-      [Flag attached to Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 1],
-       Flag attached to Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 1] and x1 + x2,
-       Flag attached to Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by x0]
+      [Projective flag given by [0, 1, 1],
+       Projective flag given by [0, 1, 1] and x1 + x2,
+       Projective flag given by x0]
 
     An unstable cubic.
       sage: R.<x0,x1,x2> = QQ[]
@@ -970,9 +970,9 @@ class ProjectivePlaneCurve:
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial x0^2*x2 - 2*x0*x1*x2 + x1^2*x2
       sage: list(X.flags())
-      [Flag attached to Projective Plane Curve with defining polynomial x0^2*x2 - 2*x0*x1*x2 + x1^2*x2 given by [1, 1, 0],
-       Flag attached to Projective Plane Curve with defining polynomial x0^2*x2 - 2*x0*x1*x2 + x1^2*x2 given by [1, 1, 0] and x2,
-       Flag attached to Projective Plane Curve with defining polynomial x0^2*x2 - 2*x0*x1*x2 + x1^2*x2 given by x0 - x1]
+      [Projective flag given by [1, 1, 0],
+       Projective flag given by [1, 1, 0] and x2,
+       Projective flag given by x0 - x1]
 
     MATHEMATICAL INTERPRETATION:
     Give reference.
