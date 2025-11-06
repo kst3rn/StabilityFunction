@@ -364,269 +364,164 @@ class LinearValuation:
         if not polynomial.parent() == self.polynomial_ring:
             raise TypeError
 
-        prime_element = self.base_ring_valuation.uniformizer()
-
-        BaseRing = LaurentPolynomialRing( self.base_ring_valuation.residue_field(), 't' )
-        BaseRing_generator = BaseRing.gen()
-
-        N = self.get_dimension()
-        GradedReductionRing = PolynomialRing( BaseRing, 'y', N )
-
-        E_matrix = identity_matrix( self.polynomial_ring.base_ring(), N )
-        G = polynomial( list( vector(self.standard_basis()) * self.base_change_matrix ) )
-        v_help = LinearValuation( self.polynomial_ring, self.base_ring_valuation, E_matrix, self.weight_vector )
-
-        # By REMARK 1 we have self.evaluate_at(polynomial) = v_help.evaluate_at(G)
-        polynomial_valuation = v_help.evaluate_at( G )
-
-        f = 0
-        for monom_coefficient, monom in list(G):
-            if v_help.evaluate_at( monom_coefficient*monom ) == polynomial_valuation:
-                prime_element_exponent = self.base_ring_valuation( monom_coefficient ) / self.base_ring_valuation( prime_element )
-                monom_coefficient_reduction = self.base_ring_valuation.reduce( monom_coefficient / prime_element**prime_element_exponent )
-                monomial_term_reduction = monom_coefficient_reduction
-                for j, variable_degree in enumerate(monom.degrees()):
-                    monomial_term_reduction = monomial_term_reduction * GradedReductionRing.gen(j)**variable_degree
-                f = f + BaseRing_generator**prime_element_exponent * monomial_term_reduction
-
-        return GradedReduction(self, f)
-
-
 
 
 
 class GradedReduction:
+  r"""
+  Construct ...
+  """
 
-    def __init__(self, linear_valuation, gr_polynomial):
-        """
-        Return ...
+  def __init__(self, polynomial, linear_valuation):
+    r"""
+    Construct ...
+    """
 
-        INPUT:
-            linear_valuation    - linear valuation on a polynomial ring K[x_0,...,x_n]
-                                  over a field K with discrete valuation v_K
-            gr_polynomial       - graded reduction of F in K[x_0,...,x_n] with respect
-                                  to 'linear_valuation'
+    R = linear_valuation.get_polynomial_ring()
+    self._polynomial = R(polynomial)
+    self._linear_valuation = linear_valuation
+    self._weight_vector = linear_valuation.get_weight_vector()
+    self._base_ring_grading = linear_valuation.get_base_ring_valuation().value_group().gen()
 
-        OUTPUT:
-            graded reduction of F with respect to 'linear_valuation' as object of the
-            class 'GradedReduction'
+    v_K = linear_valuation.get_base_ring_valuation()
+    prime_element = v_K.uniformizer()
+    BaseRing = LaurentPolynomialRing(v_K.residue_field(), 't')
+    BaseRing_generator = BaseRing.gen()
+    N = linear_valuation.get_dimension()
+    GradedReductionRing = PolynomialRing(BaseRing, 'y', N)
+    E_matrix = identity_matrix(linear_valuation.get_base_field(), N)
+    G = _apply_matrix(linear_valuation.get_base_change_matrix(), polynomial)
+    v_help = LinearValuation(polynomial.parent(), linear_valuation.get_base_ring_valuation(), E_matrix, self._weight_vector)
+    polynomial_valuation = v_help.evaluate_at(G)
+    f = GradedReductionRing(0)
+    for monom_coefficient, monom in list(G):
+      if v_help.(monom_coefficient*monom) == polynomial_valuation:
+        prime_element_exponent = v_K(monom_coefficient) / v_K(prime_element)
+        monom_coefficient_reduction = v_K.reduce(monom_coefficient / prime_element**prime_element_exponent)
+        monomial_term_reduction = monom_coefficient_reduction
+        for j, variable_degree in enumerate(monom.degrees()):
+          monomial_term_reduction = monomial_term_reduction * GradedReductionRing.gen(j)**variable_degree
+        f = f + t**prime_element_exponent * monomial_term_reduction
+    self.gr_polynomial = f
 
-        MATHEMATICS and IMPLEMENTATION:
-            First, let
-                f = gr_polynomial,
-                s = linear_valuation.get_base_ring_valuation().value_group().gen(),
-                u = linear_valuation.get_weight_vector() .
-            Then s is a rational number and u = (u_0,...,u_n) a trupel of rational
-            numbers. Moreover, f is the graded reduction of a polynomial
-                F in K[x_0,...,x_n]
-            with respect to a linear valuation v. The graded reduction ring of v is
-            given by the polynomial ring
-                R = k[t,t^(-1)][y_0,...,y_n]
-            over the Laurent polynomial ring k[t,t^(-1)]. Here y_i is the reduction
-            of x_i. Thus, we can write f as
-                sum_{j,i_0,...,i_n} a_{j,i_0,...,i_n} * t^j * y_0^i_0 * ... * y_n^i_n .
-            Furthermore, R has a grading given by
-                |a| = 0 for all a in k, |t| = s,
-            and
-                |y_0| = v(x_0) = u_0, ..., |y_n| = v(x_n) = u_n .
-            With respect to this grading, f is a homogeneous element. With the notation
-                <i,u> = i_0 * u_0 + ... + i_n * u_n
-            we have
-                |f| = j*s + <i,u>
-            for all j and i = (i_0,...,i_n) with nonzero a_{j,i_0,...,i_n}.
-            Not let
-                d_0 = (u_0/s).denominator(), ..., d_n = (u_n/s).denominator()
-            and
-                d = lcm(d_0,...,d_n) .
-            In an algebraic closure of the fraction field of k[t,t^(-1)] let T be an
-            element with
-                T^d = t .
-            Then, in the integral extension of rings
-                k[t,t^(-1)] ---> k[T,T^(-1)]
-            we can write
-                T^(d/d_i) = (t^(1/d))^(d/d_i) = t^(1/d * d/d_i) = t^(1/d_i) .
-            Thus, over k[T,T^(-1)] we can introduce the variables
-                z_0 = t^(-u_0/s) * y_0, ..., z_n = t^(-u_n/s) * y_n .
-            Note that
-                |z_i| = -u_i / s * |t| + |y_i| = -u_i + u_i = 0
-            for any i. Further, using
-                y_i = t^(u_i/s) * z_i
-            we get
-                t^j*y_0^i_0*...*y_n^i_n = t^(j+1/s*<i,u>)*z_0^i_0*...*z_n^i_n .
-            As explained above, we have
-                |f| = j*u + <i,u>
-            and therefore
-                |f|/s = j + 1/s * <i,u>
-            for all j and i = (i_0,...,i_n) with nonzero a_{j,i_0,...,i_n}.
-            Thus, we have
-                t^j*y_0^i_0*...*y_n^i_n = t^(|f|/s)*z_0^i_0*...*z_n^i_n
-            and therefore f is equal to
-                t^(|f|/s)*sum_{j,i_0,...,i_n} a_{j,i_0,...,i_n}*z_0^i_0*...*z_n^i_n .
-            Now we view
-                g = sum_{j,i_0,...,i_n} a_{j,i_0,...,i_n}*z_0^i_0*...*z_n^i_n
-            as an element of the polynomial ring
-                k[z_0,...,z_n]
-            over the field k.
-            For computational reasons we will work with g and transfere the
-            results back to f with the inverse coordinate change.
-        """
-
-        self.linear_valuation = linear_valuation
-        self.polynomial_ring = linear_valuation.get_polynomial_ring()
-        self.gr_polynomial = gr_polynomial
-        self.base_ring_grading = linear_valuation.get_base_ring_valuation().value_group().gen()
-        self.GRR_grading = linear_valuation.get_weight_vector()
-
-        self.graded_reduction_ring = gr_polynomial.parent()
-        self.residue_field = self.graded_reduction_ring.base_ring().base_ring() # linear_valuation.get_base_ring_valuation.residue_field()
-
-        self.scaled_GRR_grading = [u / self.base_ring_grading for u in self.GRR_grading]
-
-        N = len(self.GRR_grading)
-        self.reduction_ring = PolynomialRing(self.residue_field, N, 'z')
-        reduction_ring_basis = self.reduction_ring.gens()
-        self.r_polynomial = 0
-        for multi_index, coefficient in self.gr_polynomial.dict().items():
-            monom = coefficient.coefficients()[0]
-            for j, degree in enumerate(multi_index):
-                monom = monom * reduction_ring_basis[j]**degree
-            self.r_polynomial = self.r_polynomial + monom
+    self._residue_field() = v_K.residue_field()
+    self._scaled_weight_vector  = (u / self.base_ring_grading for u in self._weight_vector)
+    reduction_ring = PolynomialRing(self.residue_field, N, 'z')
+    reduction_ring_basis = self.reduction_ring.gens()
+    self.r_polynomial = reduction_ring(0)
+    for multi_index, coefficient in self.gr_polynomial.dict().items():
+      monom = coefficient.coefficients()[0]
+      for j, degree in enumerate(multi_index):
+        monom = monom * reduction_ring_basis[j]**degree
+      self.r_polynomial = self.r_polynomial + monom
 
 
-    def __repr__(self):
-        return str(self.gr_polynomial)
+  def __repr__(self):
+    return str(self.gr_polynomial)
 
 
-    def get_GRR(self):
-        return self.graded_reduction_ring
+  def weight_vector(self):
+    return self._weight_vector
 
 
-    def GRR_standard_basis(self):
-        return self.graded_reduction_ring.gens()
+  def residue_field(self):
+    return self._residue_field
 
 
-    def get_base_ring_grading(self):
-        return self.base_ring_grading
+  def parent(self):
+    return self.gr_polynomial.parent()
 
 
-    def get_GRR_grading(self):
-        return self.GRR_grading
+  def standard_basis(self):
+    return self.graded_reduction_ring.gens()
 
 
-    def RR_standard_basis(self):
-        return self.reduction_ring.gens()
+  def base_ring_grading(self):
+    return self._base_ring_grading
+ 
+ 
+  def graded_reduction_polynomial(self):
+    return self.gr_polynomial
 
 
-    def get_scaled_GRR_grading(self):
-        return self.scaled_GRR_grading
+  def normalized_reduction_polynomial(self):
+    return self.r_polynomial
 
 
-    def get_gr_polynomial(self):
-        return self.gr_polynomial
+  def valuation(self):
+    return self._linear_valuation
 
 
-    def get_r_polynomial(self):
-        return self.r_polynomial
+  def rational_graded_instabilitiy(self, matrix_form = 'uut'):
+    r"""
+    Return a rational graded instability of `self` if it exists
+    and `None` otherwise.
 
+    MATHEMATICAL INTERPRETATION:
+    First, let
+      (y_0,...,y_n) = self.standard_basis(),
+      (z_0,...,z_n) = self.RR_standard_basis(),
+      f = self.graded_reduction_polynomial(),
+      g = self.normalized_reduction_polynomial().
+    Let (E,w) with E = (e_0,...,e_n) be an instability of g over k, i.e.
+    there exists an invertible matrix
+      M in GL_n(k)
+    which describes the base change from E to (z_0,...,z_n). So, if we
+    view E and (z_0,...,z_n) as a vectors in SageMath, we can write
+      E * M = (z_0,...,z_n).
+    Note that M, as a matrix over k, desribes a k-linear transforamtion
+    of degree zero, i.e. it does not change the grading.
+    Now let D be the invertible diagonal matrix
+      D = diag(t^(u_0/s), ..., t^(u_n/s)) in GL_3(k[T,T^(-1)]).
+    We define the basis
+      E_new = (e_0_new,...,e_n_new)
+    by
+    E_new * D^(-1) = E.
+    Note that D describes a k-linear transforamtion which changes the degree
+    of homogeneous elements. Furthermore, we obtain
+      E_new * D^(-1) * M * D = E * M * D = (z_0,...,z_n) * D
+                             = (y_0,...,y_n).
+    In particular, (E_new,w) is an instability of f over k[T,T^(-1)]. Note also
+    that D^(-1) * M * D describes a k-linear isomorphism of degree zero and
+    hence induces an isomorphism of graded rings,
+    k[T,T^(-1)][y_0,...,y_n] ---> k[T,T^(-1)][y_0,...,y_n].
+    REMARK. Of course we have
+      E * M * D = (z_0,...,z_n) * D = (y_0,...,y_n)
+    and therefore (E,w) is already an instability of f over k[T,T^(-1)]. But the
+    matrix M*D describes a k-linear transforamtion, which shifts degrees. For
+    reasons of computational clarity, we want to avoid transformations that
+    lead to degree shifts. Thus, we only consider transformations of the form
+      D^(-1) * M * D
+    as explained above. The (i,j)-th entry of such a matrix is equal to
+    m_{ij} * t^{(u_j - u_i) / s} .
+    """
 
-    def get_initial_polynomial_ring(self):
-        return self.polynomial_ring
+    if len(self.scaled_GRR_grading) != 3:
+      raise NotImplementedError
 
+    if matrix_form == 'integral':
+      matrix_form = self.scaled_GRR_grading
 
-    def get_initial_base_ring(self):
-        return self.polynomial_ring.base_ring()
+    w = self.scaled_GRR_grading
+    differences = [w[0] - w[1], w[0] - w[2], w[1] - w[2]]
+    if all(x for x in differences if x not in ZZ):
+      return None
 
+    from ProjectivePlaneCurves import ProjectivePlaneCurve
+    reduced_curve = ProjectivePlaneCurve(self.r_polynomial)
 
-    def get_valuation(self):
-        return self.linear_valuation
+    if all(x for x in differences if x in ZZ):
+      T = reduced_curve.instability().base_change_matrix(matrix_form)
+      return GradedInstability(self, T)
 
-
-    def graded_instabilities(self, matrix_form = 'uut'):
-        """
-        Return a list of graded instabilities of self
-
-        INPUT:
-            matrix_form - one of the strings 'ult', 'uut', 'integral'
-
-        MATHEMATICAL INTERPRETATION:
-            First, let
-                (y_0,...,y_n) = self.GRR_standard_basis(),
-                (z_0,...,z_n) = self.RR_standard_basis(),
-                f = self.get_gr_polynomial(),
-                g = self.get_r_polynomial(),
-            compare the description of the '__init__' method.
-            Let (E,w) with E = (e_0,...,e_n) be an instability of g over k, i.e.
-            there exists an invertible matrix
-                M in GL_n(k)
-            which describes the base change from E to (z_0,...,z_n). So, if we
-            view E and (z_0,...,z_n) as a vectors in SageMath, we can write
-                E * M = (z_0,...,z_n) .
-            Note that M, as a matrix over k, desribes a k-linear transforamtion
-            of degree zero, i.e. it does not change the grading.
-            Now let D be the invertible diagonal matrix
-                D = diag(t^(u_0/s), ..., t^(u_n/s)) in GL_3(k[T,T^(-1)]) .
-            We define the basis
-                E_new = (e_0_new,...,e_n_new)
-            by
-                E_new * D^(-1) = E .
-            Note that D describes a k-linear transforamtion which changes the degree
-            of homogeneous elements. Furthermore, we obtain
-                E_new * D^(-1) * M * D = E * M * D = (z_0,...,z_n) * D
-                                       = (y_0,...,y_n) .
-            In particular, (E_new,w) is an instability of f over k[T,T^(-1)]. Note also
-            that D^(-1) * M * D describes a k-linear isomorphism of degree zero and
-            hence induces an isomorphism of graded rings,
-                k[T,T^(-1)][y_0,...,y_n] ---> k[T,T^(-1)][y_0,...,y_n] .
-            REMARK. Of course we have
-                E * M * D = (z_0,...,z_n) * D = (y_0,...,y_n)
-            and therefore (E,w) is already an instability of f over k[T,T^(-1)]. But the
-            matrix M*D describes a k-linear transforamtion, which shifts degrees. For
-            reasons of computational clarity, we want to avoid transformations that
-            lead to degree shifts. Thus, we only consider transformations of the form
-                D^(-1) * M * D
-            as explained above. The (i,j)-th entry of such a matrix is equal to
-                m_{ij} * t^{(u_j - u_i) / s} .
-        """
-
-        if len(self.RR_standard_basis()) != 3:
-            raise NotImplementedError
-        if matrix_form == 'integral':
-            matrix_form = self.GRR_grading
-
-        import ProjectivePlaneCurves as PPC
-        reduced_curve = PPC.ProjectivePlaneCurve(self.r_polynomial)
-        Graded_Instabilities = []
-
-        for instability in reduced_curve.instabilities():
-            for T in instability.base_change_matrices(matrix_form):
-                Graded_Instabilities.append(GradedInstability(self, T))
-
-        return Graded_Instabilities
-
-
-    def is_semistable(self):
-        if len(self.graded_instabilities()) == 0:
-            return True
-        return False
-
-
-    def rational_graded_instabilities(self, matrix_form = 'uut'):
-        """
-        Return a sublist of 'self.graded_instabilities()' consisting only of
-        retional graded instabilities.
-
-        INPUT:
-            matrix_form - one of the strings 'ult', 'uut', 'integral'
-        """
-
-        Rational_Graded_Instabilities = []
-        for Graded_Instability in self.graded_instabilities(matrix_form):
-            if Graded_Instability.is_rational():
-                Rational_Graded_Instabilities.append(Graded_Instability)
-
-        return Rational_Graded_Instabilities
-
-
+    for i in range(0, 2):
+      for j in range(i + 1, 3):
+        if w[i] - w[j] in ZZ:
+          a = reduced_curve.elementary_instability_direction()
+          T = [[1,0,0],[0,1,0],[0,0,1]]
+          T[i][j] = -a
+          T = matrix(self.residue_field(), T)
+          return GradedInstability(self, T)
 
 
 
@@ -655,8 +550,8 @@ class GradedInstability:
 
         self.graded_reduction = graded_reduction
         self.polynomial_ring = graded_reduction.get_initial_polynomial_ring()
-        self.graded_reduction_ring = graded_reduction.get_GRR()
-        self.base_ring_grading = graded_reduction.get_base_ring_grading()
+        self.graded_reduction_ring = graded_reduction.parent()
+        self.base_ring_grading = graded_reduction.base_ring_grading()
         self.GRR_grading = graded_reduction.get_GRR_grading()
         self.instability_matrix = instability_matrix
 
@@ -686,7 +581,7 @@ class GradedInstability:
             for j, entry in enumerate(row):
                 if entry != 0:
                     t_exponent = (self.GRR_grading[j] - self.GRR_grading[i]) / self.base_ring_grading
-                    if not t_exponent.is_integral() :
+                    if not t_exponent.is_integral():
                         return False
         return True
 
@@ -712,7 +607,7 @@ class GradedInstability:
             return None
 
         base_ring = self.graded_reduction.get_initial_base_ring()
-        _valuation_ = self.graded_reduction.get_valuation()
+        _valuation_ = self.graded_reduction.valuation()
         base_ring_valuation = _valuation_.get_base_ring_valuation()
         prime_element = base_ring_valuation.uniformizer()
         N = len(self.GRR_grading)
@@ -749,7 +644,7 @@ class GradedInstability:
                     else:
                         array_2d[i][j] = "(" + str(self.instability_matrix[i][j]) + ")*" + str(t) + "^(" + str(t_exponent) + ")"
 
-            v_K = self.graded_reduction.get_valuation().get_base_ring_valuation()
+            v_K = self.graded_reduction.valuation().get_base_ring_valuation()
             print("Let t be the reduction of the uniformizer " + str(v_K.uniformizer()) + ". Then the base change to instability is given by the following matrix:")
 
             # Calculate the maximum width of each column
