@@ -49,7 +49,7 @@ class ProjectivePlaneCurve:
 
 
   def __repr__(self):
-    return f"Projective Plane Curve with defining polynomial {self.polynomial}"
+    return f"Projective Plane Curve with defining polynomial {self.polynomial} over {self.base_ring}"
 
 
   def get_base_ring(self):
@@ -66,6 +66,22 @@ class ProjectivePlaneCurve:
 
   def degree(self):
     return self._degree
+
+
+  def base_change(self, R):
+    r"""
+    Return the base change of `self` to `Spec(R)`.
+    """
+
+    PolRin0 = self.get_polynomial().parent()
+    var_names = [str(x) for x in self.get_standard_basis()]
+    PolRin1 = PolynomialRing(R, var_names)
+    phi = PolRin1.coerce_map_from(PolRin0)
+    if phi is None:
+      raise NotImplementedError(f"No coercion from the polynomial ring over {self.get_base_ring()} to the polynomial ring over {R}")
+    new_poly = phi(self.get_polynomial())
+
+    return ProjectivePlaneCurve(new_poly)
 
 
   def tangent_cone_at(self, P):
@@ -588,6 +604,14 @@ class ProjectivePlaneCurve:
     return [(multiplicity, ProjectivePlaneCurve(factor))
             for factor, multiplicity in self._decompose
             if multiplicity > 1]
+
+
+  def rational_points(self):
+    r"""
+    Return the list of rational points of `self`.
+    """
+
+    return self.plane_curve.rational_points()
 
 
   def singular_points(self):
