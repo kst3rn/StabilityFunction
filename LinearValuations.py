@@ -537,7 +537,7 @@ class GradedReduction:
     Return `False` if `self` has a graded instability
     and `True` otherwise.
     """
-    return self.rational_graded_instability is None
+    return self.rational_graded_instability() is None
 
 
   def rational_graded_instability(self, matrix_form = 'uut'):
