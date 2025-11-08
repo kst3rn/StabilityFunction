@@ -537,12 +537,24 @@ class GradedReduction:
     Return `False` if `self` has a graded instability
     and `True` otherwise.
     """
-    return self.rational_graded_instability() is None
+    from ProjectivePlaneCurves import ProjectivePlaneCurve
+    reduced_curve = ProjectivePlaneCurve(self.normalized_reduction_polynomial())
+    return reduced_curve.is_semistable()
 
 
-  def rational_graded_instability(self, matrix_form = 'uut'):
+  def is_graded_stable(self):
     r"""
-    Return a rational graded instability of `self` if it exists
+    Return `False` of `self` has a graded semiinstability
+    and `True` otherwise.
+    """
+    from ProjectivePlaneCurves import ProjectivePlaneCurve
+    reduced_curve = ProjectivePlaneCurve(self.normalized_reduction_polynomial())
+    return reduced_curve.is_stable()
+
+
+  def graded_instability(self):
+    r"""
+    Return a graded instability of `self` if it exists
     and `None` otherwise.
 
     MATHEMATICAL INTERPRETATION:
@@ -581,7 +593,25 @@ class GradedReduction:
     lead to degree shifts. Thus, we only consider transformations of the form
       D^(-1) * M * D
     as explained above. The (i,j)-th entry of such a matrix is equal to
-    m_{ij} * t^{(u_j - u_i) / s} .
+    m_{ij} * t^{(u_j - u_i) / s}.
+    """
+
+    if len(self.normalized_weight_vector()) != 3:
+      raise NotImplementedError
+
+    from ProjectivePlaneCurves import ProjectivePlaneCurve
+    reduced_curve = ProjectivePlaneCurve(self.normalized_reduction_polynomial())
+    instability = reduced_curve.instability()
+    if instability is None:
+      return None
+    T = instability.base_change_matrix(matrix_form)
+    return GradedInstability(self, T)
+
+
+  def rational_graded_instability(self, matrix_form = 'uut'):
+    r"""
+    Return a rational graded instability of `self` if it exists
+    and `None` otherwise.
     """
 
     if len(self.normalized_weight_vector()) != 3:
