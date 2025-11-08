@@ -12,7 +12,7 @@
 
 
 from sage.all import *
-import LinearValuations as LV
+from LinearValuations import LinearValuation
 
 
 
@@ -44,7 +44,7 @@ class StabilityFunction:
         return self.homogeneous_form
 
 
-    def get_base_ring_valuation(self):
+    def base_ring_valuation(self):
         return self.base_ring_valuation
 
 
@@ -60,22 +60,19 @@ class StabilityFunction:
         return self.polynomial_ring
 
 
-    def get_base_ring(self):
+    def base_ring(self):
         return self.base_ring
 
 
-    def graded_reduction_at(self, point_on_BTB):
-
+    def graded_reduction(self, point_on_BTB):
         A = point_on_BTB.base_change_matrix()
-        u = point_on_BTB.weight_vector()
-        linear_valuation = LV.LinearValuation(self.polynomial_ring, self.base_ring_valuation, A, u)
-        return linear_valuation.graded_reduction_of(self.homogeneous_form)
+        w = point_on_BTB.weight_vector()
+        linear_valuation = LinearValuation(self.polynomial_ring, self.base_ring_valuation, A, w)
+        return linear_valuation.graded_reduction(self.homogeneous_form)
 
 
     def has_semistable_reduction_at(self, point_on_BTB):
-        if self.graded_reduction_at(point_on_BTB).is_semistable():
-            return True
-        return False
+        return self.graded_reduction(point_on_BTB).is_graded_semistable()
 
 
     def initial_form(self, point_on_BTB):
@@ -226,13 +223,13 @@ class StabilityFunction:
         return [maximum, point_on_BTB]
 
 
-    def ascent_directions_at(self, point_on_BTB, matrix_form = 'uut'):
+    def ascent_direction(self, point_on_BTB, matrix_form = 'ult'):
         """
         Return a list of matrices which describe base changes, fixing 'point_on_BTB', to apartment,
         where the stability function can be maximized further.
 
         INPUT:
-            point_on_BTB - object in the class 'BTB_Point' such that 'point_on_BTB.get_base_ring()'
+            point_on_BTB - object in the class 'BTB_Point' such that 'point_on_BTB.base_ring()'
                            equals 'self.base_ring'
             matrix_form  - one of the strings 'ult', 'uut', 'integral'
 
@@ -260,44 +257,21 @@ class StabilityFunction:
 
         if self.dimension != 2:
             raise NotImplementedError
-        if self.base_ring != point_on_BTB.get_base_ring():
+        if self.base_ring != point_on_BTB.base_ring():
             raise ValueError
 
         # (1) Compute the graded reduction, say f, of self.homogeneous_form at point_on_BTB.
         # (2) Compute the list, say L, of all graded instabilities of f.
         # (3) Find all rational graded instability in L and return their lifted matrices. Otherwise return None.
 
-        graded_reduction = self.graded_reduction_at(point_on_BTB)
-
-        ascent_directions = []
-        for rational_graded_instability in graded_reduction.rational_graded_instabilities(matrix_form):
-            ascent_directions.append(rational_graded_instability.lift_matrix())
-        return ascent_directions
-
-
-    def ascent_direction_at(self, point_on_BTB, matrix_form = 'integral'):
-        """
-        Return a matrix which describes a base change, fixing 'point_on_BTB', to an apartment,
-        where the stability function can be maximized further.
-
-        INPUT:
-            point_on_BTB - object in the class 'BTB_Point' such that 'point_on_BTB.get_base_ring()'
-                           equals 'self.base_ring'
-            matrix_form  - one of the strings 'ult', 'uut', 'integral'
-
-        OUTPUT:
-            invertible matrix in GL_{self.dimension + 1}(self.base_ring) 
-        """
-
-        ascent_directions = self.ascent_directions_at(point_on_BTB, matrix_form)
-
-        if len(ascent_directions) == 0:
+        graded_reduction = self.graded_reduction(point_on_BTB)
+        rational_graded_instability = graded_reduction.rational_graded_instability(matrix_form)
+        if rational_graded_instability is None:
             return None
-        else:
-            return ascent_directions[0]
+        return rational_graded_instability.lift_matrix()
 
 
-    def maximize(self, matrix_form = 'integral'):
+    def maximize(self, matrix_form = 'ult'):
         """
         Return the maximum and the point where the stability function takes it
 
@@ -318,7 +292,7 @@ class StabilityFunction:
             return [maximum, point_on_BTB]
 
         affine_patch = point_on_BTB.affine_patch()
-        local_trafo_matrix = self.ascent_direction_at(point_on_BTB, matrix_form)
+        local_trafo_matrix = self.ascent_direction(point_on_BTB, matrix_form)
 
         if local_trafo_matrix == None:
             return [maximum, point_on_BTB]
@@ -337,7 +311,7 @@ class StabilityFunction:
                 return [maximum, point_on_BTB]
 
             affine_patch = point_on_BTB.affine_patch()
-            local_trafo_matrix = self.ascent_direction_at(point_on_BTB, matrix_form)
+            local_trafo_matrix = self.ascent_direction(point_on_BTB, matrix_form)
 
             if local_trafo_matrix == None:
                 return [maximum, point_on_BTB]
@@ -371,7 +345,7 @@ class RestrictedStabilityFunction:
         """
 
         self.homogeneous_form = stability_function.get_homogeneous_form()
-        self.base_ring_valuation = stability_function.get_base_ring_valuation()
+        self.base_ring_valuation = stability_function.base_ring_valuation()
         self._embedding_matrix = embedding_matrix
 
 
@@ -449,7 +423,7 @@ class BTB_Point:
         return self._weight_vector.index(0)
 
 
-    def get_base_ring(self):
+    def base_ring(self):
         return self._base_change_matrix.base_ring()
 
 
@@ -460,7 +434,7 @@ class BTB_Point:
         K = self.base_ring_valuation().domain()
         N = len(self.weight_vector())
         R = PolynomialRing(K, N, 'x')
-        return LV.LinearValuation(R, self.base_ring_valuation(), self.base_change_matrix(), self.weight_vector())
+        return LinearValuation(R, self.base_ring_valuation(), self.base_change_matrix(), self.weight_vector())
 
 
     def minimal_simplex_dimension(self):
