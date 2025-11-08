@@ -496,8 +496,8 @@ class GradedReduction:
     return self._normalized_weight_vector
 
 
-  def residue_field(self):
-    return self._residue_field
+  def base_residue_ring(self):
+    return self._base_residue_ring
 
 
   def standard_basis(self):
@@ -613,7 +613,7 @@ class GradedReduction:
             return None
           T = [[1,0,0],[0,1,0],[0,0,1]]
           T[i][j] = -a
-          T = matrix(self.residue_field(), T)
+          T = matrix(self.base_residue_ring(), T)
           return GradedInstability(self, T)
 
 
