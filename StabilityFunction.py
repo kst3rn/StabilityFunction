@@ -75,6 +75,10 @@ class StabilityFunction:
         return self.graded_reduction(point_on_BTB).is_graded_semistable()
 
 
+    def has_stable_reduction_at(self, point_on_BTB):
+        return self.graded_reduction(point_on_BTB).is_graded_stable()
+
+
     def initial_form(self, point_on_BTB):
         return point_on_BTB.linear_valuation().initial_form(self.homogeneous_form)
 
