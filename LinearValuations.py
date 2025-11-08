@@ -532,7 +532,7 @@ class GradedReduction:
     return self.graded_reduction_polynomial().base_ring()
 
 
-  def rational_graded_instabilitiy(self, matrix_form = 'uut'):
+  def rational_graded_instability(self, matrix_form = 'uut'):
     r"""
     Return a rational graded instability of `self` if it exists
     and `None` otherwise.
@@ -591,13 +591,18 @@ class GradedReduction:
     reduced_curve = ProjectivePlaneCurve(self.normalized_reduction_polynomial())
 
     if all(x in ZZ for x in differences):
-      T = reduced_curve.instability().base_change_matrix(matrix_form)
+      instability = reduced_curve.instability()
+      if instability is None:
+        return None
+      T = instability.base_change_matrix(matrix_form)
       return GradedInstability(self, T)
 
     for i in range(0, 2):
       for j in range(i + 1, 3):
         if w[j] - w[i] in ZZ:
           a = reduced_curve.elementary_instability_direction((i,j))
+          if a is None:
+            return None
           T = [[1,0,0],[0,1,0],[0,0,1]]
           T[i][j] = -a
           T = matrix(self.residue_field(), T)
