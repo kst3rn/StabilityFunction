@@ -532,6 +532,14 @@ class GradedReduction:
     return self.graded_reduction_polynomial().base_ring()
 
 
+  def is_graded_semistable(self):
+    r"""
+    Return `False` if `self` has a graded instability
+    and `True` otherwise.
+    """
+    return self.rational_graded_instability is None
+
+
   def rational_graded_instability(self, matrix_form = 'uut'):
     r"""
     Return a rational graded instability of `self` if it exists
