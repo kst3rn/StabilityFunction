@@ -11,6 +11,7 @@
 
 
 from functools import cached_property
+from functools import cache
 from sage.all import *
 
 
@@ -48,7 +49,7 @@ class ProjectivePlaneCurve:
 
 
   def __repr__(self):
-    return f"Projective Plane Curve with defining polynomial {self.polynomial}"
+    return f"Projective Plane Curve with defining polynomial {self.polynomial} over {self.base_ring}"
 
 
   def get_base_ring(self):
@@ -65,6 +66,22 @@ class ProjectivePlaneCurve:
 
   def degree(self):
     return self._degree
+
+
+  def base_change(self, R):
+    r"""
+    Return the base change of `self` to `Spec(R)`.
+    """
+
+    PolRin0 = self.get_polynomial().parent()
+    var_names = [str(x) for x in self.get_standard_basis()]
+    PolRin1 = PolynomialRing(R, var_names)
+    phi = PolRin1.coerce_map_from(PolRin0)
+    if phi is None:
+      raise NotImplementedError(f"No coercion from the polynomial ring over {self.get_base_ring()} to the polynomial ring over {R}")
+    new_poly = phi(self.get_polynomial())
+
+    return ProjectivePlaneCurve(new_poly)
 
 
   def tangent_cone_at(self, P):
@@ -119,6 +136,7 @@ class ProjectivePlaneCurve:
     return PPC_TangentCone(self, P)
 
 
+  @cache
   def is_smooth(self):
     r"""
     Return `True` if `self` is smooth and `False` otherwise.
@@ -256,26 +274,8 @@ class ProjectivePlaneCurve:
 
     if self.is_smooth():
       return True
-
-    # Search for a line of multiplicity > d/3.
-    for Y, m in self._decompose:
-      if Y.degree() == 1 and m > self.degree() / 3:
-        return False
-
-    # Search for a point of multiplicity > 2d/3 or a point
-    # of multiplicity d/3 < m <= 2d/3 and a line in the
-    # tangent cone of multiplicity >= m/2.
-    X_red_sing = self.reduced_subscheme().singular_points()
-    for P in X_red_sing:
-      m = self.multiplicity(P)
-      if m > 2 * self.degree() / 3:
-        return False
-      elif m > self.degree() / 3:
-        for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
-          if L_mult > m / 2:
-            if FlagOfLinearSpaces(self, P, L).is_unstable():
-              return False
-
+    elif self.instability() is not None:
+      return False
     return True
 
 
@@ -338,7 +338,7 @@ class ProjectivePlaneCurve:
     # Search for point of multiplicity 2d/3 or a point
     # of multiplicity d/3 < m <= 2d/3 and a line in the
     # tangent cone of multiplicity >= m/2.
-    X_red_sing = self.reduced_subscheme().singular_points()
+    X_red_sing = self._reduced_singular_points
     for P in X_red_sing:
       m = self.multiplicity(P)
       if m == 2 * self.degree() / 3:
@@ -346,10 +346,61 @@ class ProjectivePlaneCurve:
       elif m > self.degree() / 3:
         for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
           if L_mult >= m / 2:
-            if FlagOfLinearSpaces(self, P, L).is_semiinstability():
+            if ProjectiveFlag(P, L).is_semiunstable(self):
               return False
 
     return True
+
+
+  def instability(self):
+    r"""
+    Return an instability of `self` or `None` if `self` is
+    semistable.
+
+    EXAMPLES:
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: f = x1^2*x2 - x0^3 - x0^2*x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial -x0^3 - x0^2*x2 + x1^2*x2
+      sage: X.instability()
+      sage:
+
+      sage: R.<x0,x1,x2> = GF(3)[]
+      sage: f = x0^3 + x1^2 * x2
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^3 + x1^2*x2
+      sage: X.instability()
+      Projective flag given by [0, 0, 1] and x1
+
+      sage: R.<x0,x1,x2> = GF(2)[]
+      sage: f = x0^4 + x1^4 + x2^4
+      sage: X = ProjectivePlaneCurve(f); X
+      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
+      sage: X.instability()
+      Projective flag given by x0 + x1 + x2
+    """
+
+    # Search for a line of multiplicity > d/3.
+    for Y, m in self._decompose:
+      if Y.degree() == 1 and m > self.degree() / 3:
+        return ProjectiveFlag(None, Y)
+
+    # Search for a point of multiplicity > 2d/3 or a point
+    # of multiplicity d/3 < m <= 2d/3 and a line in the
+    # tangent cone of multiplicity >= m/2.
+    X_red_sing = self._reduced_singular_points
+    for P in X_red_sing:
+      m = self.multiplicity(P)
+      if m > 2 * self.degree() / 3:
+        return ProjectiveFlag(P, None)
+      elif m > self.degree() / 3:
+        for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
+          if L_mult > m / 2:
+            P_on_L_flag = ProjectiveFlag(P, L)
+            if P_on_L_flag.is_unstable(self):
+              return P_on_L_flag
+
+    return None
 
 
   def elementary_instability_direction(self, shape):
@@ -396,7 +447,7 @@ class ProjectivePlaneCurve:
       sage: X.elementary_instability_direction((2,1))
       None
 
-    WARNING:
+    REMARK:
     This method does not search for instabilities that are
     diagonalized by self.get_standard_basis().
     """
@@ -422,14 +473,14 @@ class ProjectivePlaneCurve:
     # Search for a point of multiplicity > 2d/3 or a point
     # of multiplicity d/3 < m <= 2d/3 and a line in the
     # tangent cone of multiplicity >= m/2.
-    X_red_sing = self.reduced_subscheme().singular_points()
+    X_red_sing = self._reduced_singular_points
     for P in X_red_sing:
       m = self.multiplicity(P)
       if m > 2 * self.degree() / 3 and P[j] != 0 and P[i] != 0 and P[k] == 0:
         return -P[j] / P[i]
       elif m > self.degree() / 3:
         for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
-          if L_mult > m / 2 and FlagOfLinearSpaces(self, P, L).is_unstable():
+          if L_mult > m / 2 and ProjectiveFlag(P, L).is_unstable(self):
             L_vars = set(L.variables())
             if L_vars == {x_j, x_i}:
               lambda_L = L[x_i] / L[x_j]
@@ -553,6 +604,14 @@ class ProjectivePlaneCurve:
     return [(multiplicity, ProjectivePlaneCurve(factor))
             for factor, multiplicity in self._decompose
             if multiplicity > 1]
+
+
+  def rational_points(self):
+    r"""
+    Return the list of rational points of `self`.
+    """
+
+    return self.plane_curve.rational_points()
 
 
   def singular_points(self):
@@ -750,7 +809,7 @@ class ProjectivePlaneCurve:
     The method computes the maximum over all such values.
     """
 
-    X_red_sing = self.reduced_subscheme().singular_points()
+    X_red_sing = self._reduced_singular_points
     max_sing_mult = max((self.multiplicity(P) for P in X_red_sing), default=1)
 
     component_mults = [mult for mult, comp in self.nonreduced_components()]
@@ -979,22 +1038,22 @@ class ProjectivePlaneCurve:
     # CASES (b) and (d)
     for P, m in self.points_with_high_multiplicity():
       if m > 2 * self.degree() / 3:  # CASE (b)
-        list_of_pseu_inst.append(FlagOfLinearSpaces(self, Point = P))
+        list_of_pseu_inst.append(ProjectiveFlag(P, None))
       elif m > self.degree() / 2:  # CASE (d) 1/2
         for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
           if L_multiplicity > m / 2:
-            list_of_pseu_inst.append(FlagOfLinearSpaces(self, P, L))
+            list_of_pseu_inst.append(ProjectiveFlag(P, L))
 
     # CASES (a) and (c)
     for L, L_multiplicity, G in self.lines_with_high_multiplicity():
       if L_multiplicity > self.degree() / Integer(3):  # CASE (a)
-        list_of_pseu_inst.append(FlagOfLinearSpaces(self, Line = L))
+        list_of_pseu_inst.append(ProjectiveFlag(None, L))
       else: # CASE (c) 1/2
         L_curve = self.projective_plane.curve(L)
         G_curve = self.projective_plane.curve(G)
         for P in L_curve.intersection_points(G_curve):
           if L_curve.intersection_multiplicity(G_curve, P) > (self.degree() - L_multiplicity) / Integer(2):
-            list_of_pseu_inst.append(FlagOfLinearSpaces(self, P, L))
+            list_of_pseu_inst.append(ProjectiveFlag(P, L))
 
     return list_of_pseu_inst
 
@@ -1018,7 +1077,7 @@ class ProjectivePlaneCurve:
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial x0^3 + x1^3 + x0^2*x2 - x0*x2^2
       sage: list(X.flags())
-      [Flag attached to Projective Plane Curve with defining polynomial x0^3 + x1^3 + x0^2*x2 - x0*x2^2 given by [2, 2, 1] and x0 + x2]
+      [Projective flag given by [2, 2, 1] and x0 + x2]
 
     An unstable quartic.
       sage: R.<x0,x1,x2> = GF(2)[]
@@ -1026,9 +1085,9 @@ class ProjectivePlaneCurve:
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2
       sage: list(X.flags())
-      [Flag attached to Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 1],
-       Flag attached to Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 1] and x1 + x2,
-       Flag attached to Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by x0]
+      [Projective flag given by [0, 1, 1],
+       Projective flag given by [0, 1, 1] and x1 + x2,
+       Projective flag given by x0]
 
     An unstable cubic.
       sage: R.<x0,x1,x2> = QQ[]
@@ -1036,35 +1095,35 @@ class ProjectivePlaneCurve:
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial x0^2*x2 - 2*x0*x1*x2 + x1^2*x2
       sage: list(X.flags())
-      [Flag attached to Projective Plane Curve with defining polynomial x0^2*x2 - 2*x0*x1*x2 + x1^2*x2 given by [1, 1, 0],
-       Flag attached to Projective Plane Curve with defining polynomial x0^2*x2 - 2*x0*x1*x2 + x1^2*x2 given by [1, 1, 0] and x2,
-       Flag attached to Projective Plane Curve with defining polynomial x0^2*x2 - 2*x0*x1*x2 + x1^2*x2 given by x0 - x1]
+      [Projective flag given by [1, 1, 0],
+       Projective flag given by [1, 1, 0] and x2,
+       Projective flag given by x0 - x1]
 
     MATHEMATICAL INTERPRETATION:
     Give reference.
     """
 
-    X_red_sing = self.reduced_subscheme().singular_points()
+    X_red_sing = self._reduced_singular_points
     # CASES (b) and (d)
     for P in X_red_sing:
       m = self.multiplicity(P)
       if m > 2 * self.degree() / 3:  # CASE (b)
-        yield FlagOfLinearSpaces(self, Point = P)
+        yield ProjectiveFlag(P, None)
       elif m > self.degree() / 2:  # CASE (d) 1/2
         for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
           if L_multiplicity > m / 2:
-            yield FlagOfLinearSpaces(self, P, L)
+            yield ProjectiveFlag(P, L)
 
     # CASES (a) and (c)
     for L, L_multiplicity, G in self.lines_with_high_multiplicity():
       if L_multiplicity > self.degree() / 3:  # CASE (a)
-        yield FlagOfLinearSpaces(self, Line = L)
+        yield ProjectiveFlag(None, L)
       else: # CASE (c) 1/2
         L_curve = self.projective_plane.curve(L)
         G_curve = self.projective_plane.curve(G)
         for P in L_curve.intersection_points(G_curve):
           if L_curve.intersection_multiplicity(G_curve, P) > (self.degree() - L_multiplicity) / 2:
-            yield FlagOfLinearSpaces(self, P, L)
+            yield ProjectiveFlag(P, L)
 
 
   def instabilities(self):
@@ -1133,6 +1192,16 @@ class ProjectivePlaneCurve:
     """
 
     return list(self.polynomial.factor())
+
+
+  @cached_property
+  def _reduced_singular_points(self):
+    r"""
+    Return the list of singular points of the reduced subscheme
+    of `self`.
+    """
+
+    return self.reduced_subscheme().singular_points()
 
 
 
@@ -1277,7 +1346,7 @@ class PPC_TangentCone:
 
   def embedded_polynomial(self):
     r"""
-    Return the defining polynomial of the embedding if `self` into
+    Return the defining polynomial of the embedding of `self` into
     the projective plane at the point `self.normalized_point`.
 
     EXAMPLES:
@@ -1497,67 +1566,162 @@ class PPC_TangentCone:
     return L
 
 
+class ProjectiveFlag:
+  r"""
+  Construct a projective flag to the following conditions.
 
-class FlagOfLinearSpaces:
+  INPUT:
+  - ``projective_point`` -- a point in the projective plane.
+  - ``linear_form`` -- a linear form defining a line in the projective plane.
+  """
 
-  def __init__(self, projective_plane_curve, Point = None, Line = None):
-    if point == None and line == None:
-      raise ValueError
+  def __init__(self, projective_point=None, linear_form=None):
+    r"""
+    Construct a projective flag to the following conditions.
 
-    if Point != None:
-      Point = list(Point)
+    INPUT:
+    - ``projective_point`` -- a point in the projective plane.
+    - ``linear_form`` -- a linear form defining a line in the projective plane.
 
-    self.proj_plane_curve = projective_plane_curve
-    self.point = Point
-    self.line = Line
-    self.base_ring = self.proj_plane_curve.get_base_ring()
+    EXAMPLES:
+      sage: ProjectiveFlag([1,2,3])
+      Projective flag given by [1, 2, 3]
+
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: ProjectiveFlag(linear_form = x0 + 2*x1 - x2)
+      Projective flag given by x0 + 2*x1 - x2
+      sage:
+      sage: ProjectiveFlag([1,1,3], x0 + 2*x1 - x2)
+      Projective flag given by [1, 1, 3] and x0 + 2*x1 - x2
+    """
+
+    if projective_point is None and linear_form is None:
+      raise ValueError("Both arguments are None")
+
+    if projective_point is not None:
+      proj_P_list = list(projective_point)
+      if linear_form is not None and linear_form(proj_P_list) != 0:
+        raise ValueError(
+          f"{projective_point} is not a point on the projective line given by {linear_form}")
+
+    if projective_point is not None:
+      self.point = proj_P_list
+    else:
+      self.point = None
+    self.line = linear_form
+
 
   def __repr__(self):
     if self.point == None:
-      return f"Flag attached to {self.proj_plane_curve} given by {self.line}"
+      return f"Projective flag given by {self.line}"
     elif self.line == None:
-      return f"Flag attached to {self.proj_plane_curve} given by {self.point}"
+      return f"Projective flag given by {self.point}"
     else:
-      return f"Flag attached to {self.proj_plane_curve} given by {self.point} and {self.line}"
+      return f"Projective flag given by {self.point} and {self.line}"
 
 
-  def flag(self):
+  def base_change_matrix(self, matrix_form = 'uut'):
     r"""
-    Return the flag defining self
+    Return a unipotent matrix transforming a flag given by some
+    standard basis vector e_j and some line x_i = 0 to `self`.
+
+    INPUT:
+    - ``matrix_form`` -- a list of rational numbers or one of the strings 'ult', 'uut'.
+
+    OUTPUT:
+    A unipotent matrix.
+
+    EXAMPLES:
+      sage: K.<a,b,c,A,B,C> = QQ[]
+      sage: K = K.fraction_field()
+      sage: R.<x0,x1,x2> = K[]
+      sage: P = [a,b,c]
+      sage: L = A*x0 + B*x1 - (a*A/c + b*B/c)*x2
+      sage: L(P)
+      0
+      sage: F = ProjectiveFlag(P, L)
+      sage: T = F.base_change_matrix('ult')
+      sage: T = F.base_change_matrix('ult'); T
+      [     1      0      0]
+      [(-B)/A      1      0]
+      [   a/c    b/c      1]
+      sage: c * vector([0,0,1]) * T
+      (a, b, c)
+      sage: L(list(vector([x0,x1,x2]) * T))
+      A*x0
+      sage:
+      sage: P = [a,b,0]
+      sage: L = A*x0 - (a*A/b)*x1 + C*x2
+      sage: L(P)
+      0
+      sage: F = ProjectiveFlag(P, L)
+      sage: T = F.base_change_matrix('ult'); T
+      [     1      0      0]
+      [   a/b      1      0]
+      [(-C)/A      0      1]
+      sage: b * vector([0,1,0]) * T
+      (a, b, 0)
+      sage: L(list(vector([x0,x1,x2]) * T))
+      A*x0
+      sage:
+      sage: P = [a,0,0]
+      sage: L = B*x1 + C*x2
+      sage: L(P)
+      0
+      sage: F = ProjectiveFlag(P, L)
+      sage: T = F.base_change_matrix('ult'); T
+      [     1      0      0]
+      [     0      1      0]
+      [     0 (-C)/B      1]
+      sage: a * vector([1,0,0]) * T
+      (a, 0, 0)
+      sage: L(list(vector([x0,x1,x2]) * T))
+      B*x1
+      sage:
+      sage: P = [a,b,c]
+      sage: L = -(b*B/a + c*C/a)*x0 + B*x1 + C*x2
+      sage: L(P)
+      0
+      sage: F = ProjectiveFlag(P, L)
+      sage: T = F.base_change_matrix('uut'); T
+      [     1    b/a    c/a]
+      [     0      1 (-B)/C]
+      [     0      0      1]
+      sage: a * vector([1,0,0]) * T
+      (a, b, c)
+      sage: L(list(vector([x0,x1,x2]) * T))
+      C*x2
+      sage:
+      sage: P = [0,b,c]
+      sage: L = A*x0 - (c*C/b)*x1 + C*x2
+      sage: L(P)
+      0
+      sage: F = ProjectiveFlag(P, L)
+      sage: T = F.base_change_matrix('uut'); T
+      [     1      0 (-A)/C]
+      [     0      1    c/b]
+      [     0      0      1]
+      sage: b * vector([0,1,0]) * T
+      (0, b, c)
+      sage: L(list(vector([x0,x1,x2]) * T))
+      C*x2
+      sage:
+      sage: P = [0,0,c]
+      sage: L = A*x0 + B*x1
+      sage: L(P)
+      0
+      sage: F = ProjectiveFlag(P, L)
+      sage: T = F.base_change_matrix('uut'); T
+      [     1 (-A)/B      0]
+      [     0      1      0]
+      [     0      0      1]
+      sage: c * vector([0,0,1]) * T
+      (0, 0, c)
+      sage: L(list(vector([x0,x1,x2]) * T))
+      B*x1
     """
 
-    if self.point == None:
-      return self.line
-    elif self.line == None:
-      return self.point
-    return (self.point, self.line)
-
-
-  def point_transformation(self, matrix_form = 'uut'):
-    r"""
-    Return unipotent matrix transforming a standard basis vector to self.point
-    """
-
-    if self.point == None:
-      return identity_matrix(self.base_ring, 3)
-
-    if matrix_form == 'uut':
-      return _uut_line_transformation(self.base_ring, self.point)
-    elif matrix_form == 'ult':
-      return _ult_line_transformation(self.base_ring, self.point)
-    elif isinstance(matrix_form, list):
-      return _integral_line_transformation(self.base_ring, self.point, matrix_form)
-    else:
-      raise ValueError
-
-
-  def base_change_matrices(self, matrix_form = 'uut'):
-    r"""
-    Return unipotent matrix transforming a standard basis vector and the line
-    spanned by it to self.flag()
-    """
-
-    if self.point == None:
+    if self.point is None:
       if matrix_form == 'uut':
         return _uut_plane_transformation(self.line)
       elif matrix_form == 'ult':
@@ -1566,27 +1730,35 @@ class FlagOfLinearSpaces:
         return _integral_plane_transformation(self.line, matrix_form)
       else:
         raise ValueError
-    elif self.line == None:
-      return [self.point_transformation(matrix_form)]
+    elif self.line is None:
+      base_ring = self.line.base_ring()
+      if matrix_form == 'uut':
+        return _uut_line_transformation(base_ring, self.point)
+      elif matrix_form == 'ult':
+        return _ult_line_transformation(base_ring, self.point)
+      elif isinstance(matrix_form, list):
+        return _integral_line_transformation(base_ring, self.point, matrix_form)
+      else:
+        raise ValueError
     else:
       if matrix_form == 'uut':
-        return [_uut_flag_transformation(self.point, self.line)]
+        return _uut_flag_transformation(self.point, self.line)
       elif matrix_form == 'ult':
-        return [_ult_flag_transformation(self.point, self.line)]
+        return _ult_flag_transformation(self.point, self.line)
       elif isinstance(matrix_form, list):
-        return [_integral_flag_transformation(self.point, self.line, matrix_form)]
+        return _integral_flag_transformation(self.point, self.line, matrix_form)
       else:
         raise ValueError
 
 
-  def get_base_change_matrix(self, matrix_form = 'uut'):
-    return self.base_change_matrices(matrix_form)[0]
-
-
-  def is_unstable(self):
+  def is_unstable(self, projective_plane_curve):
     r"""
-    Return True or False depending on whether self corresponds to
-    an instability of self.proj_plane_curve or not
+    Return `True` or `False` depending on whether the base
+    change matrix `self.base_change_matrix()` gives rise to
+    an instability of `projective_plane_curve`.
+
+    INPUT:
+    - ``projective_plane_curve`` -- a projective plane curve.
 
     MATHEMATICAL INTERPRETATION:
     First, let
@@ -1618,29 +1790,24 @@ class FlagOfLinearSpaces:
       min(i0*w0 + i1*w1 + i2*w2 : i in I)
     under the constraints -1 <= w0, w1, w2 <= 1 and to check whether
     the maximum is > 0 or not.
-    REMARK. If self.point or self.line is None, then self is an
-    instability, see [Proposition 2.6, SternWewers].
     """
 
-    if self.point == None:
-      return True
-    if self.line == None:
-      return True
+    if not isinstance(projective_plane_curve, ProjectivePlaneCurve):
+      raise TypeError
 
-    T = self.get_base_change_matrix()
-    F = self.proj_plane_curve.get_polynomial()
+    T = self.base_change_matrix()
+    F = projective_plane_curve.get_polynomial()
     G = _apply_matrix(T, F)
 
     MILP = MixedIntegerLinearProgram(solver='PPL')
-    v = MILP.new_variable()
 
+    v = MILP.new_variable()
     t = v['minimum']
     w0 = v['w0']
     w1 = v['w1']
     w2 = v['w2']
 
     MILP.set_objective(t)
-
     MILP.add_constraint(-1 <= w0 <= 1)
     MILP.add_constraint(-1 <= w1 <= 1)
     MILP.add_constraint(-1 <= w2 <= 1)
@@ -1655,10 +1822,14 @@ class FlagOfLinearSpaces:
     return values['minimum'] > 0
 
 
-  def is_semiinstability(self):
+  def is_semiunstable(self, projective_plane_curve):
     r"""
-    Return `True` or `False` depending on whether `self` corresponds to
-    a semiinstability of self.proj_plane_curve or not.
+    Return `True` or `False` depending on whether the base
+    change matrix `self.base_change_matrix()` gives rise to
+    an semiinstability of `projective_plane_curve`.
+
+    INPUT:
+    - ``projective_plane_curve`` -- a projective plane curve.
 
     MATHEMATICAL INTERPRETATION:
     First, let
@@ -1684,18 +1855,21 @@ class FlagOfLinearSpaces:
     a balanced weight vector. Thus, it suffices to consider
       (w0, w1, w2) in QQ^3
     wtih
-      -1 <= w0, w1, w2 <= 1.
+      ||w||_1 = 1.
     Thus, we only have to maximize the function
       min(i0*w0 + i1*w1 + i2*w2 : i in I)
-    under the constraint ||w||_1 = 1 and to check whether the
+    on the boundary of the cube [-1, 1]^3 and to check whether the
     maximum is 0 or not.
     """
 
-    T = self.get_base_change_matrix()
-    F = self.proj_plane_curve.get_polynomial()
+    if not isinstance(projective_plane_curve, ProjectivePlaneCurve):
+      raise TypeError
+
+    T = self.base_change_matrix()
+    F = projective_plane_curve.get_polynomial()
     G = _apply_matrix(T, F)
 
-    maxima_on_faces = []
+    maximum_is_zero = False
     # positive faces
     for position in range(3):
       for plus_minus in [Integer(-1), Integer(1)]:
@@ -1710,16 +1884,19 @@ class FlagOfLinearSpaces:
           if i == position:
             MILP.add_constraint(v[i] == plus_minus)
           MILP.add_constraint(-1 <= v[i] <= 1)
-        # Condition to be in H
+        # Condition to be in the zero space
         MILP.add_constraint(sum(v[i] for i in range(3)) == 0)
         # All linear functions are bounded by minimum.
         for exponent in G.exponents():
           lin_func = sum(Integer(i_j) * v[j] for j, i_j in enumerate(exponent))
           MILP.add_constraint(t <= lin_func)
+        max_value = MILP.solve()
+        if max_value > 0:
+          return False
+        elif max_value == 0:
+          maximum_is_zero = True
 
-        maxima_on_faces.append(MILP.solve())
-
-    return max(maxima_on_faces) == 0
+    return maximum_is_zero
 
 
 
@@ -1777,7 +1954,8 @@ def _max_index_of_nonzero_entry(L):
 
 def _normalize_by_first_nonzero_entry(L):
   r"""
-  Return ...
+  Return the pair (i, [L[0] / L[i], ..., L[n] / L[i]]),
+  where n = len(L) and i = _min_index_of_nonzero_entry(L).
   """
 
   i_min = _min_index_of_nonzero_entry(L)
@@ -1788,7 +1966,8 @@ def _normalize_by_first_nonzero_entry(L):
 
 def _normalize_by_last_nonzero_entry(L):
   r"""
-  Return ...
+  Return the pair (i, [L[0] / L[i], ..., L[n] / L[i]]),
+  where n = len(L) and i = _max_index_of_nonzero_entry(L).
   """
 
   i_max = _max_index_of_nonzero_entry(L)
@@ -1797,56 +1976,133 @@ def _normalize_by_last_nonzero_entry(L):
   return (i_max, [x / last_nonzero_entry for x in L])
 
 
-def _apply_matrix(T, F, affine_patch = None):
+def _apply_matrix(T, F, i = None):
   r"""
   Return F((x_0,...,x_n) * T) or its dehomogenization
-  at affine_patch, i.e. x_{affine_patch} = 1 if
-  affine_patch != None
+  at `i`, i.e. x_{i} = 1 if `i` is not `None`.
 
   INPUT:
-  T            - matrix over K
-  F            - polynomial in K[x_0,...,x_n]
-  affine_patch - integer between 0 and n
+  - ``T`` -- matrix over K.
+  - ``F`` -- polynomial in K[x_0,...,x_n].
+  - ``i`` -- an integer between 0 and n.
 
   OUTPUT:
-  F((x_0,...,x_n) * T) with x_{affine_patch} = 1 if
-  affine_patch != None
+  F((x_0,...,x_n) * T) with x_i = 1 if `i` is not `None`.
 
-  MATHEMATICAL INTERPRETATION:
-  ToDo...
+  EXAMPLES:
+    sage: K.<t00,t01,t02,t10,t11,t12,t20,t21,t22> = QQ[]
+    sage: R.<x0,x1,x2> = K[]
+    sage: T = matrix(K, [[t00,t01,t02],[t10,t11,t12],[t20,t21,t22]]); T
+    [t00 t01 t02]
+    [t10 t11 t12]
+    [t20 t21 t22]
+    sage: _apply_matrix(T, x0)
+    t00*x0 + t10*x1 + t20*x2
+    sage: _apply_matrix(T, x1)
+    t01*x0 + t11*x1 + t21*x2
+    sage: _apply_matrix(T, x2)
+    t02*x0 + t12*x1 + t22*x2
+
+    sage: _apply_matrix(T, x0, 1)
+    t00*x0 + t20*x2 + t10
+
+    sage: _apply_matrix(T, x0 + x1)
+    (t00 + t01)*x0 + (t10 + t11)*x1 + (t20 + t21)*x2
+
+    sage: R.<x0,x1,x2> = QQ[]
+    sage: F = x0*(x1 - 2*x0)*(x2 - 3*x0)
+    sage: T = matrix(QQ, [[1,2,3],[0,1,0],[0,0,1]]); T
+    [1 2 3]
+    [0 1 0]
+    [0 0 1]
+    sage: _apply_matrix(T, F)
+    x0*x1*x2
+
+    sage: _apply_matrix(T, F, 0)
+    x1*x2
+    sage: _apply_matrix(T, F, 1)
+    x0*x2
   """
 
   generators = list(F.parent().gens())
-  if affine_patch != None:
-    generators[affine_patch] = F.parent()(1)
+  if i != None:
+    generators[i] = F.parent()(1)
 
-  return F(list( vector(generators) * T ))
+  return F(list(vector(generators) * T))
 
 
-def _ult_line_transformation(base_field, Vector):
+def _ult_line_transformation(base_field, coordinates):
   r"""
-  Return unipotent lower triangular matrix over base_field transforming
-  a line spanned by a standard basis vector to the line spanned by Vector
+  Return a unipotent lower triangular matrix over `base_field`
+  transforming the line spanned by some standard basis vector
+  to the line spanned by the vector defined by `coordinates`.
+
+  EXAMPLES:
+    sage: K.<a,b,c> = QQ[]
+    sage: K = K.fraction_field()
+    sage: T = _ult_line_transformation(K, [a,b,c]); T
+    [  1   0   0]
+    [  0   1   0]
+    [a/c b/c   1]
+    sage: c * vector([0,0,1]) * T
+    (a, b, c)
+    sage:
+    sage: T = _ult_line_transformation(K, [a,b,0]); T
+    [  1   0   0]
+    [a/b   1   0]
+    [  0   0   1]
+    sage: b * vector([0,1,0]) * T
+    (a, b, 0)
+    sage:
+    sage: T = _ult_line_transformation(K, [a,0,0]); T
+    [1 0 0]
+    [0 1 0]
+    [0 0 1]
   """
 
-  Vector = list(Vector)
+  Vector = [base_field(x) for x in coordinates]
   T = identity_matrix(base_field, len(Vector))
-  # Find the maximal index, i_max, with Vector[i_max] != 0 and normalize by Vector[i_max]
+  # Find the maximal index, i_max, with Vector[i_max] != 0
+  # and normalize by Vector[i_max]
   i_max, normalized_Vector = _normalize_by_last_nonzero_entry(Vector)
   T[i_max] = normalized_Vector
 
   return matrix(base_field, T)
 
 
-def _uut_line_transformation(base_field, Vector):
+def _uut_line_transformation(base_field, coordinates):
   r"""
-  Return unipotent upper triangular matrix over base_field transforming
-  a line spanned by a standard basis vector to the line spanned by Vector
+  Return a unipotent upper triangular matrix over `base_field`
+  transforming the line spanned by some standard basis vector
+  to the line spanned by the vector defined by `coordinates`.
+
+  EXAMPLES:
+    sage: K.<a,b,c> = QQ[]
+    sage: K = K.fraction_field()
+    sage: T = _uut_line_transformation(K, [a,b,c]); T
+    [  1 b/a c/a]
+    [  0   1   0]
+    [  0   0   1]
+    sage: a * vector([1,0,0]) * T
+    (a, b, c)
+    sage:
+    sage: T = _uut_line_transformation(K, [0,b,c]); T
+    [  1   0   0]
+    [  0   1 c/b]
+    [  0   0   1]
+    sage: b * vector([0,1,0]) * T
+    (0, b, c)
+    sage:
+    sage: T = _uut_line_transformation(K, [0,0,c]); T
+    [1 0 0]
+    [0 1 0]
+    [0 0 1]
   """
 
-  Vector = list(Vector)
+  Vector = [base_field(x) for x in coordinates]
   T = identity_matrix(base_field, len(Vector))
-  # Find the minimal index, i_min, with Vector[i_min] != 0 and normalize by Vector[i_min]
+  # Find the minimal index, i_min, with Vector[i_min] != 0
+  # and normalize by Vector[i_min]
   i_min, normalized_Vector = _normalize_by_first_nonzero_entry(Vector)
   T[i_min] = normalized_Vector
 
@@ -2036,45 +2292,34 @@ def _integral_line_transformation(base_field, Vector, weight_vector):
 
 def _ult_plane_transformation(linear_form):
   r"""
-  Return a list of unipotent lower triangular matrices with maximal
-  number of zeros which transform the plane defined by linear_form
-  to a plane defined by x_i = 0
+  Return a unipotent lower triangular matrix with maximal
+  number of zeros which transforms `linear_form` to some `x_i`.
 
-  MATHEMATICAL INTERPRETATION:
-  First, let
-    L = linear_form .
-  Then we can write
-    L = A*x + B*y + C*z .
-  Depending on whether
-    A != 0 or A != 0 and B != 0 or A = 0 and B != 0 or A = 0 and B = 0
-  the unipotent lower triangular matrices with maximal number of zeros, T,
-  moving L to a coordinate axis, via L((x, y, z) * T), are given by the
-  four matrices:
-    [[  1   0, 0],
-     [-B/A, 1, 0],
-     [-C/A, 0, 1 ]]
-
-    [[  1,    0,  0],
-     [-B/A,   1,  0],
-     [0,    -C/B, 1]]
-
-    [[1,   0,  0],
-     [0,   1,  0],
-     [0, -C/B, 1]]
-
-    [[1, 0, 0],
-     [0, 1, 0],
-     [0, 0, 1]]
-
-  Note that in the case A != 0 and B != 0 both matrices
-    [[  1   0, 0],
-     [-B/A, 1, 0],
-     [-C/A, 0, 1 ]]
-  and
-    [[  1,    0,  0],
-     [-B/A,   1,  0],
-     [0,    -C/B, 1]]
-  are equal if and only if C = 0.
+  EXAMPLES:
+    sage: K.<A,B,C> = QQ[]
+    sage: K = K.fraction_field()
+    sage: R.<x0,x1,x2> = K[]
+    sage: L = A*x0 + B*x1 + C*x2
+    sage: T = _ult_plane_transformation(L); T
+    [     1      0      0]
+    [(-B)/A      1      0]
+    [(-C)/A      0      1]
+    sage: L(list(vector([x0,x1,x2]) * T))
+    A*x0
+    sage: 
+    sage: L = B*x1 + C*x2
+    sage: T = _ult_plane_transformation(L); T
+    [     1      0      0]
+    [     0      1      0]
+    [     0 (-C)/B      1]
+    sage: L(list(vector([x0,x1,x2]) * T))
+    B*x1
+    sage:
+    sage: L = C*x2
+    sage: T = _ult_plane_transformation(L); T
+    [1 0 0]
+    [0 1 0]
+    [0 0 1]
   """
 
   base_ring = linear_form.base_ring()
@@ -2082,69 +2327,47 @@ def _ult_plane_transformation(linear_form):
   A = linear_form.monomial_coefficient(x0)
   B = linear_form.monomial_coefficient(x1)
   C = linear_form.monomial_coefficient(x2)
-  L = []
 
   if A != 0:
     T = [[1, 0, 0], [-B/A, 1, 0], [-C/A, 0, 1]]
-    T = matrix(base_ring, T)
-    L.append(T)
-    if B != 0 and C != 0:
-      T = [[1, 0, 0], [-B/A, 1, 0], [0, -C/B, 1]]
-      T = matrix(base_ring, T)
-      L.append(T)
+    return matrix(base_ring, T)
   elif B != 0:
     T = [[1, 0, 0], [0, 1, 0], [0, -C/B, 1]]
-    T = matrix(base_ring, T)
-    L.append(T)
+    return matrix(base_ring, T)
   else:
-    T = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-    T = matrix(base_ring, T)
-    L.append(T)
-
-  return L
+    return identity_matrix(base_ring, 3)
 
 
 def _uut_plane_transformation(linear_form):
   r"""
-  Return a list of unipotent upper triangular matrices with maximal
-  number of zeros which transform the plane defined by linear_form
-  to a plane defined by x_i = 0
+  Return a unipotent upper triangular matrix with maximal
+  number of zeros which transforms `linear_form` to some `x_i`.
 
-  MATHEMATICAL INTERPRETATION:
-  First, let
-    L = linear_form .
-  Then we can write
-    L = A*x + B*y + C*z .
-  Depending on whether
-    C != 0 or C != 0 and B != 0 or C = 0 and B != 0 or C = 0 and B = 0
-  the unipotent upper triangular matrices with maximal number of zeros, T,
-  moving L to a coordinate axis, via L((x, y, z) * T), are given by the
-  four matrices:
-    [[1, 0, -A/C],
-     [0, 1, -B/C],
-     [0, 0,   1 ]]
-
-    [[1, -A/B,   0],
-     [0,   1,  -B/C],
-     [0,   0,    1]]
-
-    [[1, -A/B, 0],
-     [0,   1,  0],
-     [0,   0,  1]]
-
-    [[1, 0, 0],
-     [0, 1, 0],
-     [0, 0, 1]]
-
-  Note that in the case C != 0 and B != 0 both matrices
-    [[1, 0, -A/C],
-     [0, 1, -B/C],
-     [0, 0,   1 ]]
-  and
-    [[1, -A/B,  0],
-     [0,   1, -B/C],
-     [0,   0,   1]]
-  are equal if and only if A = 0.
+  EXAMPLES:
+    sage: K.<A,B,C> = QQ[]
+    sage: K = K.fraction_field()
+    sage: R.<x0,x1,x2> = K[]
+    sage: L = A*x0 + B*x1 + C*x2
+    sage: T = _uut_plane_transformation(L); T
+    [     1      0 (-A)/C]
+    [     0      1 (-B)/C]
+    [     0      0      1]
+    sage: L(list(vector([x0,x1,x2]) * T))
+    C*x2
+    sage:
+    sage: L = A*x0 + B*x1
+    sage: T = _uut_plane_transformation(L); T
+    [     1 (-A)/B      0]
+    [     0      1      0]
+    [     0      0      1]
+    sage: L(list(vector([x0,x1,x2]) * T))
+    B*x1
+    sage:
+    sage: L = A*x0
+    sage: T = _uut_plane_transformation(L); T
+    [1 0 0]
+    [0 1 0]
+    [0 0 1]
   """
 
   base_ring = linear_form.base_ring()
@@ -2152,28 +2375,15 @@ def _uut_plane_transformation(linear_form):
   A = linear_form.monomial_coefficient(x0)
   B = linear_form.monomial_coefficient(x1)
   C = linear_form.monomial_coefficient(x2)
-  L = []
 
   if C != 0:
     T = [[1, 0, -A/C], [0, 1, -B/C], [0, 0, 1]]
-    T = matrix(base_ring, T)
-    L.append(T)
-    if B != 0 and A != 0:
-      T = [[1, -A/B, 0], [0, 1, -B/C], [0, 0, 1]]
-      T = matrix(base_ring, T)
-      L.append(T)
+    return matrix(base_ring, T)
   elif B != 0:
-    coordinate_axis_index = 1
     T = [[1, -A/B, 0], [0, 1, 0], [0, 0, 1]]
-    T = matrix(base_ring, T)
-    L.append(T)
+    return matrix(base_ring, T)
   else:
-    coordinate_axis_index = 0
-    T = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-    T = matrix(base_ring, T)
-    L.append(T)
-
-  return L
+    return identity_matrix(base_ring, 3)
 
 
 def _integral_plane_transformation(linear_form, weight_vector):
@@ -2250,22 +2460,19 @@ def _integral_plane_transformation(linear_form, weight_vector):
   normal subgroup and T is unipotent.
   """
 
-  # convert all entries to Rationals
-  for i, w in enumerate(weight_vector):
-    weight_vector[i] = QQ(w)
-
-  P = _sorting_permutation_matrix(weight_vector)
+  weight_vector_qq = [QQ(w) for w in weight_vector]
+  P = _sorting_permutation_matrix(weight_vector_qq)
   pL = _apply_matrix(P.transpose(), linear_form)
-  list_of_matrices = [P*T*P.transpose() for T in _ult_plane_transformation(pL)]
+  T = _ult_plane_transformation(pL)
 
-  return list_of_matrices
+  return P * T * P.transpose()
 
 
 def _ult_flag_transformation(Vector, linear_form):
   r"""
-  Return unipotent lower triangular matrix transforming a flag given
+  Return a unipotent lower triangular matrix transforming a flag given
   by a line spanned by a standard basis vector e_j and a plane x_i = 0
-  to the line spanned by Vector and the plane given by linear_form = 0
+  to the line spanned by Vector and the plane given by linear_form = 0.
 
   INPUT:
   Vector      - vector with 3 entries
@@ -2275,26 +2482,66 @@ def _ult_flag_transformation(Vector, linear_form):
   T - unipotent lower triangular matrix with e_j*T = Vector and
   _apply_matrix(T, linear_form) = x_i
 
-  MATHEMATICAL INTERPRETATION:
-  ...
+  EXAMPLES:
+    sage: K.<a,b,c,A,B,C> = QQ[]
+    sage: K = K.fraction_field()
+    sage: R.<x0,x1,x2> = K[]
+    sage: P = [a,b,c]
+    sage: L = A*x0 + B*x1 - (a*A/c + b*B/c)*x2
+    sage: L(P)
+    0
+    sage: T = _ult_flag_transformation(P, L); T
+    [     1      0      0]
+    [(-B)/A      1      0]
+    [   a/c    b/c      1]
+    sage: c * vector([0,0,1]) * T
+    (a, b, c)
+    sage: L(list(vector([x0,x1,x2]) * T))
+    A*x0
+    sage:
+    sage: P = [a,b,0]
+    sage: L = A*x0 - (a*A/b)*x1 + C*x2
+    sage: L(P)
+    0
+    sage: T = _ult_flag_transformation(P, L); T
+    [     1      0      0]
+    [   a/b      1      0]
+    [(-C)/A      0      1]
+    sage: b * vector([0,1,0]) * T
+    (a, b, 0)
+    sage: L(list(vector([x0,x1,x2]) * T))
+    A*x0
+    sage:
+    sage: P = [a,0,0]
+    sage: L = B*x1 + C*x2
+    sage: L(P)
+    0
+    sage: T = _ult_flag_transformation(P, L); T
+    [     1      0      0]
+    [     0      1      0]
+    [     0 (-C)/B      1]
+    sage: a * vector([1,0,0]) * T
+    (a, 0, 0)
+    sage: L(list(vector([x0,x1,x2]) * T))
+    B*x1
   """
 
   Vector = list(Vector)
   if linear_form(Vector) != 0:
-    raise ValueError
+    raise ValueError(f"{linear_form} must be zero at {Vector}")
 
-  base_field = linear_form.base_ring()
-  T1 = _ult_line_transformation(base_field, Vector)
-  T2 = _ult_plane_transformation(_apply_matrix(T1.inverse(), linear_form))[0]
+  base_ring = linear_form.base_ring()
+  T1 = _ult_line_transformation(base_ring, Vector)
+  T2 = _ult_plane_transformation(_apply_matrix(T1, linear_form))
 
   return T2 * T1
 
 
 def _uut_flag_transformation(Vector, linear_form):
   r"""
-  Return unipotent upper triangular matrix transforming a flag given
+  Return a unipotent upper triangular matrix transforming a flag given
   by a line spanned by a standard basis vector e_j and a plane x_i = 0
-  to the line spanned by Vector and the plane given by linear_form = 0
+  to the line spanned by Vector and the plane given by linear_form = 0.
 
   INPUT:
   Vector      - vector with 3 entries
@@ -2304,8 +2551,48 @@ def _uut_flag_transformation(Vector, linear_form):
   T - unipotent upper triangular matrix with e_j*T = Vector and
   _apply_matrix(T, linear_form) = x_i
 
-  MATHEMATICAL INTERPRETATION:
-  ...
+  EXAMPLES:
+    sage: K.<a,b,c,A,B,C> = QQ[]
+    sage: K = K.fraction_field()
+    sage: R.<x0,x1,x2> = K[]
+    sage: P = [a,b,c]
+    sage: L = -(b*B/a + c*C/a)*x0 + B*x1 + C*x2
+    sage: L(P)
+    0
+    sage: T = _uut_flag_transformation(P, L); T
+    [     1    b/a    c/a]
+    [     0      1 (-B)/C]
+    [     0      0      1]
+    sage: a * vector([1,0,0]) * T
+    (a, b, c)
+    sage: L(list(vector([x0,x1,x2]) * T))
+    C*x2
+    sage:
+    sage: P = [0,b,c]
+    sage: L = A*x0 - (c*C/b)*x1 + C*x2
+    sage: L(P)
+    0
+    sage: T = _uut_flag_transformation(P, L); T
+    [     1      0 (-A)/C]
+    [     0      1    c/b]
+    [     0      0      1]
+    sage: b * vector([0,1,0]) * T
+    (0, b, c)
+    sage: L(list(vector([x0,x1,x2]) * T))
+    C*x2
+    sage:
+    sage: P = [0,0,c]
+    sage: L = A*x0 + B*x1
+    sage: L(P)
+    0
+    sage: T = _uut_flag_transformation(P, L); T
+    [     1 (-A)/B      0]
+    [     0      1      0]
+    [     0      0      1]
+    sage: c * vector([0,0,1]) * T
+    (0, 0, c)
+    sage: L(list(vector([x0,x1,x2]) * T))
+    B*x1
   """
 
   Vector = list(Vector)
@@ -2314,7 +2601,7 @@ def _uut_flag_transformation(Vector, linear_form):
 
   base_field = linear_form.base_ring()
   T1 = _uut_line_transformation(base_field, Vector)
-  T2 = _uut_plane_transformation(_apply_matrix(T1.inverse(), linear_form))[0]
+  T2 = _uut_plane_transformation(_apply_matrix(T1, linear_form))
 
   return T2 * T1
 
