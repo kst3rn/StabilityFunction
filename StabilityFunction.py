@@ -28,7 +28,7 @@ class StabilityFunction:
       raise ValueError(f"Base rings of {homogeneous_form} and {base_ring_valuation} are not equal")
 
     self.homogeneous_form       = homogeneous_form
-    self.base_ring_valuation    = base_ring_valuation
+    self._base_ring_valuation    = base_ring_valuation
 
     self.standard_basis     = self.homogeneous_form.parent().gens()
     self.polynomial_ring    = self.homogeneous_form.parent()
@@ -45,7 +45,7 @@ class StabilityFunction:
 
 
   def base_ring_valuation(self):
-    return self.base_ring_valuation
+    return self._base_ring_valuation
 
 
   def get_dimension(self):
@@ -67,7 +67,7 @@ class StabilityFunction:
   def graded_reduction(self, point_on_BTB):
     A = point_on_BTB.base_change_matrix()
     w = point_on_BTB.weight_vector()
-    linear_valuation = LinearValuation(self.polynomial_ring, self.base_ring_valuation, A, w)
+    linear_valuation = LinearValuation(self.polynomial_ring, self.base_ring_valuation(), A, w)
     return linear_valuation.graded_reduction(self.homogeneous_form)
 
 
@@ -96,7 +96,7 @@ class StabilityFunction:
 
     MATHEMATICS and IMPLEMENTATION:
     We will now explain the mathematics and its implementation in Sage. First, let
-      v_K = self.base_ring_valuation,
+      v_K = self.base_ring_valuation(),
       A   = base_change_matrix,
       B   = base_change_matrix.inverse(),
       E_0 = (x_0,...,x_n) = self.standard_basis,
@@ -150,12 +150,12 @@ class StabilityFunction:
         w[affine_patch] = 0
 
     # Compute d / N*v_K(det(A))
-    const_A = d / N * self.base_ring_valuation(base_change_matrix.det())
+    const_A = d / N * self.base_ring_valuation()(base_change_matrix.det())
 
     # Compute v_{E,w}(F) - d*omega( v_{E,w} )
     affine_functions = []
     for multi_index, G_coefficient in G.dict().items():
-      affine_function = self.base_ring_valuation( G_coefficient ) - const_A
+      affine_function = self.base_ring_valuation()( G_coefficient ) - const_A
       for j in range(N):
         affine_function = affine_function + ( multi_index[j] - d/N )*w[j]
       affine_functions.append( affine_function )
@@ -219,7 +219,7 @@ class StabilityFunction:
     solution_dict = self.maximum_on_apartment(base_change_matrix, 0)
     maximum = solution_dict['minimum']
     weight_vector = [solution_dict['u'+str(i)] for i in range(self.dimension + 1)]
-    point_on_BTB = BTB_Point(self.base_ring_valuation, base_change_matrix, weight_vector)
+    point_on_BTB = BTB_Point(self.base_ring_valuation(), base_change_matrix, weight_vector)
     return [maximum, point_on_BTB]
 
 
@@ -282,7 +282,7 @@ class StabilityFunction:
     maximum = solution_dict['minimum']
     weight_vector = [solution_dict['u'+str(i)] for i in range(self.dimension + 1)]
 
-    point_on_BTB = BTB_Point(self.base_ring_valuation, global_trafo_matrix, weight_vector)
+    point_on_BTB = BTB_Point(self.base_ring_valuation(), global_trafo_matrix, weight_vector)
     if point_on_BTB.minimal_simplex_dimension() == self.dimension:
       return [maximum, point_on_BTB]
 
@@ -298,7 +298,7 @@ class StabilityFunction:
       solution_dict = self.maximum_on_apartment(global_trafo_matrix, 0)
       maximum = solution_dict['minimum']
       weight_vector = [solution_dict['u'+str(i)] for i in range(self.dimension + 1)]
-      point_on_BTB = BTB_Point(self.base_ring_valuation, global_trafo_matrix, weight_vector)
+      point_on_BTB = BTB_Point(self.base_ring_valuation(), global_trafo_matrix, weight_vector)
       if point_on_BTB.minimal_simplex_dimension() == self.dimension:
         return [maximum, point_on_BTB]
 
@@ -460,10 +460,14 @@ class BTB_Point:
     r"""
     Retrun the hypersurface model of `F` corresponding to `self`.
     """
+    if self.minimal_simplex_dimension() != 0:
+      raise TypeError(f"{self} is not a vertex")
+
     T = self.base_change_matrix()
     v = self.linear_valuation()
+    pi_K = self.base_ring_valuation().uniformizer()
     G = _apply_matrix(T, F)
-    return G / v(G)
+    return G / pi_K**v(G)
 
 
 
