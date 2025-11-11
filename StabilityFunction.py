@@ -33,11 +33,11 @@ class StabilityFunction:
     self.standard_basis     = self.homogeneous_form.parent().gens()
     self.polynomial_ring    = self.homogeneous_form.parent()
     self.base_ring          = self.polynomial_ring.base_ring()
-    self.dimension          = len(self.standard_basis) - 1
+    self._dimension          = len(self.standard_basis) - 1
 
 
   def __repr__(self):
-    return f"Stability Function of {self.homogeneous_form} over {self.base_ring} with {self.base_ring_valuation}"
+    return f"Stability Function of {self.homogeneous_form} over {self.base_ring} with {self.base_ring_valuation()}"
 
 
   def get_homogeneous_form(self):
@@ -48,8 +48,8 @@ class StabilityFunction:
     return self._base_ring_valuation
 
 
-  def get_dimension(self):
-    return self.dimension
+  def dimension(self):
+    return self._dimension
 
 
   def get_standard_basis(self):
@@ -134,7 +134,7 @@ class StabilityFunction:
 
     # Set up variables
     d = Integer(self.homogeneous_form.degree())
-    N = Integer(self.dimension + 1)   # N = n + 1
+    N = Integer(self._dimension + 1)   # N = n + 1
 
     # Compute G(x_0,...,x_n) = F( (x_0,...,x_n)*A )
     G = self.homogeneous_form( list( vector( self.standard_basis )*base_change_matrix ) )
@@ -186,7 +186,7 @@ class StabilityFunction:
     # of 'affine_functions', i.e. affine_function_i's are linear polynomials in QQ[w_0,...,w_n]
     # and hence of the form q_0*w_0 + ... + q_n*w_n + q_constant with q_{ self.affine_patch } = 0
     affine_function_variables = list( affine_functions[0].parent().gens() ) # [w_0,...,w_n]
-    N = self.dimension + 1
+    N = self._dimension + 1
 
     MILP = MixedIntegerLinearProgram(solver='PPL')  # we need solver='PPL' for an exact rational solution
     v = MILP.new_variable()
@@ -218,7 +218,7 @@ class StabilityFunction:
 
     solution_dict = self.maximum_on_apartment(base_change_matrix, 0)
     maximum = solution_dict['minimum']
-    weight_vector = [solution_dict['u'+str(i)] for i in range(self.dimension + 1)]
+    weight_vector = [solution_dict['u'+str(i)] for i in range(self._dimension + 1)]
     point_on_BTB = BTB_Point(self.base_ring_valuation(), base_change_matrix, weight_vector)
     return [maximum, point_on_BTB]
 
@@ -234,7 +234,7 @@ class StabilityFunction:
     matrix_form  - one of the strings 'ult', 'uut', 'integral'
 
     OUTPUT:
-    list of invertible matrix in GL_{self.dimension + 1}(self.base_ring)
+    list of invertible matrix in GL_{self.dimension() + 1}(self.base_ring)
 
     MATHEMATICAL INTERPRETATION:
     First, let
@@ -242,7 +242,7 @@ class StabilityFunction:
       u   = point_on_BTB.weight_vector(),
       B   = A.inverse(),
       K   = self.base_ring
-      n   = self.dimension
+      n   = self.dimension()
       E_0 = self.standard_basis .
     Then the matrix A lies in GL_n(K) and point_on_BTB is represented by the valuation v_{E,u}.
     Now we view E_0 = (x_0,...,x_n) as a vector in Sage and define the basis
@@ -255,7 +255,7 @@ class StabilityFunction:
     reduction of 'self.homogeneous_form' with respect to a valuation representing 'point_on_BTB'.
     """
 
-    if self.dimension != 2:
+    if self.dimension() != 2:
       raise NotImplementedError
     if self.base_ring != point_on_BTB.base_ring():
       raise ValueError
@@ -275,15 +275,15 @@ class StabilityFunction:
     matrix_form - one of the strings 'ult', 'uut', 'integral'
     """
 
-    global_trafo_matrix = identity_matrix(self.base_ring, self.dimension + 1)
+    global_trafo_matrix = identity_matrix(self.base_ring, self.dimension() + 1)
 
     # find maximum on standard apartment
     solution_dict = self.maximum_on_apartment(global_trafo_matrix, 0)
     maximum = solution_dict['minimum']
-    weight_vector = [solution_dict['u'+str(i)] for i in range(self.dimension + 1)]
+    weight_vector = [solution_dict['u'+str(i)] for i in range(self.dimension() + 1)]
 
     point_on_BTB = BTB_Point(self.base_ring_valuation(), global_trafo_matrix, weight_vector)
-    if point_on_BTB.minimal_simplex_dimension() == self.dimension:
+    if point_on_BTB.minimal_simplex_dimension() == self.dimension():
       return [maximum, point_on_BTB]
 
     affine_patch = point_on_BTB.affine_patch()
@@ -297,9 +297,9 @@ class StabilityFunction:
       # find maximum on the new apartment
       solution_dict = self.maximum_on_apartment(global_trafo_matrix, 0)
       maximum = solution_dict['minimum']
-      weight_vector = [solution_dict['u'+str(i)] for i in range(self.dimension + 1)]
+      weight_vector = [solution_dict['u'+str(i)] for i in range(self._dimension + 1)]
       point_on_BTB = BTB_Point(self.base_ring_valuation(), global_trafo_matrix, weight_vector)
-      if point_on_BTB.minimal_simplex_dimension() == self.dimension:
+      if point_on_BTB.minimal_simplex_dimension() == self.dimension():
         return [maximum, point_on_BTB]
 
       affine_patch = point_on_BTB.affine_patch()
@@ -328,14 +328,16 @@ class ApartmentStabilityFunction:
     Construct ...
     """
 
+    if not base_change_matrix.is_invertible():
+      raise ValueError
+
     self._stability_function = stability_function
     self._homogeneous_form = stability_function.get_homogeneous_form()
     self._base_ring_valuation = stability_function.base_ring_valuation()
     self._base_change_matrix = base_change_matrix
 
 
-  def __repr__(self, ):
-    n = len(self.homogeneous_form.parent().gens())
+  def __repr__(self):
     return f"Restriction of {self.stability_function()} to the apartment given by self.base_change_matrix()"
 
 
@@ -355,6 +357,10 @@ class ApartmentStabilityFunction:
     return self._base_change_matrix
 
 
+  def dimension(self):
+    return self.stability_function().dimension()
+
+
   def maximum(self):
     raise NotImplementedError
 
@@ -364,7 +370,7 @@ class ApartmentStabilityFunction:
     Return the set of active functions a w
     """
 
-    d = self.homogeneous_form.degree()
+    d = self.homogeneous_form().degree()
     N = len(self.homogeneous_form.parent().gens())
     # Compute d/N*v_K( det(A) )
     const_A = d/N*self.base_ring_valuation(self._embedding_matrix.det())
@@ -377,6 +383,130 @@ class ApartmentStabilityFunction:
       affine_functions_values[multi_index] = value_at_w
     min_value = min(affine_functions_values.values())
     return [key for key, value in affine_functions_values.items() if value == min_value]
+
+
+  def affine_forms(self):
+    r"""
+    Return the affine forms defining `self`.
+
+    OUTPUT:
+    {(c_1, (a_01,...,a_n1), (c_2, (a_02,...,a_n2),...}
+
+    MATHEMATICS and IMPLEMENTATION:
+    We will now explain the mathematics and its implementation in Sage. First, let
+      v_K = self.base_ring_valuation(),
+      A   = base_change_matrix,
+      B   = base_change_matrix.inverse(),
+      E_0 = (x_0,...,x_n) = self.standard_basis,
+      F   = self.homogeneous_form .
+    Thus, F is a homogeneous polynomial in K[x_0,...,x_n]. Fruther, we call E_0 the standard
+    basis and consider A and B as linear transformations, with respect to E_0, i.e.
+      A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n b_{ij}*x_i .
+    Then,
+      E := (y_0,...,y_n) := ( B(x_0),...,B(x_n) )
+    is a new basis of K[x_0,...,x_n]. Now if we view E_0 = (x_0,...,x_n) as a vector in Sage,
+    we get
+      (y_0,...,y_n) = (sum_{i=0}^n b_{i,0}*x_i,...,sum_{i=0}^n b_{i,n}*x_i)
+                    = (x_0,...,x_n)*B
+    and therefore
+      F(x_0,...,x_n) = F( (y_0,...,y_n)*B^{-1} ) = F( (y_0,...,y_n)*A ) .
+    Thus, the homogeneous polynomial
+      G(y_0,...,y_n) := F( (y_0,...,y_n)*A ) in K[y_0,...,y_n]
+    describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
+    Thus, for the valuation v_{E,w} we obtain
+      v_{E,w}(F) = min( v_K(a_i) + <i,w> : i in I ) with G = sum_{i in I} a_i y^i,
+    where i is a multi-index, i.e. I is a subset of NN^{n+1}. Moreover, the we have
+      omega(v_{E,w}) = 1/(n+1) * ( w_0 + ... + w_n - v_K( det(E) ) .
+    Note that per definition det(E) = det(B). Furthermore,
+      v_K( det(B) ) = v_K( det(A^{-1}) ) = v_K( det(A)^{-1} ) = -v_K( det(A) )
+    and therefore
+      omega(v_{E,w}) = 1/(n+1) * ( w_0 + ... + w_n + v_K( det(A) ) .
+    Now let N = n + 1. It follows, that 
+      phi_E(w) = v_{E,w}(F) - d*omega(v_{E,w})
+               = min(v_K(a_i) - d/N*v_K(det(A)) + sum_{j=0}^n (i_j - d/N)*w_j : i in I) .
+    Finally, we set w_{affine_patch} = 0, if affine_patch != None.
+    """
+
+    # Set up variables
+    d = Integer(self.homogeneous_form().degree())
+    N = Integer(self.dimension() + 1)   # N = n + 1
+    v_K = self.base_ring_valuation()
+    const_A = d / N * v_K(self.base_change_matrix().det())
+
+    # Compute v_{E,w}(F) - d*omega( v_{E,w} )
+    G = _apply_matrix(self.base_change_matrix(), self.homogeneous_form())
+    aff_forms = set()
+    for multi_index, G_coeff in G.dict().items():
+      aff_forms.add((v_K(G_coeff) - const_A,
+                     tuple(i_j - d / N for i_j in multi_index)))
+
+    return aff_forms
+
+
+  def maximize(self):
+    r"""
+    Return the maximum of `self` and the
+    point where it is attained.
+
+    OUTPUT:
+    A pair `(a, b)` consisting of a rational rational
+    number `a`, which equals the maximum of `self` and
+    a point `b` on the Bruhat-Tits building where `self`
+    attains `a`.
+    """
+
+    MILP = MixedIntegerLinearProgram(solver='PPL')
+    v = MILP.new_variable()
+    t = v['minimum']    
+    MILP.set_objective(t)
+    MILP.add_constraint(v[0] == 0)
+
+    N = self.dimension() + 1
+    for const, lin_form in self.affine_forms():
+      MILP_term = const + sum(lin_form[j] * v[j] for j in range(N))
+      MILP.add_constraint(t <= MILP_term)
+    MILP.solve()
+    solution_dict = MILP.get_values(v)
+    maximum = solution_dict['minimum']
+    weight_vector = [solution_dict[i] for i in range(N)]
+    b = BTB_Point(self.base_ring_valuation(),
+                  self.base_change_matrix(),
+                  weight_vector)
+
+    return (maximum, b)
+
+
+  def bounded_suplevel_sets(self):
+    r"""
+    Return `True` if the suplevel sets are bounded
+    and `False` otherwise.
+    """
+    raise NotImplementedError # ToDo
+
+
+  def integral_points(self):
+    r"""
+    Return a generator yielding all integral points
+    in the level set of `self.maximize()`.
+    """
+
+    if not self.bounded_sublevel_sets():
+      raise ValueError(f"Suplevel sets are unbounded")
+
+    raise NotImplementedError # ToDo
+
+
+  def semistable_models(self):
+    r"""
+    Return a generator yielding all semistable models
+    on the apartment given by `self.base_change_matrix()`
+    or `None` if there are no such models this apartment.
+    """
+
+    a, b = self.maximize()
+    if not self.linear_valuation().has_semistable_reduction_at(b):
+      return None
+    return self.integral_points()
 
 
 
