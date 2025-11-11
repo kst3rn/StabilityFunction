@@ -322,51 +322,61 @@ class StabilityFunction:
 
 
 
-class RestrictedStabilityFunction:
-    def __init__(self, stability_function, embedding_matrix):
-        r"""
-        Return ...
-        """
+class ApartmentStabilityFunction:
+  def __init__(self, stability_function, base_change_matrix):
+    r"""
+    Construct ...
+    """
 
-        self.homogeneous_form = stability_function.get_homogeneous_form()
-        self.base_ring_valuation = stability_function.base_ring_valuation()
-        self._embedding_matrix = embedding_matrix
-
-
-    def __repr__(self, ):
-        n = len(self.homogeneous_form.parent().gens())
-        return f"Stability Function of {self.homogeneous_form} over {self.base_ring} with {self.base_ring_valuation} restricted to RR^{n}"
+    self._stability_function = stability_function
+    self._homogeneous_form = stability_function.get_homogeneous_form()
+    self._base_ring_valuation = stability_function.base_ring_valuation()
+    self._base_change_matrix = base_change_matrix
 
 
-    def maximum(self):
-        raise NotImplementedError
+  def __repr__(self, ):
+    n = len(self.homogeneous_form.parent().gens())
+    return f"Restriction of {self.stability_function()} to the apartment given by self.base_change_matrix()"
 
 
-    def active_functions(self, w, flag = True):
-        r"""
-        Return the set of active functions a w
-        """
-
-        d = self.homogeneous_form.degree()
-        N = len(self.homogeneous_form.parent().gens())
-        # Compute d/N*v_K( det(A) )
-        const_A = d/N*self.base_ring_valuation(self._embedding_matrix.det())
-        affine_functions_values = dict()
-        F = _apply_matrix(self._embedding_matrix, self.homogeneous_form)
-        for multi_index, coefficient in F.dict().items():
-            value_at_w = self.base_ring_valuation(coefficient) - const_A
-            for j in range(N):
-                value_at_w = value_at_w + multi_index[j] * w[j]
-            affine_functions_values[multi_index] = value_at_w
-        min_value = min(affine_functions_values.values())
-        return [key for key, value in affine_functions_values.items() if value == min_value]
+  def stability_function(self):
+    return self._stability_function
 
 
-    def embedding_matrix(self):
-        r"""
-        Return the matrix T such that...
-        """
-        return self._embedding_matrix
+  def homogeneous_form(self):
+    return self._homogeneous_form
+
+
+  def base_ring_valuation(self):
+    return self._base_ring_valuation
+
+
+  def base_change_matrix(self):
+    return self._base_change_matrix
+
+
+  def maximum(self):
+    raise NotImplementedError
+
+
+  def active_functions(self, w, flag = True):
+    r"""
+    Return the set of active functions a w
+    """
+
+    d = self.homogeneous_form.degree()
+    N = len(self.homogeneous_form.parent().gens())
+    # Compute d/N*v_K( det(A) )
+    const_A = d/N*self.base_ring_valuation(self._embedding_matrix.det())
+    affine_functions_values = dict()
+    F = _apply_matrix(self._embedding_matrix, self.homogeneous_form)
+    for multi_index, coefficient in F.dict().items():
+      value_at_w = self.base_ring_valuation()(coefficient) - const_A
+      for j in range(N):
+        value_at_w = value_at_w + multi_index[j] * w[j]
+      affine_functions_values[multi_index] = value_at_w
+    min_value = min(affine_functions_values.values())
+    return [key for key, value in affine_functions_values.items() if value == min_value]
 
 
 
