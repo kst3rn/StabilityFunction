@@ -33,7 +33,7 @@ class StabilityFunction:
     self.standard_basis     = self.homogeneous_form.parent().gens()
     self.polynomial_ring    = self.homogeneous_form.parent()
     self.base_ring          = self.polynomial_ring.base_ring()
-    self._dimension          = len(self.standard_basis) - 1
+    self._dimension          = Integer(len(self.standard_basis) - 1)
 
 
   def __repr__(self):
@@ -134,7 +134,7 @@ class StabilityFunction:
 
     # Set up variables
     d = Integer(self.homogeneous_form.degree())
-    N = Integer(self._dimension + 1)   # N = n + 1
+    N = self._dimension + 1   # N = n + 1
 
     # Compute G(x_0,...,x_n) = F( (x_0,...,x_n)*A )
     G = self.homogeneous_form( list( vector( self.standard_basis )*base_change_matrix ) )
@@ -341,7 +341,7 @@ class ApartmentStabilityFunction:
     return f"Restriction of {self.stability_function()} to the apartment given by self.base_change_matrix()"
 
 
-  def show(self, affine_patch = None, arg_name = 'w'):
+  def show(self, affine_patch=None, arg_name='w'):
     r"""
     EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
@@ -514,7 +514,7 @@ class ApartmentStabilityFunction:
       G(y_0,...,y_n) := F((y_0,...,y_n)*A) in K[y_0,...,y_n]
     describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
     Thus, for the valuation v_{E,w} we obtain
-      v_{E,w}(F) = min( v_K(a_i) + <i,w> : i in I ) with G = sum_{i in I} a_i y^i,
+      v_{E,w}(F) = min(v_K(a_i) + <i,w> : i in I) with G = sum_{i in I} a_i y^i,
     where i is a multi-index, i.e. I is a subset of NN^{n+1}. Moreover, we have
       omega(v_{E,w}) = 1/(n+1) * (w_0 + ... + w_n - v_K(det(E))).
     Note that per definition det(E) = det(B). Furthermore,
@@ -529,7 +529,7 @@ class ApartmentStabilityFunction:
 
     # Set up variables
     d = Integer(self.homogeneous_form().degree())
-    N = Integer(self.dimension() + 1)   # N = n + 1
+    N = self.dimension() + 1   # N = n + 1
     v_K = self.base_ring_valuation()
     const_A = d / N * v_K(self.base_change_matrix().det())
 
@@ -594,6 +594,68 @@ class ApartmentStabilityFunction:
     return (maximum, b)
 
 
+  def optimal_solutions_polyhedron(self, affine_patch=0):
+    r"""
+    Return the polyhedron consistion of optimal
+    solution of `self`.
+
+    .. MATH::
+    By the special structure of `self` as a piecewise affine
+    affine
+      RR^{n+1} ---> RR
+    it factors over RR^{n+1}/RR(1,...,1). In particular, the
+    maximum of `self` is the same on any affine patch.
+    """
+
+    N = self.dimension() + Integer(1)
+    if affine_patch is not None:
+      if not isinstance(affine_patch, (int, Integer)):
+        raise ValueError(f"{affine_patch} is not an integer")
+      elif not 0 <= affine_patch < N:
+        raise ValueError(f"{affine_patch} is not between {0} and {N}")
+
+    # 1. Find the maximum value.
+    maximum, _ = self.maximize()
+
+    # 2. Construct the inequalities for the optimal face.
+    # The optimal face is the set of points w where phi(w) = maximum.
+    # Since phi(w) = min( c_i + L_i(w) ), this is equivalent to
+    # c_i + L_i(w) >= maximum   for all i
+    #
+    # Polyhedron representation needs inequalities in the form
+    # b + a_0*w_0 + a_1*w_1 + ... >= 0
+    #
+    # Our inequalities are:
+    # (c_i - maximum) + L_i[0]*w_0 + L_i[1]*w_1 + ... >= 0
+    ieqs = []
+    for const, lin_form in self.affine_forms():
+      # b = const - maximum
+      # [a_0, a_1, ...] = lin_form
+      ieqs.append([const - maximum] + list(lin_form))
+
+    # 3. Add the equality constraint.
+    #
+    # Polyhedron representation needs equalities in the form
+    # b + a_0*w_0 + a_1*w_1 + ... == 0
+    #
+    # Our equality is:
+    # 0 + 0*w_0 + ... + 1*w_{affine_patch} + ... + 0*w_{N-1} == 0
+    eqns = [[Integer(0)] * (N + 1)]
+    if affine_patch is not None:
+      eqns[0][affine_patch + 1] = Integer(1)
+
+    # 4. Return the polyhedron
+    return Polyhedron(ieqs=ieqs, eqns=eqns, base_ring=QQ)
+
+
+  def optimal_set_dimension(self):
+    r"""
+    Return the dimension of the polyhedron, where
+    `self` attains the maximum.
+    """
+    return self.optimal_set_polyhedron().dimension()
+
+
   def bounded_suplevel_sets(self):
     r"""
     Return `True` if the suplevel sets are bounded
@@ -603,15 +665,8 @@ class ApartmentStabilityFunction:
     The suplevel sets are bounded if and only if the
     set of optimal solutions is bounded.
     """
-    raise NotImplementedError # ToDo
 
-
-  def optimal_set_dimension(self):
-    r"""
-    Return the dimension of the set, where `self` attains
-    the maximum.
-    """
-    raise NotImplementedError
+    return self.optimal_set_polyhedron().is_compact()
 
 
   def integral_points(self):
