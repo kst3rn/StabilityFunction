@@ -117,7 +117,7 @@ class StabilityFunction:
     describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
     Thus, for the valuation v_{E,w} we obtain
       v_{E,w}(F) = min( v_K(a_i) + <i,w> : i in I ) with G = sum_{i in I} a_i y^i,
-    where i is a multi-index, i.e. I is a subset of NN^{n+1}. Moreover, the we have
+    where i is a multi-index, i.e. I is a subset of NN^{n+1}. Moreover, we have
       omega(v_{E,w}) = 1/(n+1) * ( w_0 + ... + w_n - v_K( det(E) ) .
     Note that per definition det(E) = det(B). Furthermore,
       v_K( det(B) ) = v_K( det(A^{-1}) ) = v_K( det(A)^{-1} ) = -v_K( det(A) )
@@ -374,6 +374,12 @@ class ApartmentStabilityFunction:
       sage: phiT = ApartmentStabilityFunction(phi, T)
       sage: phiT.show(affine_patch=0)
       (0, w1, w2) |--> min(1/3*w1 + 1/3*w2 - 1/3, -2/3*w1 - 2/3*w2 + 2/3)
+      sage:
+      sage: F = x0^2 + 6*x1*x2
+      sage: E = identity_matrix(QQ, 3)
+      sage: phiE = ApartmentStabilityFunction(phi, E)
+      sage: phiE.show(affine_patch=0)
+      (0, w1, w2) |--> min(2/3*w1 - 1/3*w2, -4/3*w1 + 2/3*w2 + 1)
     """
 
     N = self.dimension() + 1
@@ -419,28 +425,24 @@ class ApartmentStabilityFunction:
     return self.stability_function().dimension()
 
 
-  def maximum(self):
-    raise NotImplementedError
-
-
-  def active_functions(self, w, flag = True):
-    r"""
-    Return the set of active functions a w
-    """
-
-    d = self.homogeneous_form().degree()
-    N = self.dimension() + 1
-    # Compute d/N*v_K( det(A) )
-    const_A = d/N*self.base_ring_valuation(self._embedding_matrix.det())
-    affine_functions_values = dict()
-    F = _apply_matrix(self._embedding_matrix, self.homogeneous_form)
-    for multi_index, coefficient in F.dict().items():
-      value_at_w = self.base_ring_valuation()(coefficient) - const_A
-      for j in range(N):
-        value_at_w = value_at_w + multi_index[j] * w[j]
-      affine_functions_values[multi_index] = value_at_w
-    min_value = min(affine_functions_values.values())
-    return [key for key, value in affine_functions_values.items() if value == min_value]
+  # def active_functions(self, w, flag = True):
+  #   r"""
+  #   Return the set of active functions a w
+  #   """
+  # 
+  #   d = self.homogeneous_form().degree()
+  #   N = self.dimension() + 1
+  #   # Compute d/N*v_K( det(A) )
+  #   const_A = d/N*self.base_ring_valuation(self._embedding_matrix.det())
+  #   affine_functions_values = dict()
+  #   F = _apply_matrix(self._embedding_matrix, self.homogeneous_form)
+  #   for multi_index, coefficient in F.dict().items():
+  #     value_at_w = self.base_ring_valuation()(coefficient) - const_A
+  #     for j in range(N):
+  #       value_at_w = value_at_w + multi_index[j] * w[j]
+  #     affine_functions_values[multi_index] = value_at_w
+  #   min_value = min(affine_functions_values.values())
+  #   return [key for key, value in affine_functions_values.items() if value == min_value]
 
 
   def affine_forms(self):
@@ -493,36 +495,36 @@ class ApartmentStabilityFunction:
     .. MATH::
     First, let
       v_K = self.base_ring_valuation(),
-      A   = base_change_matrix,
-      B   = base_change_matrix.inverse(),
-      E_0 = (x_0,...,x_n) = self.standard_basis,
-      F   = self.homogeneous_form .
+      A   = self.base_change_matrix(),
+      B   = A.inverse(),
+      E_0 = (x_0,...,x_n) = self.standard_basis(),
+      F   = self.homogeneous_form().
     Thus, F is a homogeneous polynomial in K[x_0,...,x_n]. Fruther, we call E_0 the standard
-    basis and consider A and B as linear transformations, with respect to E_0, i.e.
-      A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n b_{ij}*x_i .
+    basis and consider A and B as linear transformations with respect to E_0, i.e.
+      A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n b_{ij}*x_i.
     Then,
-      E := (y_0,...,y_n) := ( B(x_0),...,B(x_n) )
+      E := (y_0,...,y_n) := (B(x_0),...,B(x_n))
     is a new basis of K[x_0,...,x_n]. Now if we view E_0 = (x_0,...,x_n) as a vector in Sage,
     we get
       (y_0,...,y_n) = (sum_{i=0}^n b_{i,0}*x_i,...,sum_{i=0}^n b_{i,n}*x_i)
                     = (x_0,...,x_n)*B
     and therefore
-      F(x_0,...,x_n) = F( (y_0,...,y_n)*B^{-1} ) = F( (y_0,...,y_n)*A ) .
+      F(x_0,...,x_n) = F((y_0,...,y_n)*B^{-1}) = F((y_0,...,y_n)*A).
     Thus, the homogeneous polynomial
-      G(y_0,...,y_n) := F( (y_0,...,y_n)*A ) in K[y_0,...,y_n]
+      G(y_0,...,y_n) := F((y_0,...,y_n)*A) in K[y_0,...,y_n]
     describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
     Thus, for the valuation v_{E,w} we obtain
       v_{E,w}(F) = min( v_K(a_i) + <i,w> : i in I ) with G = sum_{i in I} a_i y^i,
-    where i is a multi-index, i.e. I is a subset of NN^{n+1}. Moreover, the we have
-      omega(v_{E,w}) = 1/(n+1) * ( w_0 + ... + w_n - v_K( det(E) ) .
+    where i is a multi-index, i.e. I is a subset of NN^{n+1}. Moreover, we have
+      omega(v_{E,w}) = 1/(n+1) * (w_0 + ... + w_n - v_K(det(E))).
     Note that per definition det(E) = det(B). Furthermore,
-      v_K( det(B) ) = v_K( det(A^{-1}) ) = v_K( det(A)^{-1} ) = -v_K( det(A) )
+      v_K(det(B)) = v_K(det(A^{-1})) = v_K(det(A)^{-1}) = -v_K(det(A))
     and therefore
-      omega(v_{E,w}) = 1/(n+1) * ( w_0 + ... + w_n + v_K( det(A) ) .
+      omega(v_{E,w}) = 1/(n+1) * ( w_0 + ... + w_n + v_K(det(A))).
     Now let N = n + 1. It follows, that 
       phi_E(w) = v_{E,w}(F) - d*omega(v_{E,w})
-               = min(v_K(a_i) - d/N*v_K(det(A)) + sum_{j=0}^n (i_j - d/N)*w_j : i in I) .
-    Finally, we set w_{affine_patch} = 0, if affine_patch != None.
+               = min(v_K(a_i) - d/N*v_K(det(A)) + sum_{j=0}^n (i_j - d/N)*w_j : i in I).
+    Finally, we set w_{affine_patch} = 0, if affine_patch is not None.
     """
 
     # Set up variables
@@ -551,6 +553,24 @@ class ApartmentStabilityFunction:
     number `a`, which equals the maximum of `self` and
     a point `b` on the Bruhat-Tits building where `self`
     attains `a`.
+
+    EXAMPLES::
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: F = x0*x2*(x1^2 + 6*x0*x2)
+      sage: v_2 = QQ.valuation(2)
+      sage: phi = StabilityFunction(F, v_2)
+      sage: T = matrix(QQ, [[1,0,0],[2,2,0],[3,0,1]]); T
+      [1 0 0]
+      [2 2 0]
+      [3 0 1]
+      sage: phiT = ApartmentStabilityFunction(phi, T)
+      sage: a, b = phiT.maximize()
+      sage: a
+      1/3
+      sage: b
+      Point on the Bruhat-Tits Building of SL(3) over Rational Field with 2-adic valuation
+      sage: b.weight_vector()
+      [1/2, 0, 1/2]
     """
 
     MILP = MixedIntegerLinearProgram(solver='PPL')
