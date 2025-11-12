@@ -594,7 +594,7 @@ class ApartmentStabilityFunction:
     return (maximum, b)
 
 
-  def optimal_solutions_polyhedron(self, affine_patch=0):
+  def optimal_polyhedron(self, affine_patch=0):
     r"""
     Return the polyhedron consistion of optimal
     solution of `self`.
@@ -646,14 +646,6 @@ class ApartmentStabilityFunction:
 
     # 4. Return the polyhedron
     return Polyhedron(ieqs=ieqs, eqns=eqns, base_ring=QQ)
-
-
-  def optimal_set_dimension(self):
-    r"""
-    Return the dimension of the polyhedron, where
-    `self` attains the maximum.
-    """
-    return self.optimal_set_polyhedron().dimension()
 
 
   def bounded_suplevel_sets(self):
