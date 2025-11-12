@@ -341,6 +341,27 @@ class ApartmentStabilityFunction:
     return f"Restriction of {self.stability_function()} to the apartment given by self.base_change_matrix()"
 
 
+  def show(self, affine_patch = None, arg_name = 'w'):
+
+    N = self.dimension() + 1
+    if affine_patch is not None:
+      assert isinstance(affine_patch, int) or isinstance(affine_patch, Integer)
+      assert 0 <= affine_patch < N
+    assert isinstance(arg_name, str) and len(arg_name) == 1
+
+
+    R = PolynomialRing(QQ, N, arg_name)
+    w = R.gens()
+    if affine_patch is not None:
+      w = list(w)
+      w[affine_patch] = 0
+      w = tuple(w)
+    aff_forms = []
+    for const, lin_form in self.affine_forms():
+      aff_forms.append(const + sum(lin_form[j] * w[j] for j in range(N)))
+    print(str(w) + " |---> min" + str(tuple(aff_forms)))
+
+
   def stability_function(self):
     return self._stability_function
 
@@ -371,7 +392,7 @@ class ApartmentStabilityFunction:
     """
 
     d = self.homogeneous_form().degree()
-    N = len(self.homogeneous_form.parent().gens())
+    N = self.dimension() + 1
     # Compute d/N*v_K( det(A) )
     const_A = d/N*self.base_ring_valuation(self._embedding_matrix.det())
     affine_functions_values = dict()
@@ -392,8 +413,48 @@ class ApartmentStabilityFunction:
     OUTPUT:
     {(c_1, (a_01,...,a_n1), (c_2, (a_02,...,a_n2),...}
 
-    MATHEMATICS and IMPLEMENTATION:
-    We will now explain the mathematics and its implementation in Sage. First, let
+    EXAMPLES::
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: v_2 = QQ.valuation(2)
+      sage: F = x0*x2*(x1^2 + x0*x2)
+      sage: phi = StabilityFunction(F, v_2)
+      sage: E = identity_matrix(QQ, 3)
+      sage: phiE = ApartmentStabilityFunction(phi, E)
+      sage: phiE.affine_forms()
+      {(0, (-1/3, 2/3, -1/3)), (0, (2/3, -4/3, 2/3))}
+      sage:
+      sage: T = matrix(QQ, [[1,0,0],[2,1,0],[3,0,1]]); T
+      [1 0 0]
+      [2 1 0]
+      [3 0 1]
+      sage: phiT = ApartmentStabilityFunction(phi, T)
+      sage: phiT.affine_forms()
+      {(0, (-4/3, -4/3, 8/3)),
+       (0, (-4/3, 2/3, 2/3)),
+       (0, (-1/3, 2/3, -1/3)),
+       (0, (2/3, -4/3, 2/3)),
+       (1, (-4/3, 5/3, -1/3)),
+       (1, (-1/3, -4/3, 5/3)),
+       (2, (-4/3, -1/3, 5/3)),
+       (2, (-1/3, -1/3, 2/3))}
+      sage:
+      sage: T = matrix(QQ, [[1,0,0],[2,2,0],[3,0,1]]); T
+      [1 0 0]
+      [2 2 0]
+      [3 0 1]
+      sage: phiT = ApartmentStabilityFunction(phi, T)
+      sage: phiT.affine_forms()
+      {(-4/3, (-4/3, -4/3, 8/3)),
+       (-4/3, (2/3, -4/3, 2/3)),
+       (-1/3, (-1/3, -4/3, 5/3)),
+       (2/3, (-4/3, -1/3, 5/3)),
+       (2/3, (-1/3, -1/3, 2/3)),
+       (2/3, (-1/3, 2/3, -1/3)),
+       (5/3, (-4/3, 5/3, -1/3)),
+       (8/3, (-4/3, 2/3, 2/3))}
+
+    .. MATH::
+    First, let
       v_K = self.base_ring_valuation(),
       A   = base_change_matrix,
       B   = base_change_matrix.inverse(),
@@ -462,8 +523,8 @@ class ApartmentStabilityFunction:
     MILP.add_constraint(v[0] == 0)
 
     N = self.dimension() + 1
-    for const, lin_form in self.affine_forms():
-      MILP_term = const + sum(lin_form[j] * v[j] for j in range(N))
+    for const_coeff, lin_form in self.affine_forms():
+      MILP_term = const_coeff + sum(lin_form[j] * v[j] for j in range(N))
       MILP.add_constraint(t <= MILP_term)
     MILP.solve()
     solution_dict = MILP.get_values(v)
@@ -480,8 +541,20 @@ class ApartmentStabilityFunction:
     r"""
     Return `True` if the suplevel sets are bounded
     and `False` otherwise.
+
+    .. MATH::
+    The suplevel sets are bounded if and only if the
+    set of optimal solutions is bounded.
     """
     raise NotImplementedError # ToDo
+
+
+  def optimal_set_dimension(self):
+    r"""
+    Return the dimension of the set, where `self` attains
+    the maximum.
+    """
+    raise NotImplementedError
 
 
   def integral_points(self):
