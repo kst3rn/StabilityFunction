@@ -342,13 +342,50 @@ class ApartmentStabilityFunction:
 
 
   def show(self, affine_patch = None, arg_name = 'w'):
+    r"""
+    EXAMPLES::
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: F = x0*x2*(x1^2 + x0*x2)
+      sage: v_2 = QQ.valuation(2)
+      sage: phi = StabilityFunction(F, v_2)
+      sage: E = identity_matrix(QQ, 3)
+      sage: phiE = ApartmentStabilityFunction(phi, E)
+      sage: phiE.show()
+      (w0, w1, w2) |--> min(-1/3*w0 + 2/3*w1 - 1/3*w2, 2/3*w0 - 4/3*w1 + 2/3*w2)
+      sage: phiE.show(affine_patch=0)
+      (0, w1, w2) |--> min(2/3*w1 - 1/3*w2, -4/3*w1 + 2/3*w2)
+      sage: phiE.show(affine_patch=2)
+      (w0, w1, 0) |--> min(-1/3*w0 + 2/3*w1, 2/3*w0 - 4/3*w1)
+      sage:
+      sage: F = x0^2 + x1*x2
+      sage: phi = StabilityFunction(F, v_2)
+      sage: T = matrix(QQ, [[1,0,0],[0,1,0],[0,2,1]]); T
+      [1 0 0]
+      [0 1 0]
+      [0 2 1]
+      sage: phiT = ApartmentStabilityFunction(phi, T)
+      sage: phiT.show(affine_patch=0)
+      (0, w1, w2) |--> min(1/3*w1 + 1/3*w2, -2/3*w1 + 4/3*w2 + 1, -2/3*w1 - 2/3*w2)
+      sage:
+      sage: T = matrix(QQ, [[2,0,0],[0,2,0],[0,0,1]]); T
+      [2 0 0]
+      [0 2 0]
+      [0 0 1]
+      sage: phiT = ApartmentStabilityFunction(phi, T)
+      sage: phiT.show(affine_patch=0)
+      (0, w1, w2) |--> min(1/3*w1 + 1/3*w2 - 1/3, -2/3*w1 - 2/3*w2 + 2/3)
+    """
 
     N = self.dimension() + 1
     if affine_patch is not None:
-      assert isinstance(affine_patch, int) or isinstance(affine_patch, Integer)
-      assert 0 <= affine_patch < N
-    assert isinstance(arg_name, str) and len(arg_name) == 1
-
+      if not isinstance(affine_patch, (int, Integer)):
+        raise ValueError(f"{affine_patch} is not an integer")
+      elif not 0 <= affine_patch < N:
+        raise ValueError(f"{affine_patch} is not between {0} and {N}")
+    if not isinstance(arg_name, str):
+      raise ValueError(f"{arg_name} is not a string")
+    elif not len(arg_name) == 1:
+      raise ValueError(f"{arg_name} is not a character")
 
     R = PolynomialRing(QQ, N, arg_name)
     w = R.gens()
@@ -359,7 +396,7 @@ class ApartmentStabilityFunction:
     aff_forms = []
     for const, lin_form in self.affine_forms():
       aff_forms.append(const + sum(lin_form[j] * w[j] for j in range(N)))
-    print(str(w) + " |---> min" + str(tuple(aff_forms)))
+    print(str(w) + " |--> min" + str(tuple(aff_forms)))
 
 
   def stability_function(self):
