@@ -658,7 +658,7 @@ class ApartmentStabilityFunction:
     set of optimal solutions is bounded.
     """
 
-    return self.optimal_set_polyhedron().is_compact()
+    return self.optimal_polyhedron().is_compact()
 
 
   def integral_points(self):
@@ -667,10 +667,10 @@ class ApartmentStabilityFunction:
     in the level set of `self.maximize()`.
     """
 
-    if not self.bounded_sublevel_sets():
+    if not self.bounded_suplevel_sets():
       raise ValueError(f"Suplevel sets are unbounded")
 
-    raise NotImplementedError # ToDo
+    return self.optimal_polyhedron().integral_points()
 
 
   def semistable_models(self):
@@ -681,9 +681,14 @@ class ApartmentStabilityFunction:
     """
 
     a, b = self.maximize()
-    if not self.linear_valuation().has_semistable_reduction_at(b):
+    if not self.stability_function().has_semistable_reduction_at(b):
       return None
-    return self.integral_points()
+
+    v_K = self.base_ring_valuation()
+    T = self.base_change_matrix()
+    F = self.homogeneous_form()
+    for weight_vector in self.integral_points():
+      yield BTB_Point(v_K, T, weight_vector).hypersurface_model(F)
 
 
 
