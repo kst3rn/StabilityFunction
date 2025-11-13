@@ -663,7 +663,7 @@ class ApartmentStabilityFunction:
 
   def integral_points(self):
     r"""
-    Return a generator yielding all integral points
+    Return the list of all integral points
     in the level set of `self.maximize()`.
     """
 
@@ -675,9 +675,8 @@ class ApartmentStabilityFunction:
 
   def semistable_models(self):
     r"""
-    Return a generator yielding all semistable models
-    on the apartment given by `self.base_change_matrix()`
-    or `None` if there are no such models this apartment.
+    Return the generator yielding all semistable models
+    on the apartment given by `self.base_change_matrix()`.
     """
 
     a, b = self.maximize()
