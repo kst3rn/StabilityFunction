@@ -608,7 +608,7 @@ class GradedReduction:
     return GradedInstability(self, T)
 
 
-  def rational_graded_instability(self, matrix_form = 'uut'):
+  def rational_graded_instability(self, matrix_form = 'ult'):
     r"""
     Return a rational graded instability of `self` if it exists
     and `None` otherwise.
@@ -616,9 +616,8 @@ class GradedReduction:
 
     if len(self.normalized_weight_vector()) != 3:
       raise NotImplementedError
-
-    if matrix_form == 'integral':
-      matrix_form = self.normalized_weight_vector()
+    if matrix_form not in {'ult', 'uut', 'integral'}:
+      raise ValueError
 
     w = self.normalized_weight_vector()
     differences = [w[2] - w[0], w[1] - w[0], w[2] - w[1]]
@@ -635,17 +634,20 @@ class GradedReduction:
       T = instability.base_change_matrix(matrix_form)
       return GradedInstability(self, T)
 
-    for i in range(0, 2):
-      for j in range(i + 1, 3):
-        if w[j] - w[i] in ZZ:
-          a = reduced_curve.elementary_instability_direction((i,j))
-          if a is None:
-            return None
+    for i, j in [(1,0), (2,0), (2,1)]:
+      diff = w[j] - w[i]
+      if diff in ZZ:
+        a = reduced_curve.elementary_instability_direction((i,j))
+        if a is not None:
           T = [[1,0,0],[0,1,0],[0,0,1]]
-          T[i][j] = -a
+          if matrix_form == 'ult' or matrix_form == 'integral' and diff >= 0:
+            T[i][j] = -a
+          elif matrix_form == 'uut' or matrix_form == 'integral' and diff < 0:
+            T[j][i] = -1/a
           T = matrix(self.base_residue_ring(), T)
           return GradedInstability(self, T)
 
+      return None
 
 
 class GradedInstability:
