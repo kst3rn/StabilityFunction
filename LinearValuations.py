@@ -643,11 +643,11 @@ class GradedReduction:
           if matrix_form == 'ult' or matrix_form == 'integral' and diff >= 0:
             T[i][j] = -a
           elif matrix_form == 'uut' or matrix_form == 'integral' and diff < 0:
-            T[j][i] = -1/a
+            T[j][i] = Integer(1) / (-a)
           T = matrix(self.base_residue_ring(), T)
           return GradedInstability(self, T)
 
-      return None
+    return None
 
 
 class GradedInstability:
