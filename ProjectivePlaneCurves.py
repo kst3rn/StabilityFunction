@@ -42,7 +42,7 @@ class ProjectivePlaneCurve:
     self.polynomial = polynomial
     self._degree = self.polynomial.degree()
     self.polynomial_ring = self.polynomial.parent()
-    self.base_ring = self.polynomial.base_ring()
+    self._base_ring = self.polynomial.base_ring()
     self.projective_plane = ProjectiveSpace(self.polynomial_ring)
     self.plane_curve = self.projective_plane.curve(self.polynomial)
     self.standard_basis = self.polynomial_ring.gens()
@@ -52,8 +52,8 @@ class ProjectivePlaneCurve:
     return f"Projective Plane Curve with defining polynomial {self.polynomial} over {self.base_ring}"
 
 
-  def get_base_ring(self):
-    return self.base_ring
+  def base_ring(self):
+    return self._base_ring
 
 
   def get_polynomial(self):
@@ -78,7 +78,7 @@ class ProjectivePlaneCurve:
     PolRin1 = PolynomialRing(R, var_names)
     phi = PolRin1.coerce_map_from(PolRin0)
     if phi is None:
-      raise NotImplementedError(f"No coercion from the polynomial ring over {self.get_base_ring()} to the polynomial ring over {R}")
+      raise NotImplementedError(f"No coercion from the polynomial ring over {self.base_ring()} to the polynomial ring over {R}")
     new_poly = phi(self.get_polynomial())
 
     return ProjectivePlaneCurve(new_poly)
@@ -346,7 +346,7 @@ class ProjectivePlaneCurve:
       elif m > self.degree() / 3:
         for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
           if L_mult >= m / 2:
-            if ProjectiveFlag(P, L).is_semiunstable(self):
+            if ProjectiveFlag(self.base_ring(), P, L).is_semiunstable(self):
               return False
 
     return True
@@ -383,7 +383,7 @@ class ProjectivePlaneCurve:
     # Search for a line of multiplicity > d/3.
     for Y, m in self._decompose:
       if Y.degree() == 1 and m > self.degree() / 3:
-        return ProjectiveFlag(None, Y)
+        return ProjectiveFlag(self.base_ring(), None, Y)
 
     # Search for a point of multiplicity > 2d/3 or a point
     # of multiplicity d/3 < m <= 2d/3 and a line in the
@@ -392,11 +392,11 @@ class ProjectivePlaneCurve:
     for P in X_red_sing:
       m = self.multiplicity(P)
       if m > 2 * self.degree() / 3:
-        return ProjectiveFlag(P, None)
+        return ProjectiveFlag(self.base_ring(), P, None)
       elif m > self.degree() / 3:
         for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
           if L_mult > m / 2:
-            P_on_L_flag = ProjectiveFlag(P, L)
+            P_on_L_flag = ProjectiveFlag(self.base_ring(), P, L)
             if P_on_L_flag.is_unstable(self):
               return P_on_L_flag
 
@@ -414,7 +414,7 @@ class ProjectivePlaneCurve:
     - ``shape`` -- a pair `(i, j)` of distinct integers in {0, 1, 2}.
 
     OUTPUT:
-    - ``lambda`` -- an element of self.get_base_ring() such that there
+    - ``lambda`` -- an element of self.base_ring() such that there
                     is an instability diagonalized by the basis
                     (x_0, x_1, x_2) * T_{ij}(lambda),
                     where
@@ -480,7 +480,7 @@ class ProjectivePlaneCurve:
         return -P[j] / P[i]
       elif m > self.degree() / 3:
         for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
-          if L_mult > m / 2 and ProjectiveFlag(P, L).is_unstable(self):
+          if L_mult > m / 2 and ProjectiveFlag(self.base_ring(), P, L).is_unstable(self):
             L_vars = set(L.variables())
             if L_vars == {x_j, x_i}:
               lambda_L = L[x_i] / L[x_j]
@@ -1038,22 +1038,22 @@ class ProjectivePlaneCurve:
     # CASES (b) and (d)
     for P, m in self.points_with_high_multiplicity():
       if m > 2 * self.degree() / 3:  # CASE (b)
-        list_of_pseu_inst.append(ProjectiveFlag(P, None))
+        list_of_pseu_inst.append(ProjectiveFlag(self.base_ring(), P, None))
       elif m > self.degree() / 2:  # CASE (d) 1/2
         for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
           if L_multiplicity > m / 2:
-            list_of_pseu_inst.append(ProjectiveFlag(P, L))
+            list_of_pseu_inst.append(ProjectiveFlag(self.base_ring(), P, L))
 
     # CASES (a) and (c)
     for L, L_multiplicity, G in self.lines_with_high_multiplicity():
       if L_multiplicity > self.degree() / Integer(3):  # CASE (a)
-        list_of_pseu_inst.append(ProjectiveFlag(None, L))
+        list_of_pseu_inst.append(ProjectiveFlag(self.base_ring(), None, L))
       else: # CASE (c) 1/2
         L_curve = self.projective_plane.curve(L)
         G_curve = self.projective_plane.curve(G)
         for P in L_curve.intersection_points(G_curve):
           if L_curve.intersection_multiplicity(G_curve, P) > (self.degree() - L_multiplicity) / Integer(2):
-            list_of_pseu_inst.append(ProjectiveFlag(P, L))
+            list_of_pseu_inst.append(ProjectiveFlag(self.base_ring(), P, L))
 
     return list_of_pseu_inst
 
@@ -1108,22 +1108,22 @@ class ProjectivePlaneCurve:
     for P in X_red_sing:
       m = self.multiplicity(P)
       if m > 2 * self.degree() / 3:  # CASE (b)
-        yield ProjectiveFlag(P, None)
+        yield ProjectiveFlag(self.base_ring(), P, None)
       elif m > self.degree() / 2:  # CASE (d) 1/2
         for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
           if L_multiplicity > m / 2:
-            yield ProjectiveFlag(P, L)
+            yield ProjectiveFlag(self.base_ring(), P, L)
 
     # CASES (a) and (c)
     for L, L_multiplicity, G in self.lines_with_high_multiplicity():
       if L_multiplicity > self.degree() / 3:  # CASE (a)
-        yield ProjectiveFlag(None, L)
+        yield ProjectiveFlag(self.base_ring(), None, L)
       else: # CASE (c) 1/2
         L_curve = self.projective_plane.curve(L)
         G_curve = self.projective_plane.curve(G)
         for P in L_curve.intersection_points(G_curve):
           if L_curve.intersection_multiplicity(G_curve, P) > (self.degree() - L_multiplicity) / 2:
-            yield ProjectiveFlag(P, L)
+            yield ProjectiveFlag(self.base_ring(), P, L)
 
 
   def instabilities(self):
@@ -1265,7 +1265,7 @@ class PPC_TangentCone:
       raise ValueError
 
     self.projective_plane_curve = projective_plane_curve
-    self.base_ring = projective_plane_curve.get_base_ring()
+    self.base_ring = projective_plane_curve.base_ring()
     self.polynomial_ring = PolynomialRing(self.base_ring, ['x', 'y'])
     self.gen1, self.gen2 = self.polynomial_ring.gens()
 
@@ -1406,7 +1406,7 @@ class PPC_TangentCone:
     MATHEMATICAL INTERPRETATION:
     First, let
       F = self.projective_plane_curve.get_polynomial(),
-      K = self.projective_plane_curve.get_base_ring(),
+      K = self.projective_plane_curve.base_ring(),
       P = self.normalized_point,
       j = self.affine_patch,
       x_0, x_1, x_2 = self.projective_plane_curve.get_standard_basis().
@@ -1575,13 +1575,14 @@ class ProjectiveFlag:
   - ``linear_form`` -- a linear form defining a line in the projective plane.
   """
 
-  def __init__(self, projective_point=None, linear_form=None):
+  def __init__(self, base_ring, projective_point=None, linear_form=None):
     r"""
     Construct a projective flag to the following conditions.
 
     INPUT:
-    - ``projective_point`` -- a point in the projective plane.
-    - ``linear_form`` -- a linear form defining a line in the projective plane.
+    - ``base_ring`` -- a ring `R`.
+    - ``projective_point`` -- a point in the projective plane over `R`.
+    - ``linear_form`` -- a linear form over `R` defining a line in the projective plane.
 
     EXAMPLES:
       sage: ProjectiveFlag([1,2,3])
@@ -1604,6 +1605,7 @@ class ProjectiveFlag:
         raise ValueError(
           f"{projective_point} is not a point on the projective line given by {linear_form}")
 
+    self._base_ring = base_ring
     if projective_point is not None:
       self.point = proj_P_list
     else:
@@ -1619,6 +1621,9 @@ class ProjectiveFlag:
     else:
       return f"Projective flag given by {self.point} and {self.line}"
 
+
+  def base_ring(self):
+    return self._base_ring
 
   def base_change_matrix(self, matrix_form = 'uut'):
     r"""
@@ -1731,7 +1736,7 @@ class ProjectiveFlag:
       else:
         raise ValueError
     elif self.line is None:
-      base_ring = self.line.base_ring()
+      base_ring = self.base_ring()
       if matrix_form == 'uut':
         return _uut_line_transformation(base_ring, self.point)
       elif matrix_form == 'ult':
