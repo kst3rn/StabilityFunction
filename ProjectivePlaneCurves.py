@@ -467,7 +467,7 @@ class ProjectivePlaneCurve:
         G_vars = set(G.variables())
         if G_vars == {x_j, x_i}:
           return G[x_i] / G[x_j]
-        if m > 2 * self.degree() / 3 and G_vars.issupset({x_j, x_i}):
+        if m > 2 * self.degree() / 3 and G_vars.issuperset({x_j, x_i}):
           return G[x_i] / G[x_j]
 
     # Search for a point of multiplicity > 2d/3 or a point
