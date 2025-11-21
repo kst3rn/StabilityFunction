@@ -400,7 +400,7 @@ class ApartmentStabilityFunction:
       w[affine_patch] = 0
       w = tuple(w)
     aff_forms = []
-    for const, lin_form in self.affine_forms():
+    for const, lin_form in self.affine_forms(redundancy=False):
       aff_forms.append(const + sum(lin_form[j] * w[j] for j in range(N)))
     print(str(w) + " |--> min" + str(tuple(aff_forms)))
 
@@ -445,7 +445,7 @@ class ApartmentStabilityFunction:
   #   return [key for key, value in affine_functions_values.items() if value == min_value]
 
 
-  def affine_forms(self):
+  def affine_forms(self, redundancy=True):
     r"""
     Return the affine forms defining `self`.
 
@@ -460,7 +460,7 @@ class ApartmentStabilityFunction:
       sage: E = identity_matrix(QQ, 3)
       sage: phiE = ApartmentStabilityFunction(phi, E)
       sage: phiE.affine_forms()
-      {(0, (-1/3, 2/3, -1/3)), (0, (2/3, -4/3, 2/3))}
+      [(0, (-1/3, 2/3, -1/3)), (0, (2/3, -4/3, 2/3))]
       sage:
       sage: T = matrix(QQ, [[1,0,0],[2,1,0],[3,0,1]]); T
       [1 0 0]
@@ -468,14 +468,20 @@ class ApartmentStabilityFunction:
       [3 0 1]
       sage: phiT = ApartmentStabilityFunction(phi, T)
       sage: phiT.affine_forms()
-      {(0, (-4/3, -4/3, 8/3)),
-       (0, (-4/3, 2/3, 2/3)),
-       (0, (-1/3, 2/3, -1/3)),
-       (0, (2/3, -4/3, 2/3)),
-       (1, (-4/3, 5/3, -1/3)),
-       (1, (-1/3, -4/3, 5/3)),
-       (2, (-4/3, -1/3, 5/3)),
-       (2, (-1/3, -1/3, 2/3))}
+      [(0, (-1/3, 2/3, -1/3)),
+      (1, (-4/3, 5/3, -1/3)),
+      (0, (2/3, -4/3, 2/3)),
+      (2, (-1/3, -1/3, 2/3)),
+      (0, (-4/3, 2/3, 2/3)),
+      (1, (-1/3, -4/3, 5/3)),
+      (2, (-4/3, -1/3, 5/3)),
+      (0, (-4/3, -4/3, 8/3))]
+      sage: phiT.affine_forms(redundancy=False)
+      [(0, (-4/3, -4/3, 8/3)),
+      (0, (2/3, -4/3, 2/3)),
+      (0, (-4/3, 2/3, 2/3)),
+      (1, (-4/3, 5/3, -1/3)),
+      (0, (-1/3, 2/3, -1/3))]
       sage:
       sage: T = matrix(QQ, [[1,0,0],[2,2,0],[3,0,1]]); T
       [1 0 0]
@@ -483,14 +489,19 @@ class ApartmentStabilityFunction:
       [3 0 1]
       sage: phiT = ApartmentStabilityFunction(phi, T)
       sage: phiT.affine_forms()
-      {(-4/3, (-4/3, -4/3, 8/3)),
-       (-4/3, (2/3, -4/3, 2/3)),
-       (-1/3, (-1/3, -4/3, 5/3)),
-       (2/3, (-4/3, -1/3, 5/3)),
-       (2/3, (-1/3, -1/3, 2/3)),
-       (2/3, (-1/3, 2/3, -1/3)),
-       (5/3, (-4/3, 5/3, -1/3)),
-       (8/3, (-4/3, 2/3, 2/3))}
+      [(2/3, (-1/3, 2/3, -1/3)),
+      (5/3, (-4/3, 5/3, -1/3)),
+      (-4/3, (2/3, -4/3, 2/3)),
+      (2/3, (-1/3, -1/3, 2/3)),
+      (8/3, (-4/3, 2/3, 2/3)),
+      (-1/3, (-1/3, -4/3, 5/3)),
+      (2/3, (-4/3, -1/3, 5/3)),
+      (-4/3, (-4/3, -4/3, 8/3))]
+      sage: phiT.affine_forms(redundancy=False)
+      [(-4/3, (-4/3, -4/3, 8/3)),
+      (-4/3, (2/3, -4/3, 2/3)),
+      (5/3, (-4/3, 5/3, -1/3)),
+      (2/3, (-1/3, 2/3, -1/3))]
 
     .. MATH::
     First, let
@@ -533,14 +544,32 @@ class ApartmentStabilityFunction:
     v_K = self.base_ring_valuation()
     const_A = d / N * v_K(self.base_change_matrix().det())
 
-    # Compute v_{E,w}(F) - d*omega( v_{E,w} )
+    # Compute v_{E,w}(F) - d*omega(v_{E,w})
     G = _apply_matrix(self.base_change_matrix(), self.homogeneous_form())
-    aff_forms = set()
+    aff_forms = []
     for multi_index, G_coeff in G.dict().items():
-      aff_forms.add((v_K(G_coeff) - const_A,
-                     tuple(i_j - d / N for i_j in multi_index)))
+      aff_forms.append((v_K(G_coeff) - const_A,
+                        tuple(i_j - d / N for i_j in multi_index)))
 
-    return aff_forms
+    if redundancy:
+      return aff_forms
+
+    inequalities_input = []
+    for const, lin_form in aff_forms:
+      inequalities_input.append([const] + list(lin_form) + [-1])
+    P = Polyhedron(ieqs=inequalities_input, base_ring=QQ)
+
+    minimized_forms = []
+    for row in P.inequalities_list():
+      const_term = row[0]
+      w_coeffs = row[1:-1]
+      z_coeff = row[-1]
+      scale = -1 / z_coeff
+      new_const = const_term * scale
+      new_lin_form = tuple(c * scale for c in w_coeffs)
+      minimized_forms.append((new_const, new_lin_form))
+
+    return minimized_forms
 
 
   def maximize(self):
