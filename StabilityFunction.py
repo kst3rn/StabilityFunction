@@ -317,8 +317,8 @@ class StabilityFunction:
     return min(affine_function(w) for affine_function in self.affine_functions_on_apartment(T))
 
 
-  def show( self ):
-    print( self.affine_functions()[0].parent().gens(), "|---> min" + str( tuple( self.affine_functions() ) ) )
+  def show(self, base_change_matrix, affine_patch = None):
+    return ApartmentStabilityFunction(self, base_change_matrix).show(affine_patch)
 
 
 
