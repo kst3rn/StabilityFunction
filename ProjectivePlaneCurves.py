@@ -1174,7 +1174,7 @@ class ProjectivePlaneCurve:
       2
     """
 
-    return [I for I in self.flags() if I.is_unstable()]
+    return [I for I in self.flags() if I.is_unstable(self)]
 
 
   @cached_property
