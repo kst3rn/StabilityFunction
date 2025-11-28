@@ -1585,14 +1585,14 @@ class ProjectiveFlag:
     - ``linear_form`` -- a linear form over `R` defining a line in the projective plane.
 
     EXAMPLES:
-      sage: ProjectiveFlag([1,2,3])
+      sage: ProjectiveFlag(QQ, [1,2,3])
       Projective flag given by [1, 2, 3]
 
       sage: R.<x0,x1,x2> = QQ[]
-      sage: ProjectiveFlag(linear_form = x0 + 2*x1 - x2)
+      sage: ProjectiveFlag(QQ, linear_form = x0 + 2*x1 - x2)
       Projective flag given by x0 + 2*x1 - x2
       sage:
-      sage: ProjectiveFlag([1,1,3], x0 + 2*x1 - x2)
+      sage: ProjectiveFlag(QQ, [1,1,3], x0 + 2*x1 - x2)
       Projective flag given by [1, 1, 3] and x0 + 2*x1 - x2
     """
 
@@ -1631,7 +1631,7 @@ class ProjectiveFlag:
     Return the dimension of `self`.
 
     EXAMPLES::
-      sage: P = ProjectiveFlag(QQ,[1,2,3])
+      sage: P = ProjectiveFlag(QQ, [1,2,3])
       sage: P.dimension()
       0
 
@@ -1668,7 +1668,7 @@ class ProjectiveFlag:
       sage: L = A*x0 + B*x1 - (a*A/c + b*B/c)*x2
       sage: L(P)
       0
-      sage: F = ProjectiveFlag(P, L)
+      sage: F = ProjectiveFlag(K, P, L)
       sage: T = F.base_change_matrix('ult')
       sage: T = F.base_change_matrix('ult'); T
       [     1      0      0]
@@ -1683,7 +1683,7 @@ class ProjectiveFlag:
       sage: L = A*x0 - (a*A/b)*x1 + C*x2
       sage: L(P)
       0
-      sage: F = ProjectiveFlag(P, L)
+      sage: F = ProjectiveFlag(K, P, L)
       sage: T = F.base_change_matrix('ult'); T
       [     1      0      0]
       [   a/b      1      0]
@@ -1697,7 +1697,7 @@ class ProjectiveFlag:
       sage: L = B*x1 + C*x2
       sage: L(P)
       0
-      sage: F = ProjectiveFlag(P, L)
+      sage: F = ProjectiveFlag(K, P, L)
       sage: T = F.base_change_matrix('ult'); T
       [     1      0      0]
       [     0      1      0]
@@ -1711,7 +1711,7 @@ class ProjectiveFlag:
       sage: L = -(b*B/a + c*C/a)*x0 + B*x1 + C*x2
       sage: L(P)
       0
-      sage: F = ProjectiveFlag(P, L)
+      sage: F = ProjectiveFlag(K, P, L)
       sage: T = F.base_change_matrix('uut'); T
       [     1    b/a    c/a]
       [     0      1 (-B)/C]
@@ -1725,7 +1725,7 @@ class ProjectiveFlag:
       sage: L = A*x0 - (c*C/b)*x1 + C*x2
       sage: L(P)
       0
-      sage: F = ProjectiveFlag(P, L)
+      sage: F = ProjectiveFlag(K, P, L)
       sage: T = F.base_change_matrix('uut'); T
       [     1      0 (-A)/C]
       [     0      1    c/b]
@@ -1739,7 +1739,7 @@ class ProjectiveFlag:
       sage: L = A*x0 + B*x1
       sage: L(P)
       0
-      sage: F = ProjectiveFlag(P, L)
+      sage: F = ProjectiveFlag(K, P, L)
       sage: T = F.base_change_matrix('uut'); T
       [     1 (-A)/B      0]
       [     0      1      0]
