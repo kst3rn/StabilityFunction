@@ -552,7 +552,7 @@ class GradedReduction:
     return reduced_curve.is_stable()
 
 
-  def graded_instability(self):
+  def graded_instability(self, matrix_form='ult'):
     r"""
     Return a graded instability of `self` if it exists
     and `None` otherwise.
