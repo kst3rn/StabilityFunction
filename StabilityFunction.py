@@ -30,10 +30,10 @@ class StabilityFunction:
     self.homogeneous_form       = homogeneous_form
     self._base_ring_valuation    = base_ring_valuation
 
-    self.standard_basis     = self.homogeneous_form.parent().gens()
+    self._standard_basis     = self.homogeneous_form.parent().gens()
     self.polynomial_ring    = self.homogeneous_form.parent()
     self.base_ring          = self.polynomial_ring.base_ring()
-    self._dimension          = Integer(len(self.standard_basis) - 1)
+    self._dimension         = Integer(len(self._standard_basis) - 1)
 
 
   def __repr__(self):
@@ -52,8 +52,8 @@ class StabilityFunction:
     return self._dimension
 
 
-  def get_standard_basis(self):
-    return self.standard_basis
+  def standard_basis(self):
+    return self._standard_basis
 
 
   def get_polynomial_ring(self):
@@ -85,7 +85,7 @@ class StabilityFunction:
 
   def affine_functions_on_apartment(self, base_change_matrix, affine_patch = None):
     r"""
-    Return the stability function restricted to the apartment given by 'self.standard_basis*base_change_matrix.inverse()'.
+    Return the stability function restricted to the apartment given by 'self.standard_basis()*base_change_matrix.inverse()'.
 
     INPUT:
     base_change_matrix - invertible matrix in GL_{self.dimension + 1}(self.base_ring)
@@ -99,7 +99,7 @@ class StabilityFunction:
       v_K = self.base_ring_valuation(),
       A   = base_change_matrix,
       B   = base_change_matrix.inverse(),
-      E_0 = (x_0,...,x_n) = self.standard_basis,
+      E_0 = (x_0,...,x_n) = self.standard_basis(),
       F   = self.homogeneous_form .
     Thus, F is a homogeneous polynomial in K[x_0,...,x_n]. Fruther, we call E_0 the standard
     basis and consider A and B as linear transformations, with respect to E_0, i.e.
@@ -137,7 +137,7 @@ class StabilityFunction:
     N = self._dimension + 1   # N = n + 1
 
     # Compute G(x_0,...,x_n) = F( (x_0,...,x_n)*A )
-    G = self.homogeneous_form( list( vector( self.standard_basis )*base_change_matrix ) )
+    G = self.homogeneous_form( list( vector( self.standard_basis() )*base_change_matrix ) )
 
     # Now create variables for affine functions
     w = list( PolynomialRing( QQ, N, 'w' ).gens() ) # w = [w_0,...,w_n] since N = n + 1
@@ -169,7 +169,7 @@ class StabilityFunction:
 
   def _maximum_on_apartment(self, base_change_matrix, affine_patch):
     r"""
-    Return the maximum of the stability function on the apartment given by 'self.standard_basis*base_change_matrix.inverse()'.
+    Return the maximum of the stability function on the apartment given by 'self.standard_basis()*base_change_matrix.inverse()'.
 
     INPUT:
     base_change_matrix - invertible matrix in GL_{self.dimension + 1}(self.base_ring)
@@ -177,7 +177,7 @@ class StabilityFunction:
 
     OUTPUT:
     rational number, which equals the maximum of self on the apartment given by
-    the basis 'self.standard_basis*base_change_matrix.inverse()'
+    the basis 'self.standard_basis()*base_change_matrix.inverse()'
     """
 
     affine_functions = self.affine_functions_on_apartment(base_change_matrix, affine_patch)
@@ -243,7 +243,7 @@ class StabilityFunction:
       B   = A.inverse(),
       K   = self.base_ring
       n   = self.dimension()
-      E_0 = self.standard_basis .
+      E_0 = self.standard_basis() .
     Then the matrix A lies in GL_n(K) and point_on_BTB is represented by the valuation v_{E,u}.
     Now we view E_0 = (x_0,...,x_n) as a vector in Sage and define the basis
       E_1 = (x_0,...,x_n)*B .
