@@ -323,9 +323,31 @@ class StabilityFunction:
 
 
 class ApartmentStabilityFunction:
+  r"""
+  Construct the restriction of a stability function to an apartment
+  to the following conditions.
+
+  INPUT:
+  - ``stability_function`` -- a stability function.
+  - ``base_change_matrix`` -- an invertible matrix.
+  """
+
   def __init__(self, stability_function, base_change_matrix):
     r"""
-    Construct ...
+    Construct the restriction of a stability function to an apartment
+    to the following conditions.
+
+    INPUT:
+    - ``stability_function`` -- a stability function.
+    - ``base_change_matrix`` -- an invertible matrix.
+
+    OUTPUT:
+    Restriction of `stability_function` to the apartment defined by
+    the basis
+      (x_0,...,x_n) * T^{-1},
+    where
+      T = base_change_matrix,
+      (x_0,...,x_n) = stability_function.standard_basis().
     """
 
     if not base_change_matrix.is_invertible():
