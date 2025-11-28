@@ -1625,6 +1625,30 @@ class ProjectiveFlag:
   def base_ring(self):
     return self._base_ring
 
+
+  def dimension(self):
+    r"""
+    Return the dimension of `self`.
+
+    EXAMPLES::
+      sage: P = ProjectiveFlag(QQ,[1,2,3])
+      sage: P.dimension()
+      0
+
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: L = ProjectiveFlag(QQ, linear_form = x0 + 2*x1 - x2)
+      sage: L.dimension()
+      0
+      sage: L
+      sage: ProjectiveFlag(QQ, [1,1,3], x0 + 2*x1 - x2).dimension()
+      1
+    """
+
+    if self.point is None or self.line is None:
+      return 0
+    return 1
+
+
   def base_change_matrix(self, matrix_form = 'uut'):
     r"""
     Return a unipotent matrix transforming a flag given by some
