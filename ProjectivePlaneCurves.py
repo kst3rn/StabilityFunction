@@ -2668,39 +2668,87 @@ def _integral_flag_transformation(Vector, linear_form, weight_vector):
   return T2 * T1
 
 
-def _move_point_to_001(base_ring, P):
+def _move_point_and_line_to_001_and_x0(base_ring, P, L):
   r"""
   Return an invertible matrix `T` over `base_ring` such that
-  (0,0,1)*T = P.
+  (0,0,1)*T = P and the linear form L((x0,x1,x2)*T) is equal
+  to C*x_0.
+
+  INPUT:
+  - ``base_ring`` -- a ring.
+  - ``P`` -- a list/tuple of 3 coordinates representing a point.
+  - ``L`` -- a linear form A0*x0 + A1*x1 + A2*x2.
+
+  OUTPUT:
+  An invertible 3x3 matrix.
 
   EXAMPLES::
-    sage: _move_point_to_001(QQ,[3,2,1])
+    sage: R.<x0,x1,x2> = QQ[]
+    sage: _move_point_and_line_to_001_and_x0(QQ, [0,0,1], x0)
     [1 0 0]
     [0 1 0]
-    [3 2 1]
-    sage: _move_point_to_001(QQ,[3,2,0])
+    [0 0 1]
+    sage: P = [0,0,1]
+    sage: L = x1
+    sage: T = _move_point_and_line_to_001_and_x0(QQ, P, L); T
+    [0 1 0]
     [1 0 0]
     [0 0 1]
+    sage: vector([0,0,1])*T
+    (0, 0, 1)
+    sage: L(list(vector([x0,x1,x2]) * T))
+    x0
+    sage: P = [3,2,1]
+    sage: L = 2*x0 - 3*x1
+    sage: T = _move_point_and_line_to_001_and_x0(QQ, P, L); T
+    [1 0 0]
     [3 2 0]
-    sage: _move_point_to_001(QQ,[3,0,0])
-    [0 0 1]
-    [0 1 0]
-    [3 0 0]
-    sage: _move_point_to_001(QQ,[0,2,0])
+    [3 2 1]
+    sage: vector([0,0,1])*T
+    (3, 2, 1)
+    sage: L(list(vector([x0,x1,x2]) * T))
+    2*x0
   """
+
   if not isinstance(base_ring, Ring):
     raise ValueError(f"{base_ring} is not a ring")
 
+  R = L.parent()
+  if R.base_ring() is not base_ring:
+    raise ValueError(f"The base ring of {L} is not equal to {base_ring}")
+
   P = [base_ring(x) for x in P]
+  A = [L.coefficient(x) for x in R.gens()]
+
   if not any(P):
     raise ValueError(f"The point must be nonzero. Provided: {P}")
+  if not any(A):
+    raise ValueError(f"The linear form must be nonzero. Provided: {L}")
 
-  row0 = [1,0,0]
-  row1 = [0,1,0]
-  if P[2] == 0:
-    if P[1] != 0:
-      row1 = [0,0,1]
-    else:
-      row0 = [0,0,1]
+  val_at_P = sum(a*p for a, p in zip(A,P))
+  if val_at_P != 0:
+    raise ValueError(f"The homogeneous form {L} does not vanish at {P}.")
+
+  k = -1
+  for idx in range(3):
+    if A[idx] != 0:
+      k = idx
+      break
+
+  row0 = [base_ring(0)] * 3
+  row0[k] = base_ring(1)
+  others = [idx for idx in range(3) if idx != k]
+  i, j = others[0], others[1]
+  row1 = [base_ring(0)] * 3
+
+  if P[j] != 0:
+    row1[k] = -A[i]
+    row1[i] =  A[k]
+    row1[j] =  0
+  else:
+    row1[k] = -A[j]
+    row1[j] =  A[k]
+    row1[i] =  0
+
   return matrix(base_ring, [row0, row1, P])
 
