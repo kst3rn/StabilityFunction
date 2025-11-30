@@ -2672,6 +2672,21 @@ def _move_point_to_001(base_ring, P):
   r"""
   Return an invertible matrix `T` over `base_ring` such that
   (0,0,1)*T = P.
+
+  EXAMPLES::
+    sage: _move_point_to_001(QQ,[3,2,1])
+    [1 0 0]
+    [0 1 0]
+    [3 2 1]
+    sage: _move_point_to_001(QQ,[3,2,0])
+    [1 0 0]
+    [0 0 1]
+    [3 2 0]
+    sage: _move_point_to_001(QQ,[3,0,0])
+    [0 0 1]
+    [0 1 0]
+    [3 0 0]
+    sage: _move_point_to_001(QQ,[0,2,0])
   """
   if not isinstance(base_ring, Ring):
     raise ValueError(f"{base_ring} is not a ring")
