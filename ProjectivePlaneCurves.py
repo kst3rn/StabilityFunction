@@ -2666,3 +2666,26 @@ def _integral_flag_transformation(Vector, linear_form, weight_vector):
   T2 = _integral_plane_transformation(_apply_matrix(T1.inverse(), linear_form), weight_vector)[0]
 
   return T2 * T1
+
+
+def _move_point_to_001(base_ring, P):
+  r"""
+  Return an invertible matrix `T` over `base_ring` such that
+  (0,0,1)*T = P.
+  """
+  if not isinstance(base_ring, Ring):
+    raise ValueError(f"{base_ring} is not a ring")
+
+  P = [base_ring(x) for x in P]
+  if not any(P):
+    raise ValueError(f"The point must be nonzero. Provided: {P}")
+
+  row0 = [1,0,0]
+  row1 = [0,1,0]
+  if P[2] == 0:
+    if P[1] != 0:
+      row1 = [0,0,1]
+    else:
+      row0 = [0,0,1]
+  return matrix(base_ring, [row0, row1, P])
+
