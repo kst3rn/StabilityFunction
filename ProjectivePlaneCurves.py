@@ -49,7 +49,7 @@ class ProjectivePlaneCurve:
 
 
   def __repr__(self):
-    return f"Projective Plane Curve with defining polynomial {self.polynomial} over {self.base_ring}"
+    return f"Projective Plane Curve with defining polynomial {self.polynomial} over {self._base_ring}"
 
 
   def base_ring(self):
