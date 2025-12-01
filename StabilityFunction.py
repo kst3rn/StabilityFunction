@@ -790,9 +790,34 @@ class BTB_Point:
     return LinearValuation(R, self.base_ring_valuation(), self.base_change_matrix(), self.weight_vector())
 
 
-  def minimal_simplex_dimension(self):
+  def minimal_simplex_dimension(self, ramification_index=None):
     r"""
-    Return the dimension of the minimal simplex containing self
+    Return the dimension of the minimal simplex containing `self`.
+
+    EXAMPLES::
+      sage: w = [1/2, 1/3, 5/3]
+      sage: E = identity_matrix(QQ, 3)
+      sage: P = BTB_Point(QQ.valuation(2), E, w)
+      sage: P
+      Point on the Bruhat-Tits Building of SL(3) over Rational Field with 2-adic valuation
+      sage: P.minimal_simplex_dimension()
+      2
+      sage: P.minimal_simplex_dimension(ramification_index=1/2)
+      2
+      sage: P.minimal_simplex_dimension(ramification_index=1/3)
+      1
+      sage: P.minimal_simplex_dimension(ramification_index=1/6)
+      0
+      sage: w = [0, 1/2, 3/2]
+      sage: P = BTB_Point(QQ.valuation(2), E, w)
+      sage: P.minimal_simplex_dimension()
+      1
+      sage: P.minimal_simplex_dimension(ramification_index=1/2)
+      0
+      sage: w = [0, 1, 3]
+      sage: P = BTB_Point(QQ.valuation(2), E, w)
+      sage: P.minimal_simplex_dimension()
+      0
 
     MATHEMATICAL INTERPRETATION (ToDo. But at this point we just give an example.): 
     If we start with the point (0, 1/2, 3/2, 1/3), we first move it to
@@ -814,16 +839,19 @@ class BTB_Point:
     len(set(w)) - 1.
     """
 
-    # normalize the value grout to be ZZ
-    value_groug_generator = self.base_ring_valuation().value_group().gen()
+    # normalize the value group to be ZZ
+    if ramification_index is None:
+      value_groug_generator = self.base_ring_valuation().value_group().gen()
+    else:
+      value_groug_generator = ramification_index
     norm_weight_vector = []
-    for i in self._weight_vector:
-      norm_weight_vector.append(i/value_groug_generator)
+    for c in self._weight_vector:
+      norm_weight_vector.append(c / value_groug_generator)
 
     # translate inside the unit cube
     trans_norm_weight_vector = []
-    for i in norm_weight_vector:
-      trans_norm_weight_vector.append(i - floor(i))
+    for c in norm_weight_vector:
+      trans_norm_weight_vector.append(c - floor(c))
 
     return len(set(trans_norm_weight_vector)) - 1
 
