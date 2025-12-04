@@ -672,17 +672,21 @@ class ProjectivePlaneCurve:
       False
     """
 
+    P = list(P)
+    if not any(P):
+      return ValueError(f"{P} does not define a point on the projective plane.")
+
     if self.multiplicity(P) != 2:
       return False
 
-    TC = self.tangent_cone_at(P)
-    if len(TC.get_lines()) != 1:
+    tangent_lines = self.tangent_cone_at(P).get_lines()
+    if len(tangent_lines) > 1:
       return False
+    P_tangent_line = tangent_lines[0][0]
 
     components = []
-    P_list = list(P)
     for G, m in self._decompose:
-      if G(P_list) == 0:
+      if G(P) == 0:
         if m >= 2:
           return False
         components.append(G)
@@ -690,26 +694,19 @@ class ProjectivePlaneCurve:
       return False
 
     F = components[0]
-    R = PolynomialRing(F.base_ring(), 'x,y')
+    K = F.base_ring()
+    T = _move_point_and_line_to_001_and_x0(K, P, P_tangent_line)
+    f = _apply_matrix(T, F)
+    R = PolynomialRing(K, 'x,y')
     x, y = R.gens()
-
-    if P[2] != 0:
-      P1 = [P[0] / P[2], P[1] / P[2], 1]
-      f = F(x + P1[0], y + P1[1], 1)
-    elif P[1] != 0:
-      P1 = [P[0] / P[1], 1, 0]
-      f = F(x + P1[0], 1, y)
-    elif P[0] != 0:
-      f = F(1, x, y)
-    else:
-      ValueError(f"{P} does not define a point on the projective plane")
-
+    f = f(x, y, 1)
     f = R(f)
+
     AA = AffineSpace(R)
     C = AA.curve(f)
     P = AA(0,0)
     B = C.blowup(P)
-    C_tilde = B[0][0]
+    C_tilde = B[0][1]
     AA_tilde = C_tilde.ambient_space()
     Q = AA_tilde(0,0)
 
