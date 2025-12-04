@@ -672,17 +672,21 @@ class ProjectivePlaneCurve:
       False
     """
 
+    P = list(P)
+    if not any(P):
+      return ValueError(f"{P} does not define a point on the projective plane.")
+
     if self.multiplicity(P) != 2:
       return False
 
-    TC = self.tangent_cone_at(P)
-    if len(TC.get_lines()) != 1:
+    tangent_lines = self.tangent_cone_at(P).get_lines()
+    if len(tangent_lines) > 1:
       return False
+    P_tangent_line = tangent_lines[0][0]
 
     components = []
-    P_list = list(P)
     for G, m in self._decompose:
-      if G(P_list) == 0:
+      if G(P) == 0:
         if m >= 2:
           return False
         components.append(G)
@@ -690,26 +694,19 @@ class ProjectivePlaneCurve:
       return False
 
     F = components[0]
-    R = PolynomialRing(F.base_ring(), 'x,y')
+    K = F.base_ring()
+    T = _move_point_and_line_to_001_and_x0(K, P, P_tangent_line)
+    f = _apply_matrix(T, F)
+    R = PolynomialRing(K, 'x,y')
     x, y = R.gens()
-
-    if P[2] != 0:
-      P1 = [P[0] / P[2], P[1] / P[2], 1]
-      f = F(x + P1[0], y + P1[1], 1)
-    elif P[1] != 0:
-      P1 = [P[0] / P[1], 1, 0]
-      f = F(x + P1[0], 1, y)
-    elif P[0] != 0:
-      f = F(1, x, y)
-    else:
-      ValueError(f"{P} does not define a point on the projective plane")
-
+    f = f(x, y, 1)
     f = R(f)
+
     AA = AffineSpace(R)
     C = AA.curve(f)
     P = AA(0,0)
     B = C.blowup(P)
-    C_tilde = B[0][0]
+    C_tilde = B[0][1]
     AA_tilde = C_tilde.ambient_space()
     Q = AA_tilde(0,0)
 
@@ -2666,3 +2663,89 @@ def _integral_flag_transformation(Vector, linear_form, weight_vector):
   T2 = _integral_plane_transformation(_apply_matrix(T1.inverse(), linear_form), weight_vector)[0]
 
   return T2 * T1
+
+
+def _move_point_and_line_to_001_and_x0(base_ring, P, L):
+  r"""
+  Return an invertible matrix `T` over `base_ring` such that
+  (0,0,1)*T = P and the linear form L((x0,x1,x2)*T) is equal
+  to C*x_0.
+
+  INPUT:
+  - ``base_ring`` -- a ring.
+  - ``P`` -- a list/tuple of 3 coordinates representing a point.
+  - ``L`` -- a linear form A0*x0 + A1*x1 + A2*x2.
+
+  OUTPUT:
+  An invertible 3x3 matrix.
+
+  EXAMPLES::
+    sage: R.<x0,x1,x2> = QQ[]
+    sage: _move_point_and_line_to_001_and_x0(QQ, [0,0,1], x0)
+    [1 0 0]
+    [0 1 0]
+    [0 0 1]
+    sage: P = [0,0,1]
+    sage: L = x1
+    sage: T = _move_point_and_line_to_001_and_x0(QQ, P, L); T
+    [0 1 0]
+    [1 0 0]
+    [0 0 1]
+    sage: vector([0,0,1])*T
+    (0, 0, 1)
+    sage: L(list(vector([x0,x1,x2]) * T))
+    x0
+    sage: P = [3,2,1]
+    sage: L = 2*x0 - 3*x1
+    sage: T = _move_point_and_line_to_001_and_x0(QQ, P, L); T
+    [1 0 0]
+    [3 2 0]
+    [3 2 1]
+    sage: vector([0,0,1])*T
+    (3, 2, 1)
+    sage: L(list(vector([x0,x1,x2]) * T))
+    2*x0
+  """
+
+  if not isinstance(base_ring, Ring):
+    raise ValueError(f"{base_ring} is not a ring")
+
+  R = L.parent()
+  if R.base_ring() is not base_ring:
+    raise ValueError(f"The base ring of {L} is not equal to {base_ring}")
+
+  P = [base_ring(x) for x in P]
+  A = [L.coefficient(x) for x in R.gens()]
+
+  if not any(P):
+    raise ValueError(f"The point must be nonzero. Provided: {P}")
+  if not any(A):
+    raise ValueError(f"The linear form must be nonzero. Provided: {L}")
+
+  val_at_P = sum(a*p for a, p in zip(A,P))
+  if val_at_P != 0:
+    raise ValueError(f"The homogeneous form {L} does not vanish at {P}.")
+
+  k = -1
+  for idx in range(3):
+    if A[idx] != 0:
+      k = idx
+      break
+
+  row0 = [base_ring(0)] * 3
+  row0[k] = base_ring(1)
+  others = [idx for idx in range(3) if idx != k]
+  i, j = others[0], others[1]
+  row1 = [base_ring(0)] * 3
+
+  if P[j] != 0:
+    row1[k] = -A[i]
+    row1[i] =  A[k]
+    row1[j] =  0
+  else:
+    row1[k] = -A[j]
+    row1[j] =  A[k]
+    row1[i] =  0
+
+  return matrix(base_ring, [row0, row1, P])
+
