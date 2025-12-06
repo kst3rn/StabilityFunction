@@ -101,7 +101,7 @@ class StabilityFunction:
       B   = base_change_matrix.inverse(),
       E_0 = (x_0,...,x_n) = self.standard_basis(),
       F   = self.homogeneous_form .
-    Thus, F is a homogeneous polynomial in K[x_0,...,x_n]. Fruther, we call E_0 the standard
+    Thus, F is a homogeneous polynomial in K[x_0,...,x_n]. Further, we call E_0 the standard
     basis and consider A and B as linear transformations, with respect to E_0, i.e.
       A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n b_{ij}*x_i .
     Then,
@@ -373,11 +373,11 @@ class ApartmentStabilityFunction:
       sage: E = identity_matrix(QQ, 3)
       sage: phiE = ApartmentStabilityFunction(phi, E)
       sage: phiE.show()
-      (w0, w1, w2) |--> min(-1/3*w0 + 2/3*w1 - 1/3*w2, 2/3*w0 - 4/3*w1 + 2/3*w2)
+      (w0, w1, w2) |--> max(1/3*w0 - 2/3*w1 + 1/3*w2, -2/3*w0 + 4/3*w1 - 2/3*w2)
       sage: phiE.show(affine_patch=0)
-      (0, w1, w2) |--> min(2/3*w1 - 1/3*w2, -4/3*w1 + 2/3*w2)
+      (0, w1, w2) |--> max(-2/3*w1 + 1/3*w2, 4/3*w1 - 2/3*w2)
       sage: phiE.show(affine_patch=2)
-      (w0, w1, 0) |--> min(-1/3*w0 + 2/3*w1, 2/3*w0 - 4/3*w1)
+      (w0, w1, 0) |--> max(1/3*w0 - 2/3*w1, -2/3*w0 + 4/3*w1)
       sage:
       sage: F = x0^2 + x1*x2
       sage: phi = StabilityFunction(F, v_2)
@@ -387,7 +387,7 @@ class ApartmentStabilityFunction:
       [0 2 1]
       sage: phiT = ApartmentStabilityFunction(phi, T)
       sage: phiT.show(affine_patch=0)
-      (0, w1, w2) |--> min(1/3*w1 + 1/3*w2, -2/3*w1 + 4/3*w2 + 1, -2/3*w1 - 2/3*w2)
+      (0, w1, w2) |--> max(2/3*w1 - 4/3*w2 - 1, -1/3*w1 - 1/3*w2, 2/3*w1 + 2/3*w2)
       sage:
       sage: T = matrix(QQ, [[2,0,0],[0,2,0],[0,0,1]]); T
       [2 0 0]
@@ -395,13 +395,14 @@ class ApartmentStabilityFunction:
       [0 0 1]
       sage: phiT = ApartmentStabilityFunction(phi, T)
       sage: phiT.show(affine_patch=0)
-      (0, w1, w2) |--> min(1/3*w1 + 1/3*w2 - 1/3, -2/3*w1 - 2/3*w2 + 2/3)
+      (0, w1, w2) |--> max(-1/3*w1 - 1/3*w2 + 1/3, 2/3*w1 + 2/3*w2 - 2/3)
       sage:
       sage: F = x0^2 + 6*x1*x2
+      sage: phi = StabilityFunction(F, v_2)
       sage: E = identity_matrix(QQ, 3)
       sage: phiE = ApartmentStabilityFunction(phi, E)
       sage: phiE.show(affine_patch=0)
-      (0, w1, w2) |--> min(2/3*w1 - 1/3*w2, -4/3*w1 + 2/3*w2 + 1)
+      (0, w1, w2) |--> max(-1/3*w1 - 1/3*w2 - 1, 2/3*w1 + 2/3*w2)
     """
 
     N = self.dimension() + 1
@@ -424,7 +425,7 @@ class ApartmentStabilityFunction:
     aff_forms = []
     for const, lin_form in self.affine_forms(redundancy=False):
       aff_forms.append(const + sum(lin_form[j] * w[j] for j in range(N)))
-    print(str(w) + " |--> min" + str(tuple(aff_forms)))
+    print(str(w) + " |--> max" + str(tuple(aff_forms)))
 
 
   def stability_function(self):
@@ -482,7 +483,7 @@ class ApartmentStabilityFunction:
       sage: E = identity_matrix(QQ, 3)
       sage: phiE = ApartmentStabilityFunction(phi, E)
       sage: phiE.affine_forms()
-      [(0, (-1/3, 2/3, -1/3)), (0, (2/3, -4/3, 2/3))]
+      [(0, (1/3, -2/3, 1/3)), (0, (-2/3, 4/3, -2/3))]
       sage:
       sage: T = matrix(QQ, [[1,0,0],[2,1,0],[3,0,1]]); T
       [1 0 0]
@@ -490,20 +491,20 @@ class ApartmentStabilityFunction:
       [3 0 1]
       sage: phiT = ApartmentStabilityFunction(phi, T)
       sage: phiT.affine_forms()
-      [(0, (-1/3, 2/3, -1/3)),
-      (1, (-4/3, 5/3, -1/3)),
-      (0, (2/3, -4/3, 2/3)),
-      (2, (-1/3, -1/3, 2/3)),
-      (0, (-4/3, 2/3, 2/3)),
-      (1, (-1/3, -4/3, 5/3)),
-      (2, (-4/3, -1/3, 5/3)),
-      (0, (-4/3, -4/3, 8/3))]
+      [(0, (1/3, -2/3, 1/3)),
+      (-1, (4/3, -5/3, 1/3)),
+      (0, (-2/3, 4/3, -2/3)),
+      (-2, (1/3, 1/3, -2/3)),
+      (0, (4/3, -2/3, -2/3)),
+      (-1, (1/3, 4/3, -5/3)),
+      (-2, (4/3, 1/3, -5/3)),
+      (0, (4/3, 4/3, -8/3))]
       sage: phiT.affine_forms(redundancy=False)
-      [(0, (-4/3, -4/3, 8/3)),
-      (0, (2/3, -4/3, 2/3)),
-      (0, (-4/3, 2/3, 2/3)),
-      (1, (-4/3, 5/3, -1/3)),
-      (0, (-1/3, 2/3, -1/3))]
+      [(0, (4/3, 4/3, -8/3)),
+      (0, (-2/3, 4/3, -2/3)),
+      (0, (4/3, -2/3, -2/3)),
+      (-1, (4/3, -5/3, 1/3)),
+      (0, (1/3, -2/3, 1/3))]
       sage:
       sage: T = matrix(QQ, [[1,0,0],[2,2,0],[3,0,1]]); T
       [1 0 0]
@@ -511,19 +512,19 @@ class ApartmentStabilityFunction:
       [3 0 1]
       sage: phiT = ApartmentStabilityFunction(phi, T)
       sage: phiT.affine_forms()
-      [(2/3, (-1/3, 2/3, -1/3)),
-      (5/3, (-4/3, 5/3, -1/3)),
-      (-4/3, (2/3, -4/3, 2/3)),
-      (2/3, (-1/3, -1/3, 2/3)),
-      (8/3, (-4/3, 2/3, 2/3)),
-      (-1/3, (-1/3, -4/3, 5/3)),
-      (2/3, (-4/3, -1/3, 5/3)),
-      (-4/3, (-4/3, -4/3, 8/3))]
+      [(-2/3, (1/3, -2/3, 1/3)),
+      (-5/3, (4/3, -5/3, 1/3)),
+      (4/3, (-2/3, 4/3, -2/3)),
+      (-2/3, (1/3, 1/3, -2/3)),
+      (-8/3, (4/3, -2/3, -2/3)),
+      (1/3, (1/3, 4/3, -5/3)),
+      (-2/3, (4/3, 1/3, -5/3)),
+      (4/3, (4/3, 4/3, -8/3))]
       sage: phiT.affine_forms(redundancy=False)
-      [(-4/3, (-4/3, -4/3, 8/3)),
-      (-4/3, (2/3, -4/3, 2/3)),
-      (5/3, (-4/3, 5/3, -1/3)),
-      (2/3, (-1/3, 2/3, -1/3))]
+      [(4/3, (4/3, 4/3, -8/3)),
+      (4/3, (-2/3, 4/3, -2/3)),
+      (-5/3, (4/3, -5/3, 1/3)),
+      (-2/3, (1/3, -2/3, 1/3))]
 
     .. MATH::
     First, let
@@ -532,7 +533,7 @@ class ApartmentStabilityFunction:
       B   = A.inverse(),
       E_0 = (x_0,...,x_n) = self.standard_basis(),
       F   = self.homogeneous_form().
-    Thus, F is a homogeneous polynomial in K[x_0,...,x_n]. Fruther, we call E_0 the standard
+    Thus, F is a homogeneous polynomial in K[x_0,...,x_n]. Further, we call E_0 the standard
     basis and consider A and B as linear transformations with respect to E_0, i.e.
       A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n b_{ij}*x_i.
     Then,
