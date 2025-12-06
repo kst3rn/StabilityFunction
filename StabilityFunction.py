@@ -577,7 +577,7 @@ class ApartmentStabilityFunction:
 
     inequalities_input = []
     for const, lin_form in aff_forms:
-      inequalities_input.append([const] + list(lin_form) + [-1])
+      inequalities_input.append([-const] + [-c for c in lin_form] + [1])
     P = Polyhedron(ieqs=inequalities_input, base_ring=QQ)
 
     minimized_forms = []
