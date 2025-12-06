@@ -545,7 +545,7 @@ class ApartmentStabilityFunction:
       F(x_0,...,x_n) = F((y_0,...,y_n)*B^{-1}) = F((y_0,...,y_n)*A).
     Thus, the homogeneous polynomial
       G(y_0,...,y_n) := F((y_0,...,y_n)*A) in K[y_0,...,y_n]
-    describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
+    describes F with respect to the basis E = (y_0,...,y_n) and A describes the base change.
     Thus, for the valuation v_{E,w} we obtain
       v_{E,w}(F) = min(v_K(a_i) + <i,w> : i in I) with G = sum_{i in I} a_i y^i,
     where i is a multi-index, i.e. I is a subset of NN^{n+1}. Moreover, we have
@@ -553,25 +553,24 @@ class ApartmentStabilityFunction:
     Note that per definition det(E) = det(B). Furthermore,
       v_K(det(B)) = v_K(det(A^{-1})) = v_K(det(A)^{-1}) = -v_K(det(A))
     and therefore
-      omega(v_{E,w}) = 1/(n+1) * ( w_0 + ... + w_n + v_K(det(A))).
-    Now let N = n + 1. It follows, that 
-      phi_E(w) = v_{E,w}(F) - d*omega(v_{E,w})
-               = min(v_K(a_i) - d/N*v_K(det(A)) + sum_{j=0}^n (i_j - d/N)*w_j : i in I).
-    Finally, we set w_{affine_patch} = 0, if affine_patch is not None.
+      omega(v_{E,w}) = 1/(n+1) * (w_0 + ... + w_n + v_K(det(A))).
+    Now let N = n + 1. Then we have
+      phi_E(w) = d*omega(v_{E,w}) - v_{E,w}(F)
+               = max(d/N*v_K(det(A)) - v_K(a_i) + sum_{j=0}^n (d/N - i_j)*w_j : i in I).
     """
 
     # Set up variables
     d = Integer(self.homogeneous_form().degree())
     N = self.dimension() + 1   # N = n + 1
     v_K = self.base_ring_valuation()
-    const_A = d / N * v_K(self.base_change_matrix().det())
+    val_det_A = d / N * v_K(self.base_change_matrix().det())
 
-    # Compute v_{E,w}(F) - d*omega(v_{E,w})
+    # Compute d*omega(v_{E,w}) - v_{E,w}(F)
     G = _apply_matrix(self.base_change_matrix(), self.homogeneous_form())
     aff_forms = []
     for multi_index, G_coeff in G.dict().items():
-      aff_forms.append((v_K(G_coeff) - const_A,
-                        tuple(i_j - d / N for i_j in multi_index)))
+      aff_forms.append((val_det_A - v_K(G_coeff),
+                        tuple(d / N - i_j for i_j in multi_index)))
 
     if redundancy:
       return aff_forms
