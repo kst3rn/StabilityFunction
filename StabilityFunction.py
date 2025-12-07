@@ -594,7 +594,7 @@ class ApartmentStabilityFunction:
     return minimized_forms
 
 
-  def maximize(self):
+  def minimize(self):
     r"""
     Return the maximum of `self` and the
     point where it is attained.
@@ -608,35 +608,34 @@ class ApartmentStabilityFunction:
     EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
       sage: F = x0*x2*(x1^2 + 6*x0*x2)
-      sage: v_2 = QQ.valuation(2)
-      sage: phi = StabilityFunction(F, v_2)
+      sage: phi = StabilityFunction(F, QQ.valuation(2))
       sage: T = matrix(QQ, [[1,0,0],[2,2,0],[3,0,1]]); T
       [1 0 0]
       [2 2 0]
       [3 0 1]
       sage: phiT = ApartmentStabilityFunction(phi, T)
-      sage: a, b = phiT.maximize()
+      sage: a, b = phiT.minimize()
       sage: a
-      1/3
+      -1/3
       sage: b
       Point on the Bruhat-Tits Building of SL(3) over Rational Field with 2-adic valuation
       sage: b.weight_vector()
       [1/2, 0, 1/2]
     """
 
-    MILP = MixedIntegerLinearProgram(solver='PPL')
+    MILP = MixedIntegerLinearProgram(solver='PPL', maximization=False)
     v = MILP.new_variable()
-    t = v['minimum']    
+    t = v['maximum']    
     MILP.set_objective(t)
     MILP.add_constraint(v[0] == 0)
 
     N = self.dimension() + 1
     for const_coeff, lin_form in self.affine_forms():
       MILP_term = const_coeff + sum(lin_form[j] * v[j] for j in range(N))
-      MILP.add_constraint(t <= MILP_term)
+      MILP.add_constraint(MILP_term <= t)
     MILP.solve()
     solution_dict = MILP.get_values(v)
-    maximum = solution_dict['minimum']
+    maximum = solution_dict['maximum']
     weight_vector = [solution_dict[i] for i in range(N)]
     b = BTB_Point(self.base_ring_valuation(),
                   self.base_change_matrix(),
