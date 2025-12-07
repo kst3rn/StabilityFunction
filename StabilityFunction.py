@@ -596,14 +596,13 @@ class ApartmentStabilityFunction:
 
   def minimize(self):
     r"""
-    Return the maximum of `self` and the
+    Return the minimum of `self` and the
     point where it is attained.
 
     OUTPUT:
-    A pair `(a, b)` consisting of a rational rational
-    number `a`, which equals the maximum of `self` and
-    a point `b` on the Bruhat-Tits building where `self`
-    attains `a`.
+    A pair `(a, b)` consisting of a rational number `a`,
+    which equals the minimum of `self` and a point `b` on
+    the Bruhat-Tits building where `self` attains `a`.
 
     EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
