@@ -625,7 +625,7 @@ class ApartmentStabilityFunction:
 
     MILP = MixedIntegerLinearProgram(solver='PPL', maximization=False)
     v = MILP.new_variable()
-    t = v['maximum']    
+    t = v['maximum_of_affine_forms']    
     MILP.set_objective(t)
     MILP.add_constraint(v[0] == 0)
 
@@ -635,13 +635,13 @@ class ApartmentStabilityFunction:
       MILP.add_constraint(MILP_term <= t)
     MILP.solve()
     solution_dict = MILP.get_values(v)
-    maximum = solution_dict['maximum']
+    minimum = solution_dict['maximum_of_affine_forms']
     weight_vector = [solution_dict[i] for i in range(N)]
     b = BTB_Point(self.base_ring_valuation(),
                   self.base_change_matrix(),
                   weight_vector)
 
-    return (maximum, b)
+    return (minimum, b)
 
 
   def optimal_polyhedron(self, affine_patch=0):
