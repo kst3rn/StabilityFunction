@@ -27,21 +27,20 @@ class StabilityFunction:
     if homogeneous_form.base_ring() != base_ring_valuation.domain():
       raise ValueError(f"Base rings of {homogeneous_form} and {base_ring_valuation} are not equal")
 
-    self.homogeneous_form       = homogeneous_form
+    self._homogeneous_form       = homogeneous_form
     self._base_ring_valuation    = base_ring_valuation
 
-    self._standard_basis     = self.homogeneous_form.parent().gens()
-    self.polynomial_ring    = self.homogeneous_form.parent()
-    self.base_ring          = self.polynomial_ring.base_ring()
+    self._standard_basis    = homogeneous_form.parent().gens()
+    self._base_ring         = base_ring_valuation.domain()
     self._dimension         = Integer(len(self._standard_basis) - 1)
 
 
   def __repr__(self):
-    return f"Stability Function of {self.homogeneous_form} over {self.base_ring} with {self.base_ring_valuation()}"
+    return f"Stability Function of {self.homogeneous_form()} over {self.base_ring()} with {self.base_ring_valuation()}"
 
 
-  def get_homogeneous_form(self):
-    return self.homogeneous_form
+  def homogeneous_form(self):
+    return self._homogeneous_form
 
 
   def base_ring_valuation(self):
@@ -56,19 +55,19 @@ class StabilityFunction:
     return self._standard_basis
 
 
-  def get_polynomial_ring(self):
-    return self.polynomial_ring
+  def polynomial_ring(self):
+    return self.homogeneous_form().parent()
 
 
   def base_ring(self):
-    return self.base_ring
+    return self._base_ring
 
 
   def graded_reduction(self, point_on_BTB):
     A = point_on_BTB.base_change_matrix()
     w = point_on_BTB.weight_vector()
-    linear_valuation = LinearValuation(self.polynomial_ring, self.base_ring_valuation(), A, w)
-    return linear_valuation.graded_reduction(self.homogeneous_form)
+    linear_valuation = LinearValuation(self.polynomial_ring(), self.base_ring_valuation(), A, w)
+    return linear_valuation.graded_reduction(self.homogeneous_form())
 
 
   def has_semistable_reduction_at(self, point_on_BTB):
@@ -80,7 +79,7 @@ class StabilityFunction:
 
 
   def initial_form(self, point_on_BTB):
-    return point_on_BTB.linear_valuation().initial_form(self.homogeneous_form)
+    return point_on_BTB.linear_valuation().initial_form(self.homogeneous_form())
 
 
   def affine_functions_on_apartment(self, base_change_matrix, affine_patch = None):
@@ -100,7 +99,7 @@ class StabilityFunction:
       A   = base_change_matrix,
       B   = base_change_matrix.inverse(),
       E_0 = (x_0,...,x_n) = self.standard_basis(),
-      F   = self.homogeneous_form .
+      F   = self.homogeneous_form() .
     Thus, F is a homogeneous polynomial in K[x_0,...,x_n]. Further, we call E_0 the standard
     basis and consider A and B as linear transformations, with respect to E_0, i.e.
       A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n b_{ij}*x_i .
@@ -133,11 +132,11 @@ class StabilityFunction:
       raise ValueError
 
     # Set up variables
-    d = Integer(self.homogeneous_form.degree())
+    d = Integer(self.homogeneous_form().degree())
     N = self._dimension + 1   # N = n + 1
 
     # Compute G(x_0,...,x_n) = F( (x_0,...,x_n)*A )
-    G = self.homogeneous_form( list( vector( self.standard_basis() )*base_change_matrix ) )
+    G = self.homogeneous_form()( list( vector( self.standard_basis() )*base_change_matrix ) )
 
     # Now create variables for affine functions
     w = list( PolynomialRing( QQ, N, 'w' ).gens() ) # w = [w_0,...,w_n] since N = n + 1
@@ -223,41 +222,41 @@ class StabilityFunction:
     return [maximum, point_on_BTB]
 
 
-  def ascent_direction(self, point_on_BTB, matrix_form = 'ult'):
+  def descent_direction(self, point_on_BTB, matrix_form = 'ult'):
     r"""
-    Return a list of matrices which describe base changes, fixing 'point_on_BTB', to apartment,
-    where the stability function can be maximized further.
+    Return a matrices which describes a base change,
+    fixing `point_on_BTB`, to an apartment, where `self`
+    can be minimized further.
 
     INPUT:
-    point_on_BTB - object in the class 'BTB_Point' such that 'point_on_BTB.base_ring()'
-    equals 'self.base_ring'
-    matrix_form  - one of the strings 'ult', 'uut', 'integral'
+    - ``point_on_BTB`` -- point in the domain of `self`.
+    - ``matrix_form``  -- one of the strings 'ult', 'uut', 'integral'.
 
     OUTPUT:
-    list of invertible matrix in GL_{self.dimension() + 1}(self.base_ring)
+    An invertible matrix.
 
     MATHEMATICAL INTERPRETATION:
     First, let
       A   = point_on_BTB.base_change_matrix(),
       u   = point_on_BTB.weight_vector(),
       B   = A.inverse(),
-      K   = self.base_ring
+      K   = self.base_ring()
       n   = self.dimension()
       E_0 = self.standard_basis() .
     Then the matrix A lies in GL_n(K) and point_on_BTB is represented by the valuation v_{E,u}.
     Now we view E_0 = (x_0,...,x_n) as a vector in Sage and define the basis
       E_1 = (x_0,...,x_n)*B .
-    Furthermore, let phi be the stability function, 'self'. We want to find a matrix T in GL_n(K)
+    Furthermore, let phi be the stability function, `self`. We want to find a matrix T in GL_n(K)
     such that for the basis E_2 = E_1*T^(-1) we get
       phi(point_on_BTB) < max phi_{E_2},
     where phi_{E_2} is the stability function phi restricted to the apartment given by E_2.
     Note that if n = 2, we can compute E_2 by computing a graded instability (E_2, w) of the graded
-    reduction of 'self.homogeneous_form' with respect to a valuation representing 'point_on_BTB'.
+    reduction of 'self.homogeneous_form()' with respect to a valuation representing 'point_on_BTB'.
     """
 
     if self.dimension() != 2:
       raise NotImplementedError
-    if self.base_ring != point_on_BTB.base_ring():
+    if self.base_ring() != point_on_BTB.base_ring():
       raise ValueError
 
     graded_reduction = self.graded_reduction(point_on_BTB)
@@ -267,45 +266,87 @@ class StabilityFunction:
     return rational_graded_instability.lift_matrix()
 
 
-  def maximize(self, matrix_form = 'ult'):
+  def local_mimimum(self, base_change_matrix):
     r"""
-    Return the maximum and the point where the stability function takes it
+    Return the mimimum on the apartment defined by
+    `base_change_matrix` and the point where `self`
+    attains it.
 
     INPUT:
-    matrix_form - one of the strings 'ult', 'uut', 'integral'
+    - ``base_change_matrix`` -- an invertible matrix.
+    """
+    return ApartmentStabilityFunction(self, base_change_matrix).minimize()
+
+
+  def global_minimum(self, matrix_form = 'ult'):
+    r"""
+    Return the minimum on the Bruhat-Tit building and
+    the point where `self` attains it.
+
+    INPUT:
+    - ``base_change_matrix`` -- an invertible matrix.
+    - ``matrix_form`` -- one of the strings 'ult', 'uut', 'integral'.
+
+    EXAMPLES::
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: F = x0*x2*(x1^2 + 6*x0*x2)
+      sage: phi = StabilityFunction(F, QQ.valuation(2))
+      sage: a, b = phi.global_minimum()
+      sage: a
+      -1/3
+      sage: b.weight_vector()
+      [0, 1/2, 0]
+      sage: b.base_change_matrix()
+      [1 0 0]
+      [0 1 0]
+      [0 0 1]
+      sage: b.minimal_simplex_dimension()
+      1
+
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: F = x2*x1^2 - x0^3 - x0*x2^2
+      sage: phi = StabilityFunction(F, QQ.valuation(2))
+      sage: a, b = phi.global_minimum()
+      sage: a
+      -1/6
+      sage: b.weight_vector()
+      [1/2, 1/3, 0]
+      sage: b.base_change_matrix()
+      [1 0 0]
+      [1 1 0]
+      [1 0 1]
+      sage: a, b = phi.global_minimum('uut')
+      sage: a
+      -1/6
+      sage: b.weight_vector()
+      [0, 1/3, 1/2]
+      sage: b.base_change_matrix()
+      [1 0 1]
+      [0 1 1]
+      [0 0 1]
+      sage: b.minimal_simplex_dimension()
+      2
     """
 
-    global_trafo_matrix = identity_matrix(self.base_ring, self.dimension() + 1)
-
-    # find maximum on standard apartment
-    solution_dict = self.maximum_on_apartment(global_trafo_matrix, 0)
-    maximum = solution_dict['minimum']
-    weight_vector = [solution_dict['u'+str(i)] for i in range(self.dimension() + 1)]
-
-    point_on_BTB = BTB_Point(self.base_ring_valuation(), global_trafo_matrix, weight_vector)
-    if point_on_BTB.minimal_simplex_dimension() == self.dimension():
-      return [maximum, point_on_BTB]
-
-    affine_patch = point_on_BTB.affine_patch()
-    local_trafo_matrix = self.ascent_direction(point_on_BTB, matrix_form)
-    if local_trafo_matrix == None:
-      return [maximum, point_on_BTB]
+    global_trafo_matrix = identity_matrix(self.base_ring(), self.dimension() + 1)
 
     while True:
+      # 1. Find minimum on the current apartment defined by global_trafo_matrix.
+      min_val, btb_point = self.local_mimimum(global_trafo_matrix)
+
+      # 2. If btb_point is in the interior of a chamber,
+      #    we are at the global minimum.
+      if btb_point.minimal_simplex_dimension() == self.dimension():
+        return [min_val, btb_point]
+
+      # 3. If there is no descent direction at btb_point,
+      #    we are at the global minimum.
+      local_trafo_matrix = self.descent_direction(btb_point, matrix_form)
+      if local_trafo_matrix is None:
+        return [min_val, btb_point]
+
+      # 4. Update the base change matrix for the next iteration.
       global_trafo_matrix = local_trafo_matrix * global_trafo_matrix
-
-      # find maximum on the new apartment
-      solution_dict = self.maximum_on_apartment(global_trafo_matrix, 0)
-      maximum = solution_dict['minimum']
-      weight_vector = [solution_dict['u'+str(i)] for i in range(self._dimension + 1)]
-      point_on_BTB = BTB_Point(self.base_ring_valuation(), global_trafo_matrix, weight_vector)
-      if point_on_BTB.minimal_simplex_dimension() == self.dimension():
-        return [maximum, point_on_BTB]
-
-      affine_patch = point_on_BTB.affine_patch()
-      local_trafo_matrix = self.ascent_direction(point_on_BTB, matrix_form)
-      if local_trafo_matrix == None:
-        return [maximum, point_on_BTB]
 
 
   def evaluate_at(self, point_on_BTB):
@@ -354,7 +395,7 @@ class ApartmentStabilityFunction:
       raise ValueError
 
     self._stability_function = stability_function
-    self._homogeneous_form = stability_function.get_homogeneous_form()
+    self._homogeneous_form = stability_function.homogeneous_form()
     self._base_ring_valuation = stability_function.base_ring_valuation()
     self._base_change_matrix = base_change_matrix
 
@@ -458,7 +499,7 @@ class ApartmentStabilityFunction:
   #   # Compute d/N*v_K( det(A) )
   #   const_A = d/N*self.base_ring_valuation(self._embedding_matrix.det())
   #   affine_functions_values = dict()
-  #   F = _apply_matrix(self._embedding_matrix, self.homogeneous_form)
+  #   F = _apply_matrix(self._embedding_matrix, self.homogeneous_form())
   #   for multi_index, coefficient in F.dict().items():
   #     value_at_w = self.base_ring_valuation()(coefficient) - const_A
   #     for j in range(N):
