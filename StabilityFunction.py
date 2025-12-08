@@ -139,6 +139,22 @@ class StabilityFunction:
 
     INPUT:
     - ``base_change_matrix`` -- an invertible matrix.
+
+    EXAMPLES::
+      sage: R.<x0,x1,x2> = QQ[]
+      sage: F = x2*x1^2 - x0^3 - x0*x2^2
+      sage: phi = StabilityFunction(F, QQ.valuation(2))
+      sage: T = matrix(QQ, [[1,0,0],[1,1,0],[1,0,1]]); T
+      [1 0 0]
+      [1 1 0]
+      [1 0 1]
+      sage: a,b = phi.local_mimimum(T)
+      sage: a
+      -1/6
+      sage: b.weight_vector()
+      [1/2, 1/3, 0]
+      sage: b.base_change_matrix() == T
+      True
     """
     return ApartmentStabilityFunction(self, base_change_matrix).minimize()
 
