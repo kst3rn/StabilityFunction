@@ -27,12 +27,12 @@ class StabilityFunction:
     if homogeneous_form.base_ring() != base_ring_valuation.domain():
       raise ValueError(f"Base rings of {homogeneous_form} and {base_ring_valuation} are not equal")
 
-    self._homogeneous_form       = homogeneous_form
-    self._base_ring_valuation    = base_ring_valuation
+    self._homogeneous_form    = homogeneous_form
+    self._base_ring_valuation = base_ring_valuation
 
-    self._standard_basis    = homogeneous_form.parent().gens()
-    self._base_ring         = base_ring_valuation.domain()
-    self._dimension         = Integer(len(self._standard_basis) - 1)
+    self._standard_basis = homogeneous_form.parent().gens()
+    self._base_ring      = base_ring_valuation.domain()
+    self._dimension      = Integer(len(self._standard_basis) - 1)
 
 
   def __repr__(self):
@@ -64,9 +64,10 @@ class StabilityFunction:
 
 
   def graded_reduction(self, point_on_BTB):
-    A = point_on_BTB.base_change_matrix()
-    w = point_on_BTB.weight_vector()
-    linear_valuation = LinearValuation(self.polynomial_ring(), self.base_ring_valuation(), A, w)
+    linear_valuation = LinearValuation(self.polynomial_ring(),
+                                       self.base_ring_valuation(),
+                                       point_on_BTB.base_change_matrix(),
+                                       point_on_BTB.weight_vector())
     return linear_valuation.graded_reduction(self.homogeneous_form())
 
 
@@ -82,144 +83,8 @@ class StabilityFunction:
     return point_on_BTB.linear_valuation().initial_form(self.homogeneous_form())
 
 
-  def affine_functions_on_apartment(self, base_change_matrix, affine_patch = None):
-    r"""
-    Return the stability function restricted to the apartment given by 'self.standard_basis()*base_change_matrix.inverse()'.
-
-    INPUT:
-    base_change_matrix - invertible matrix in GL_{self.dimension + 1}(self.base_ring)
-    affine_patch - integer between 0 and self.dimension
-
-    OUTPUT:
-    [affine_function_1, affine_function_2, ...]
-
-    MATHEMATICS and IMPLEMENTATION:
-    We will now explain the mathematics and its implementation in Sage. First, let
-      v_K = self.base_ring_valuation(),
-      A   = base_change_matrix,
-      B   = base_change_matrix.inverse(),
-      E_0 = (x_0,...,x_n) = self.standard_basis(),
-      F   = self.homogeneous_form() .
-    Thus, F is a homogeneous polynomial in K[x_0,...,x_n]. Further, we call E_0 the standard
-    basis and consider A and B as linear transformations, with respect to E_0, i.e.
-      A(x_j) = sum_{i=0}^n a_{ij}*x_i  and  B(x_j) = sum_{i=0}^n b_{ij}*x_i .
-    Then,
-      E := (y_0,...,y_n) := ( B(x_0),...,B(x_n) )
-    is a new basis of K[x_0,...,x_n]. Now if we view E_0 = (x_0,...,x_n) as a vector in Sage,
-    we get
-      (y_0,...,y_n) = (sum_{i=0}^n b_{i,0}*x_i,...,sum_{i=0}^n b_{i,n}*x_i)
-                    = (x_0,...,x_n)*B
-    and therefore
-      F(x_0,...,x_n) = F( (y_0,...,y_n)*B^{-1} ) = F( (y_0,...,y_n)*A ) .
-    Thus, the homogeneous polynomial
-      G(y_0,...,y_n) := F( (y_0,...,y_n)*A ) in K[y_0,...,y_n]
-    describes F with respect to the basis (y_0,...,y_n) and A describes the base change.
-    Thus, for the valuation v_{E,w} we obtain
-      v_{E,w}(F) = min( v_K(a_i) + <i,w> : i in I ) with G = sum_{i in I} a_i y^i,
-    where i is a multi-index, i.e. I is a subset of NN^{n+1}. Moreover, we have
-      omega(v_{E,w}) = 1/(n+1) * ( w_0 + ... + w_n - v_K( det(E) ) .
-    Note that per definition det(E) = det(B). Furthermore,
-      v_K( det(B) ) = v_K( det(A^{-1}) ) = v_K( det(A)^{-1} ) = -v_K( det(A) )
-    and therefore
-      omega(v_{E,w}) = 1/(n+1) * ( w_0 + ... + w_n + v_K( det(A) ) .
-    Now let N = n + 1. It follows, that 
-      phi_E(w) = v_{E,w}(F) - d*omega(v_{E,w})
-               = min(v_K(a_i) - d/N*v_K(det(A)) + sum_{j=0}^n (i_j - d/N)*w_j : i in I) .
-    Finally, we set w_{affine_patch} = 0, if affine_patch != None.
-    """
-
-    if not base_change_matrix.is_invertible():
-      raise ValueError
-
-    # Set up variables
-    d = Integer(self.homogeneous_form().degree())
-    N = self._dimension + 1   # N = n + 1
-
-    # Compute G(x_0,...,x_n) = F( (x_0,...,x_n)*A )
-    G = self.homogeneous_form()( list( vector( self.standard_basis() )*base_change_matrix ) )
-
-    # Now create variables for affine functions
-    w = list( PolynomialRing( QQ, N, 'w' ).gens() ) # w = [w_0,...,w_n] since N = n + 1
-
-    # Now set w_j = 0 with j = affine_patch
-    if not affine_patch == None:
-      if affine_patch < 0 or N - 1 < affine_patch:
-        raise ValueError
-      else:
-        w[affine_patch] = 0
-
-    # Compute d / N*v_K(det(A))
-    const_A = d / N * self.base_ring_valuation()(base_change_matrix.det())
-
-    # Compute v_{E,w}(F) - d*omega( v_{E,w} )
-    affine_functions = []
-    for multi_index, G_coefficient in G.dict().items():
-      affine_function = self.base_ring_valuation()( G_coefficient ) - const_A
-      for j in range(N):
-        affine_function = affine_function + ( multi_index[j] - d/N )*w[j]
-      affine_functions.append( affine_function )
-
-    return affine_functions
-
-
   def active_functions_at(self, base_change_matrix, weight_vector):
     return RestrictedStabilityFunction(self, base_change_matrix).active_functions(weight_vector)
-
-
-  def _maximum_on_apartment(self, base_change_matrix, affine_patch):
-    r"""
-    Return the maximum of the stability function on the apartment given by 'self.standard_basis()*base_change_matrix.inverse()'.
-
-    INPUT:
-    base_change_matrix - invertible matrix in GL_{self.dimension + 1}(self.base_ring)
-    affine_patch - integer between 0 and self.dimension
-
-    OUTPUT:
-    rational number, which equals the maximum of self on the apartment given by
-    the basis 'self.standard_basis()*base_change_matrix.inverse()'
-    """
-
-    affine_functions = self.affine_functions_on_apartment(base_change_matrix, affine_patch)
-
-    # Note that by definition of the method 'affine_functions_on_apartment()' the elements
-    # of 'affine_functions', i.e. affine_function_i's are linear polynomials in QQ[w_0,...,w_n]
-    # and hence of the form q_0*w_0 + ... + q_n*w_n + q_constant with q_{ self.affine_patch } = 0
-    affine_function_variables = list( affine_functions[0].parent().gens() ) # [w_0,...,w_n]
-    N = self._dimension + 1
-
-    MILP = MixedIntegerLinearProgram(solver='PPL')  # we need solver='PPL' for an exact rational solution
-    v = MILP.new_variable()
-    t = v['minimum']    
-    MILP.set_objective(t)   # t will be maximized the under constraints below
-
-    # We have affine_function = q_0*w_0 + ... q_n*w_n + q_constant. The next for-loop will replace w_i's by MILP variables u_i's.
-    for affine_function in affine_functions:
-      # affine_function = q_0*w_0 + ... + q_n*w_n + q_constant and hence affine_function.constant_coefficient() = q_constant
-      affine_function_in_MILP_variables = affine_function.constant_coefficient()  # the constant term of affine_function
-      for i in range(N):
-        # w[i] = w_i is already a monomial in affine_function = q_0*w_0 + ... + q_n*w_n + q_constant
-        # and the corresponding monomial coefficient is q_i.
-        affine_function_in_MILP_variables = affine_function_in_MILP_variables + affine_function.monomial_coefficient( affine_function_variables[i] )*v["u"+str(i)]
-      MILP.add_constraint(t <= affine_function_in_MILP_variables)
-    MILP.solve()
-
-    return MILP.get_values(v)
-
-
-  def maximum_on_apartment(self, base_change_matrix, affine_patch = None):
-    r"""
-    Return the maximum on the apartment given by base_change_matrix and
-    the point where the maximum is reached
-    """
-
-    if affine_patch != None:
-      return self._maximum_on_apartment(base_change_matrix, affine_patch)
-
-    solution_dict = self.maximum_on_apartment(base_change_matrix, 0)
-    maximum = solution_dict['minimum']
-    weight_vector = [solution_dict['u'+str(i)] for i in range(self._dimension + 1)]
-    point_on_BTB = BTB_Point(self.base_ring_valuation(), base_change_matrix, weight_vector)
-    return [maximum, point_on_BTB]
 
 
   def descent_direction(self, point_on_BTB, matrix_form = 'ult'):
