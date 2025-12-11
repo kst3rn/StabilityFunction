@@ -107,13 +107,13 @@ def _search_tree(F, fixed_valuation, step, minimum, global_trafo_matrix, depth, 
     R_K = F.parent().change_ring(K)
     F_K = R_K(F)
     phi_typeI = StabilityFunction(F_K, K.valuation(2))
-    aI, bI = phi_typeI.local_mimimum(_evaluate_matrix(global_trafo_matrix, piK))
+    aI, bI = phi_typeI.local_minimum(_evaluate_matrix(global_trafo_matrix, piK))
     if phi_typeI.has_semistable_reduction_at(bI):
       return K
 
     new_typeII_valuation = fixed_valuation.augmentation(center, new_radius)
     phi_typeII = StabilityFunction(F, new_typeII_valuation)
-    new_minimum, new_btb_point = phi_typeII.local_mimimum(global_trafo_matrix)
+    new_minimum, new_btb_point = phi_typeII.local_minimum(global_trafo_matrix)
     if new_minimum >= minimum:
       break
 
