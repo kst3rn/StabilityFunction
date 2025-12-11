@@ -18,14 +18,15 @@ def find_base_ring_extension(homogeneous_form, base_ring_valuation, ramification
     Number Field in piK with defining polynomial s^2 + 2
 
     sage: R.<x,y,z> = QQ[]
+    sage: R.<x,y,z> = QQ[]
     sage: F = 16*x**4 + y**4 + 8*y**3*z + 16*x*y*z**2 + 4*x*z**3
     sage: find_base_ring_extension(F, QQ.valuation(2), 4)
-    Number Field in piK with defining polynomial s^4 + 2*s^2 + 2
+    'Any extension of Number Field in piK with defining polynomial s^4 + 2*s^2 + 2 making the point [0, 3/2, 4/3] integral'
 
     sage: R.<x0,x1,x2> = QQ[]
     sage: G = -2*x0^3*x1 - 12*x1^4 - 4*x0^3*x2 - 3*x0^2*x1*x2 - 12*x1^3*x2 - 4*x0^2*x2^2 - 12*x0*x1*x2^2 + 16*x1^2*x2^2 + 5*x1*x2^3
     sage: find_base_ring_extension(G, QQ.valuation(2), 4)
-    Number Field in piK with defining polynomial s^4 + 2
+    'Any extension of Number Field in piK with defining polynomial s^4 + 2 making the point [0, 3/8, 25/16] integral'
   """
 
   if homogeneous_form.base_ring() != base_ring_valuation.domain():
@@ -42,7 +43,7 @@ def find_base_ring_extension(homogeneous_form, base_ring_valuation, ramification
     if btb_point.minimal_simplex_dimension() != 0:
       L = K
       # make `L` to an extension of K such that b becomes integral
-      return f"Any extension of {K} making the point integral"
+      return f"Any extension of {K} making the point {btb_point.weight_vector()} integral"
     return K
 
   R = homogeneous_form.parent()
@@ -109,6 +110,8 @@ def _search_tree(F, fixed_valuation, step, minimum, global_trafo_matrix, depth, 
     phi_typeI = StabilityFunction(F_K, K.valuation(2))
     aI, bI = phi_typeI.local_minimum(_evaluate_matrix(global_trafo_matrix, piK))
     if phi_typeI.has_semistable_reduction_at(bI):
+      if bI.minimal_simplex_dimension(step) != 0:
+        return f"Any extension of {K} making the point {bI.weight_vector()} integral"
       return K
 
     new_typeII_valuation = fixed_valuation.augmentation(center, new_radius)
@@ -116,6 +119,8 @@ def _search_tree(F, fixed_valuation, step, minimum, global_trafo_matrix, depth, 
     new_minimum, new_btb_point = phi_typeII.local_minimum(global_trafo_matrix)
     if new_minimum >= minimum:
       break
+    elif new_btb_point.minimal_simplex_dimension(step) == 2:
+      continue
 
     j = j + 1
     new_radius = radius - j * step
