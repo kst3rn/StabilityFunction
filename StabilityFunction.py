@@ -131,9 +131,9 @@ class StabilityFunction:
     return rational_graded_instability.lift_matrix()
 
 
-  def local_mimimum(self, base_change_matrix):
+  def local_minimum(self, base_change_matrix):
     r"""
-    Return the mimimum on the apartment defined by
+    Return the minimum on the apartment defined by
     `base_change_matrix` and the point where `self`
     attains it.
 
@@ -148,7 +148,7 @@ class StabilityFunction:
       [1 0 0]
       [1 1 0]
       [1 0 1]
-      sage: a,b = phi.local_mimimum(T)
+      sage: a,b = phi.local_minimum(T)
       sage: a
       -1/6
       sage: b.weight_vector()
@@ -213,7 +213,7 @@ class StabilityFunction:
 
     while True:
       # 1. Find minimum on the current apartment defined by global_trafo_matrix.
-      min_val, btb_point = self.local_mimimum(global_trafo_matrix)
+      min_val, btb_point = self.local_minimum(global_trafo_matrix)
 
       # 2. If btb_point is in the interior of a chamber,
       #    we are at the global minimum.
