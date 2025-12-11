@@ -22,6 +22,9 @@ def find_base_ring_extension(homogeneous_form, base_ring_valuation, ramification
     sage: F = 16*x**4 + y**4 + 8*y**3*z + 16*x*y*z**2 + 4*x*z**3
     sage: find_base_ring_extension(F, QQ.valuation(2), 4)
     'Any extension of Number Field in piK with defining polynomial s^4 + 2*s^2 + 2 making the point [0, 3/2, 4/3] integral'
+    sage: F = 4*x**4 + 4*x*y**3 + y**4 + 2*x*z**3 + 4*y*z**3 + z**4
+    sage: find_base_ring_extension(F, QQ.valuation(2), 4)
+    Number Field in piK with defining polynomial s^4 + 2*s^3 + 2*s^2 + 2
 
     sage: R.<x0,x1,x2> = QQ[]
     sage: G = -2*x0^3*x1 - 12*x1^4 - 4*x0^3*x2 - 3*x0^2*x1*x2 - 12*x1^3*x2 - 4*x0^2*x2^2 - 12*x0*x1*x2^2 + 16*x1^2*x2^2 + 5*x1*x2^3
