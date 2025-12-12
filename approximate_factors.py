@@ -31,8 +31,17 @@ EXAMPLES:
 
     sage: R.<x> = QQ[]
     sage: v_2 = QQ.valuation(2)
-    sage: f = x^6 + 1
-    sage: approximate_factorization(f, v_2)
+    sage: f = x^6 + 4*x + 1
+    sage: F = approximate_factorization(f, v_2); F
+    [approximate prime factor of x^6 + 4*x + 1 of degree 2,
+     approximate prime factor of x^6 + 4*x + 1 of degree 4]
+    
+    sage: g1 = F[0]
+    sage: g1.approximate_factor()
+    x + 1
+
+    sage: g1.approximate_factor(5)
+    x^2 + 12*x - 15
 
 """
 
@@ -78,7 +87,7 @@ def approximate_factorization(f, v_K, g0=None, assume_squarefree=False,
         v0 = GaussValuation(f.parent(), v_K)
         g0 = ApproximateFactor(f, v0)
     if g0.is_irreducible():
-        return [g0]
+        return [ApproximatePrimeFactor(f, g0.valuation())]
     ret = []
     for g in g0.mac_lane_step():
         ret += approximate_factorization(f, v_K, g0=g, 
@@ -140,11 +149,6 @@ class ApproximateFactor(SageObject):
     def equivalence_decomposition(self):
         return self._equivalence_decomposition
     
-    def limit_valuation(self):
-        from sage.rings.valuation.limit_valuation import LimitValuation
-        assert self.is_irreducible(), "the limit valuation of an approximate factor is only defined if it is irreducible"
-        return LimitValuation(self.valuation(), self.polynomial())
-    
     def mac_lane_step(self):
         r""" Return a list of approximate factors which refine this factor.
         
@@ -177,3 +181,97 @@ class ApproximateFactor(SageObject):
             ret.append(ApproximateFactor(self.polynomial(), v1))
         return ret
     
+
+class ApproximatePrimeFactor(ApproximateFactor):
+    r""" An approximate prime factor of a polynomial over a p-adic number field.
+
+    INPUT:
+
+    - ``f`` -- a nonconstant polynomial over a number field `K`
+    - ``v`` -- a discrete valuation on the polynomial ring
+               to which `f` belongs
+
+    It is assumed that `v` is an *approximate prime factor* of `f`, i.e. that
+    `v` is a MacLane valuation on `K[x]` and that there exists a *unique* strong
+    factor `g` of `f` such that `v\leq v_g`.
+    
+    OUTPUT:
+
+    an object representing this approximate prime factor.
+      
+    """
+    def __init__(self, f, v):
+        v_K = v._base_valuation
+        assert v.domain() == f.parent(), "the domain of v must be the parent of f"
+        self._polynomial = f
+        self._valuation = v
+        self._base_valuation = v_K
+        # we check whether this factor is really irreducible
+        # as a side effect, we compute the next improved approximation
+        F = v.equivalence_decomposition(f, compute_unit=False)
+        assert len(F) == 1 and F[0][1] == 1, "this factor is not irreducible"
+        phi = F[0][0]
+        self._phi = phi
+        self._degree = phi.degree()
+        if phi.degree() == f.degree():
+            self._prec = Infinity
+        else:
+            self._prec = v(v.phi())
+
+    def __repr__(self):
+        return f"approximate prime factor of {self._polynomial()} of degree {self.degree()}"
+    
+    def polynomial(self):
+        return self._polynomial
+    
+    def valuation(self):
+        return self._valuation
+    
+    def degree(self):
+        r""" Return the degree of this approximate factor.
+        
+        """
+        return self._degree
+    
+    def prec(self):
+        return self._prec
+    
+    def improve_approximation(self):
+        r""" Improve the approximation of the approximate prime factor.
+
+        This function has no output, but it replaces the underlying inductive valuation
+        by the next better approximation given by one MacLane step.
+        
+        """
+        if self.prec() < Infinity: 
+            v0 = self.valuation()
+            f = self.polynomial()
+            phi = v0.equivalence_decomposition(f)[0][0]
+            f1, f0 = f.quo_rem(phi)
+            t = v0(f0) - v0(f1)
+            v1 = v0.augmentation(phi, t)
+            F = v1.equivalence_decomposition(f)
+            assert len(F) == 1 and F[0][1] == 1, "something is wrong"
+            self._valuation = v1
+            self._prec = t
+
+    def approximate_factor(self, prec=None):
+        r""" Return the current approximation of this approximate prime factor.
+
+        INPUT:
+
+        - ``prec`` -- a nonnegative rational number (default: ``None``)
+
+        OUTPUT:
+
+        An approximation of this approximate prime factor with precision
+        at least ``prec``. If ``prec`` is not given, the current approximation
+        is returned.
+          
+        """
+        if prec is None:
+            return self.valuation().phi()
+        else:
+            while self._prec < prec:
+                self.improve_approximation()
+            return self.valuation().phi()

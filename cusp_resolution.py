@@ -15,11 +15,11 @@ EXAMPLES:
 
 from sage.all import QQ, PolynomialRing, matrix, Infinity, lcm
 
-import sys
-sys.path.insert(0, '/home/stefan/code/MCLF/mclf')   # parent of the package dir, not .../mclf
-import mclf
-from mclf.padic_extensions.padic_number_fields import pAdicNumberField
-from mclf.padic_extensions.approximate_factorizations import approximate_factorization
+# import sys
+# sys.path.insert(0, '/home/stefan/code/MCLF/mclf')   # parent of the package dir, not .../mclf
+# import mclf
+# from mclf.padic_extensions.padic_number_fields import pAdicNumberField
+# from mclf.padic_extensions.approximate_factorizations import approximate_factorization
 
 
 def resolve_cusp(F, v_K):
@@ -88,6 +88,9 @@ def resolve_cusp(F, v_K):
     G = J.groebner_basis()
     assert len(G) == 3, "Unexpected Groebner basis length."
 
+    # only for testing:
+    return G
+
     prec = 5
     while True:
         v_L, alpha, beta, gamma = approximate_solution(G, v_K, prec)
@@ -149,7 +152,6 @@ def approximate_solution(G, v_K, prec):
 
     """
     K = v_K.domain()
-    Kh = pAdicNumberField(K, v_K)
     c, b, _ = G[0].parent().gens()
     f = G[2].univariate_polynomial()
     f = lcm(a.denominator() for a in f.coefficients()) * f
