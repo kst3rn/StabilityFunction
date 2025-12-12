@@ -4,7 +4,7 @@ Resolution of cusps on plane models of plane curves.
 
 EXAMPLES:
 
-    sage: from cusp_resolution import resolve_cusps
+    sage: from cusp_resolution import resolve_cusp
     sage: R.<z,x,y> = PolynomialRing(QQ, ("z","x","y"))
     sage: v_2 = QQ.valuation(2)
     sage: F = 2*z^4 + 2*x*y*z^2 - x^3*z + y^2*z^2 + x^4 + y^4
@@ -27,11 +27,11 @@ def resolve_cusp(F, v_K):
 
     INPUT:
 
-    - ``F`` -- a trivariat form of degree `3` over a field `K`
+    - ``F`` -- a trivariat form of degree `\geq 3` over a field `K`
     - ``v_K`` -- a nontrivial discrete valuation on `K`
 
-    It is assumed that `F` that
-    - `F` defines a smmoth quartic curve `X`,
+    It is assumed that 
+    - `F` defines a smooth quartic curve `X`,
     - `F` is integral and primitive with respect to `v_K`, so that it defines
       an integral model `\mathcal{X}` of `X`, and
     - the special fiber has a cusp in normal form at the point `P=(1:0:0)`.
@@ -43,7 +43,7 @@ def resolve_cusp(F, v_K):
     representing the base change to the plane model resolving the cusp `P`.
 
     """
-    # check validity of the input (to do)
+    # check validity of the input
     assert v_K.is_discrete_valuation()
     K = v_K.domain()
     F = F.change_ring(K)
@@ -119,6 +119,9 @@ def resolve_cusp(F, v_K):
             break
         else:
             prec += 5
+    # this is not what should be returned. L is in general not yet the correct extension;
+    # we may need to add ramification to have t in the value group. Then we also have to 
+    # do another transformation.
     return v_L, F1, t
 
 
@@ -147,7 +150,7 @@ def approximate_solution(G, v_K, prec):
     """
     K = v_K.domain()
     Kh = pAdicNumberField(K, v_K)
-    c, b, a = G[0].parent().gens()
+    c, b, _ = G[0].parent().gens()
     f = G[2].univariate_polynomial()
     f = lcm(a.denominator() for a in f.coefficients()) * f
     F = approximate_factorization(Kh, f)
