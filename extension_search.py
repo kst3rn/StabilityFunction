@@ -1,5 +1,5 @@
 from itertools import combinations
-from sage.all import PolynomialRing, GF, QQ, ZZ, ceil, matrix, GaussValuation, vector, Infinity
+from sage.all import gcd, PolynomialRing, GF, QQ, ZZ, ceil, matrix, GaussValuation, vector, Infinity
 from stability_function import StabilityFunction
 from plane_curves import ProjectivePlaneCurve
 from parametric_optimization import minimum_as_valuative_function
@@ -12,24 +12,22 @@ def find_base_ring_extension(homogeneous_form, base_ring_valuation, ramification
   Try to find an extension of the base ring of `homogeneous_form`.
 
   EXAMPLES::
-    sage: R.<x0,x1,x2> = QQ[]
-    sage: F = x1^4 + 2*x0^3*x2 + x0*x1^2*x2 + 2*x0*x2^3
+    sage: R.<x,y,z> = QQ[]
+    sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
     sage: find_base_ring_extension(F, QQ.valuation(2), 2)
-    Number Field in piK with defining polynomial s^2 + 2
-
-    sage: R.<x,y,z> = QQ[]
-    sage: R.<x,y,z> = QQ[]
-    sage: F = 16*x**4 + y**4 + 8*y**3*z + 16*x*y*z**2 + 4*x*z**3
+    Number Field in piK with defining polynomial x^2 + 2
+    sage:
+    sage: F = 16*x^4 + y^4 + 8*y^3*z + 16*x*y*z^2 + 4*x*z^3
     sage: find_base_ring_extension(F, QQ.valuation(2), 4)
-    'Any extension of Number Field in piK with defining polynomial s^4 + 2*s^2 + 2 making the point [0, 3/2, 4/3] integral'
-    sage: F = 4*x**4 + 4*x*y**3 + y**4 + 2*x*z**3 + 4*y*z**3 + z**4
+    Number Field in piL with defining polynomial x^12 + 2*x^6 + 2
+    sage:
+    sage: F = 4*x^4 + 4*x*y^3 + y^4 + 2*x*z^3 + 4*y*z^3 + z^4
     sage: find_base_ring_extension(F, QQ.valuation(2), 4)
-    Number Field in piK with defining polynomial s^4 + 2*s^3 + 2*s^2 + 2
-
-    sage: R.<x0,x1,x2> = QQ[]
-    sage: G = -2*x0^3*x1 - 12*x1^4 - 4*x0^3*x2 - 3*x0^2*x1*x2 - 12*x1^3*x2 - 4*x0^2*x2^2 - 12*x0*x1*x2^2 + 16*x1^2*x2^2 + 5*x1*x2^3
-    sage: find_base_ring_extension(G, QQ.valuation(2), 4)
-    'Any extension of Number Field in piK with defining polynomial s^4 + 2 making the point [0, 3/8, 25/16] integral'
+    Number Field in piK with defining polynomial x^4 + 2*x^3 + 2*x^2 + 2
+    sage:
+    sage: F = -2*x^3*y - 12*y^4 - 4*x^3*z - 3*x^2*y*z - 12*y^3*z - 4*x^2*z^2 - 12*x*y*z^2 + 16*y^2*z^2 + 5*y*z^3
+    sage: find_base_ring_extension(F, QQ.valuation(2), 4)
+    Number Field in piL with defining polynomial x^16 + 2
   """
 
   if homogeneous_form.base_ring() != base_ring_valuation.domain():
@@ -44,14 +42,18 @@ def find_base_ring_extension(homogeneous_form, base_ring_valuation, ramification
   minimum, btb_point = phi.global_minimum('uut')
   if phi.has_semistable_reduction_at(btb_point):
     if btb_point.minimal_simplex_dimension() != 0:
-      r = btb_point.ramification_index()
-      L = K
-      # make `L` to an extension of K such that b becomes integral
-      return f"Any extension of {K} making the point {btb_point.weight_vector()} integral"
+      piK = base_ring_valuation.uniformizer()
+      r_K = base_ring_valuation(piK).denominator()
+      r_L = btb_point.ramification_index()
+      r = r_L / gcd(r_K, r_L)
+      S = PolynomialRing(K, 'x')
+      s = S.gen()
+      L = K.extension(s**r - piK, 'piL')
+      return L.absolute_field('piL')
     return K
 
   R = homogeneous_form.parent()
-  S = PolynomialRing(K, 's')
+  S = PolynomialRing(K, 'x')
   s = S.gen()
   R_S = R.change_ring(S)
   F_S = R_S(homogeneous_form)
@@ -115,7 +117,15 @@ def _search_tree(F, fixed_valuation, step, minimum, global_trafo_matrix, depth, 
     aI, bI = phi_typeI.local_minimum(_evaluate_matrix(global_trafo_matrix, piK))
     if phi_typeI.has_semistable_reduction_at(bI):
       if bI.minimal_simplex_dimension(ZZ(1) / step) != 0:
-        return f"Any extension of {K} making the point {bI.weight_vector()} integral"
+        v_K = phi_typeI.base_ring_valuation()
+        piK = v_K.uniformizer()
+        r_K = v_K(piK).denominator()
+        r_L = bI.ramification_index()
+        r = r_L / gcd(r_K, r_L)
+        S = PolynomialRing(K, 'x')
+        s = S.gen()
+        L = K.extension(s**r - piK, 'piL')
+        return L.absolute_field('piL')
       return K
 
     new_typeII_valuation = fixed_valuation.augmentation(center, new_radius)
