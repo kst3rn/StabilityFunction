@@ -10,7 +10,7 @@
 # ****************************************************************************
 
 
-
+from transformations import _apply_matrix
 from sage.all import *
 
 
@@ -757,45 +757,4 @@ class GradedInstability:
         for i, item in enumerate(row):
           print(str(item).ljust(col_widths[i] + 2), end="")  # Add spacing
         print()
-
-
-
-# ================== helper functions ==================
-
-def _apply_matrix(T, F, affine_patch = None):
-    r"""
-    Return F((x_0,...,x_n) * T) or its dehomogenization
-    at affine_patch, i.e. x_{affine_patch} = 1 if
-    affine_patch != None
-
-    INPUT:
-        T            - (n+1)x(n+1) matrix over K, where n+1 is the number of variables for F.
-        F            - polynomial in K[x_0,...,x_n]
-        affine_patch - integer between 0 and n, or None
-
-    OUTPUT:
-        Polynomial resulting from F((x_0,...,x_n) * T), where x_{affine_patch}
-        is set to 1 *before* the matrix multiplication if affine_patch is not None.
-
-    MATHEMATICAL INTERPRETATION:
-        Let X = (x_0, ..., x_n) be the coordinate variables of the polynomial ring of F.
-        This function computes the polynomial H(X) = F(X * T).
-        If affine_patch = k is specified, it then returns H(x_0, ..., x_{k-1}, 1, x_{k+1}, ..., x_n),
-        effectively performing a substitution x_k = 1 into the expression H(X).
-    """
-    R = F.parent()
-    num_gens = R.ngens()
-
-    if not (T.nrows() == num_gens and T.ncols() == num_gens):
-        raise ValueError(f"Matrix T must be {num_gens}x{num_gens}")
-
-    generators = list(R.gens())
-
-    if affine_patch is not None:
-        if not (0 <= affine_patch < num_gens):
-            raise ValueError(f"affine_patch must be between 0 and {num_gens-1}")
-        generators[affine_patch] = R(1)
-
-    transformed_vars = list(vector(generators) * T)        
-    return F(transformed_vars)
 
