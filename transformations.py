@@ -51,7 +51,7 @@ def _apply_matrix(T, F, i=None):
   num_gens = F.parent().ngens()
   if not (T.nrows() == num_gens and T.ncols() == num_gens):
     raise ValueError(f"Matrix T must be {num_gens}x{num_gens}")
-  generators = list(R.gens())
+  generators = list(F.parent().gens())
   if i is not None:
     if not (0 <= i < num_gens):
       raise ValueError(f"i = {i} is not between 0 and {num_gens-1}")
