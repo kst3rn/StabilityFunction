@@ -10,10 +10,9 @@
 # ****************************************************************************
 
 
-
 from sage.all import *
 from linear_valuations import LinearValuation
-
+from transformations import _apply_matrix
 
 
 class StabilityFunction:
@@ -789,32 +788,3 @@ class BTB_Point:
     G = _apply_matrix(T, F)
     return G / pi_K**v(G)
 
-
-
-
-
-# ===================== helper functions =====================
-
-def _apply_matrix(T, F, affine_patch = None):
-    """
-    Return F((x_0,...,x_n) * T) or its dehomogenization
-    at affine_patch, i.e. x_{affine_patch} = 1 if
-    affine_patch != None
-
-    INPUT:
-        T            - matrix over K
-        F            - polynomial in K[x_0,...,x_n]
-        affine_patch - integer between 0 and n
-
-    OUTPUT:
-        F((x_0,...,x_n) * T) with x_{affine_patch} = 1 if
-        affine_patch != None
-
-    MATHEMATICAL INTERPRETATION:
-        ToDo...
-    """
-
-    generators = list(F.parent().gens())
-    if affine_patch != None:
-        generators[affine_patch] = F.parent()(1)
-    return F(list( vector(generators) * T ))
