@@ -13,7 +13,7 @@
 from functools import cached_property
 from functools import cache
 from sage.all import *
-from transformations import _apply_matrix, _ult_line_transformation, _uut_line_transformation, _ult_plane_transformation, _uut_plane_transformation, _ult_flag_transformation, _uut_flag_transformation, _move_point_and_line_to_001_and_x0
+from transformations import _apply_matrix, _ult_line_transformation, _uut_line_transformation, _ult_plane_transformation, _uut_plane_transformation, _ult_flag_transformation, _uut_flag_transformation, _move_point_and_line_to_001_and_x0, _normalize_by_last_nonzero_entry
 
 
 class ProjectivePlaneCurve:
