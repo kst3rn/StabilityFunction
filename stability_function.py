@@ -774,6 +774,26 @@ class BTB_Point:
     return len(set(trans_norm_weight_vector)) - 1
 
 
+  def ramification_index(self):
+    r"""
+    Return minimal positive integer `r` such that all coordinates
+    of `self.weight_vector()` are contained in 1/r * ZZ.
+
+    EXAMPLES::
+      sage: E = identity_matrix(QQ, 3)
+      sage: w = [1/2, 1/3, 5/3]
+      sage: P = BTB_Point(QQ.valuation(2), E, w)
+      sage: P.ramification_index()
+      6
+      sage:
+      sage: w = [1/2, 1/3, 5/11]
+      sage: P = BTB_Point(QQ.valuation(2), E, w)
+      sage: P.ramification_index()
+      66
+    """
+    return lcm(b.denominator() for b in self.weight_vector())    
+
+
   def hypersurface_model(self, F):
     r"""
     Retrun the hypersurface model of `F` corresponding to `self`.
