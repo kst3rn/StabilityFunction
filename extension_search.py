@@ -1,7 +1,7 @@
 from itertools import combinations
 from sage.all import PolynomialRing, GF, QQ, ZZ, ceil, matrix, GaussValuation, vector, Infinity
-from StabilityFunction import StabilityFunction
-from ProjectivePlaneCurves import ProjectivePlaneCurve
+from stability_function import StabilityFunction
+from plane_curves import ProjectivePlaneCurve
 from parametric_optimization import minimum_as_valuative_function
 
 def _tree_search():
@@ -44,6 +44,7 @@ def find_base_ring_extension(homogeneous_form, base_ring_valuation, ramification
   minimum, btb_point = phi.global_minimum('uut')
   if phi.has_semistable_reduction_at(btb_point):
     if btb_point.minimal_simplex_dimension() != 0:
+      r = btb_point.ramification_index()
       L = K
       # make `L` to an extension of K such that b becomes integral
       return f"Any extension of {K} making the point {btb_point.weight_vector()} integral"
@@ -113,7 +114,7 @@ def _search_tree(F, fixed_valuation, step, minimum, global_trafo_matrix, depth, 
     phi_typeI = StabilityFunction(F_K, K.valuation(2))
     aI, bI = phi_typeI.local_minimum(_evaluate_matrix(global_trafo_matrix, piK))
     if phi_typeI.has_semistable_reduction_at(bI):
-      if bI.minimal_simplex_dimension(step) != 0:
+      if bI.minimal_simplex_dimension(ZZ(1) / step) != 0:
         return f"Any extension of {K} making the point {bI.weight_vector()} integral"
       return K
 
@@ -122,7 +123,7 @@ def _search_tree(F, fixed_valuation, step, minimum, global_trafo_matrix, depth, 
     new_minimum, new_btb_point = phi_typeII.local_minimum(global_trafo_matrix)
     if new_minimum >= minimum:
       break
-    elif new_btb_point.minimal_simplex_dimension(step) == 2:
+    elif new_btb_point.minimal_simplex_dimension(ZZ(1) / step) == 2:
       continue
 
     j = j + 1
