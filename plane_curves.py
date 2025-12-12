@@ -39,29 +39,29 @@ class ProjectivePlaneCurve:
     if not polynomial.base_ring().is_field():
       raise ValueError
 
-    self.polynomial = polynomial
-    self._degree = self.polynomial.degree()
-    self.polynomial_ring = self.polynomial.parent()
-    self._base_ring = self.polynomial.base_ring()
+    self._defining_polynomial = polynomial
+    self._degree = polynomial.degree()
+    self.polynomial_ring = polynomial.parent()
+    self._base_ring = polynomial.base_ring()
     self.projective_plane = ProjectiveSpace(self.polynomial_ring)
-    self.plane_curve = self.projective_plane.curve(self.polynomial)
-    self.standard_basis = self.polynomial_ring.gens()
+    self.plane_curve = self.projective_plane.curve(polynomial)
+    self._standard_basis = self.polynomial_ring.gens()
 
 
   def __repr__(self):
-    return f"Projective Plane Curve with defining polynomial {self.polynomial} over {self._base_ring}"
+    return f"Projective Plane Curve with defining polynomial {self._defining_polynomial} over {self._base_ring}"
 
 
   def base_ring(self):
     return self._base_ring
 
 
-  def get_polynomial(self):
-    return self.polynomial
+  def defining_polynomial(self):
+    return self._defining_polynomial
 
 
-  def get_standard_basis(self):
-    return self.standard_basis
+  def standard_basis(self):
+    return self._standard_basis
 
 
   def degree(self):
@@ -73,13 +73,13 @@ class ProjectivePlaneCurve:
     Return the base change of `self` to `Spec(R)`.
     """
 
-    PolRin0 = self.get_polynomial().parent()
-    var_names = [str(x) for x in self.get_standard_basis()]
+    PolRin0 = self.defining_polynomial().parent()
+    var_names = [str(x) for x in self.standard_basis()]
     PolRin1 = PolynomialRing(R, var_names)
     phi = PolRin1.coerce_map_from(PolRin0)
     if phi is None:
       raise NotImplementedError(f"No coercion from the polynomial ring over {self.base_ring()} to the polynomial ring over {R}")
-    new_poly = phi(self.get_polynomial())
+    new_poly = phi(self.defining_polynomial())
 
     return ProjectivePlaneCurve(new_poly)
 
@@ -99,7 +99,7 @@ class ProjectivePlaneCurve:
       sage: P = [0,0,1]
       sage: C = X.tangent_cone_at(P); C
       Tangent cone of Projective Plane Curve with defining polynomial -x1^3 + x0^2*x2 at [0, 0, 1]
-      sage: C.get_polynomial()
+      sage: C.defining_polynomial()
       x^2
 
       sage: R.<x0,x1,x2> = QQ[]
@@ -109,7 +109,7 @@ class ProjectivePlaneCurve:
       sage: P = [3,-5,1]
       sage: C = X.tangent_cone_at(P); C
       Tangent cone of Projective Plane Curve with defining polynomial -x1^3 + x0^2*x2 - 15*x1^2*x2 - 6*x0*x2^2 - 75*x1*x2^2 - 116*x2^3 at [3, -5, 1]
-      sage: C.get_polynomial()
+      sage: C.defining_polynomial()
       x^2
 
       sage: R.<x0,x1,x2> = QQ[]
@@ -119,7 +119,7 @@ class ProjectivePlaneCurve:
       sage: P = [0,0,1]
       sage: C = X.tangent_cone_at(P); C
       Tangent cone of Projective Plane Curve with defining polynomial -x0^3 - x0^2*x2 + x1^2*x2 at [0, 0, 1]
-      sage: C.get_polynomial()
+      sage: C.defining_polynomial()
       -x^2 + y^2
 
       sage: R.<x0,x1,x2> = GF(7)[]
@@ -129,7 +129,7 @@ class ProjectivePlaneCurve:
       sage: P = [1,2,4]
       sage: C = X.tangent_cone_at(P); C
       Tangent cone of Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4 at [2, 4, 1]
-      sage: C.get_polynomial()
+      sage: C.defining_polynomial()
       -3*x - 3*y
     """
 
@@ -420,7 +420,7 @@ class ProjectivePlaneCurve:
                     where
                     i = shape[0],
                     j = shape[1],
-                    (x_0, x_1, x_2) = self.get_standard_basis(),
+                    (x_0, x_1, x_2) = self.standard_basis(),
                     and `T_{ij}(lambda)` is the elementary matrix with
                     `lambda` at the (i,j)-th position.
 
@@ -449,7 +449,7 @@ class ProjectivePlaneCurve:
 
     REMARK:
     This method does not search for instabilities that are
-    diagonalized by self.get_standard_basis().
+    diagonalized by self.standard_basis().
     """
 
     if shape[0] == shape[1]:
@@ -457,9 +457,9 @@ class ProjectivePlaneCurve:
 
     i, j = shape
     k = 3 - i - j
-    x_i = self.get_standard_basis()[i]
-    x_j = self.get_standard_basis()[j]
-    x_k = self.get_standard_basis()[k]
+    x_i = self.standard_basis()[i]
+    x_j = self.standard_basis()[j]
+    x_k = self.standard_basis()[k]
 
     # Search for a line of multiplicity > d/3.
     for G, m in self._decompose:
@@ -679,7 +679,7 @@ class ProjectivePlaneCurve:
     if self.multiplicity(P) != 2:
       return False
 
-    tangent_lines = self.tangent_cone_at(P).get_lines()
+    tangent_lines = self.tangent_cone_at(P).line_components()
     if len(tangent_lines) > 1:
       return False
     P_tangent_line = tangent_lines[0][0]
@@ -797,11 +797,11 @@ class ProjectivePlaneCurve:
       4
 
     MATHEMATICAL INTERPRETATION:
-    The maximal multiplicity of the scheme defined by self.polynomial at
+    The maximal multiplicity of the scheme defined by self.defining_polynomial() at
     a rational point P is sought. This occurs either:
     (1) At a singular point P of the support (reduced subscheme).
     (2) At a generic (smooth) point P of an irreducible component of the support.
-        If self.polynomial = ... * factor_i^e_i * ..., the multiplicity of self
+        If self.defining_polynomial() = ... * factor_i^e_i * ..., the multiplicity of self
         at a generic point of the component defined by factor_i is e_i.
     The method computes the maximum over all such values.
     """
@@ -941,7 +941,7 @@ class ProjectivePlaneCurve:
     OUTPUT:
     A list of triples `(L, m, G)` where `L` is a line contained
     in `self` with multiplicity `m` such that either
-    0 < m <= self.degree() / 3 and self.polynomial = L^m * G
+    0 < m <= self.degree() / 3 and self.defining_polynomial() = L^m * G
     or
     G = None.
 
@@ -968,7 +968,7 @@ class ProjectivePlaneCurve:
     """
 
     L = []
-    polynomial_factors = list(self.polynomial.factor())
+    polynomial_factors = list(self.defining_polynomial().factor())
     for i, (factor, factor_multiplicity) in enumerate(polynomial_factors):
       if factor.degree() > 1:
         continue
@@ -1177,7 +1177,7 @@ class ProjectivePlaneCurve:
   @cached_property
   def _decompose(self):
     r"""
-    Return the factored form of self.polynomial.
+    Return the factored form of self.defining_polynomial().
 
     EXAMPLES:
       sage: R.<x0,x1,x2> = QQ[]
@@ -1188,7 +1188,7 @@ class ProjectivePlaneCurve:
       [(x0, 1), (x1, 2), (x0*x1 + x2^2, 1)]
     """
 
-    return list(self.polynomial.factor())
+    return list(self.defining_polynomial().factor())
 
 
   @cached_property
@@ -1258,7 +1258,7 @@ class PPC_TangentCone:
 
     # Convert to list
     P = list(P)
-    if projective_plane_curve.get_polynomial()(P) != 0:
+    if projective_plane_curve.defining_polynomial()(P) != 0:
       raise ValueError
 
     self.projective_plane_curve = projective_plane_curve
@@ -1278,7 +1278,7 @@ class PPC_TangentCone:
     return f"Tangent cone of {self.projective_plane_curve} at {self.normalized_point}"
 
 
-  def get_polynomial(self):
+  def defining_polynomial(self):
     r"""
     Return the defining polynomial of `self`.
 
@@ -1291,7 +1291,7 @@ class PPC_TangentCone:
       sage: P = [2,1,1]
       sage: C = PPC_TangentCone(X, P); C
       Tangent cone of Projective Plane Curve with defining polynomial -x^3 + 5*x^2*z + y^2*z - 8*x*z^2 - 2*y*z^2 + 5*z^3 at [2, 1, 1]
-      sage: h = C.get_polynomial(); h
+      sage: h = C.defining_polynomial(); h
       -x^2 + y^2
       sage: h.parent()
       Multivariate Polynomial Ring in x, y over Rational Field
@@ -1306,7 +1306,7 @@ class PPC_TangentCone:
       sage: P = [2,1,1]
       sage: C = PPC_TangentCone(X, P); C
       Tangent cone of Projective Plane Curve with defining polynomial -x^3 + 6*x^2*z + y^2*z - 12*x*z^2 - 2*y*z^2 + 9*z^3 at [2, 1, 1]
-      sage: h = C.get_polynomial(); h
+      sage: h = C.defining_polynomial(); h
       y^2
       sage: h.parent()
       Multivariate Polynomial Ring in x, y over Rational Field
@@ -1319,13 +1319,13 @@ class PPC_TangentCone:
       sage: P = [0,0,1]
       sage: C = PPC_TangentCone(X, P); C
       Tangent cone of Projective Plane Curve with defining polynomial -x^4 + y^2*z^2 at [0, 0, 1]
-      sage: h = C.get_polynomial(); h
+      sage: h = C.defining_polynomial(); h
       y^2
       sage: h.parent()
       Multivariate Polynomial Ring in x, y over Rational Field
     """
 
-    PPC_equation = self.projective_plane_curve.get_polynomial()
+    PPC_equation = self.projective_plane_curve.defining_polynomial()
     dehomogenization = [self.gen1, self.gen2]
     dehomogenization.insert(self.affine_patch, self.polynomial_ring(0))
     dehomogenization_translated = []
@@ -1363,7 +1363,7 @@ class PPC_TangentCone:
       (-x + y + z) * (x + y - 3*z)
       sage: h(x + 2, y + 1, 1)
       -x^2 + y^2
-      sage: C.get_polynomial()
+      sage: C.defining_polynomial()
       -x^2 + y^2
 
     A cuspidal cubic with cusp at (2:1:1).
@@ -1382,7 +1382,7 @@ class PPC_TangentCone:
       (y - z)^2
       sage: h(x + 2, y + 1, 1)
       y^2
-      sage: C.get_polynomial()
+      sage: C.defining_polynomial()
       y^2
 
     A quartic with tacnode at (0:0:1).
@@ -1397,16 +1397,16 @@ class PPC_TangentCone:
       y^2
       sage: h(P)
       0
-      sage: C.get_polynomial()
+      sage: C.defining_polynomial()
       y^2
 
     MATHEMATICAL INTERPRETATION:
     First, let
-      F = self.projective_plane_curve.get_polynomial(),
+      F = self.projective_plane_curve.defining_polynomial(),
       K = self.projective_plane_curve.base_ring(),
       P = self.normalized_point,
       j = self.affine_patch,
-      x_0, x_1, x_2 = self.projective_plane_curve.get_standard_basis().
+      x_0, x_1, x_2 = self.projective_plane_curve.standard_basis().
     Then P[j] = 1 and for all j < i <= 2 we have
       P[i] = 0.
     Further, we set y_0 = x_0, y_1 = x_1, y_2 = x_2, y_j = 1 and 
@@ -1435,7 +1435,7 @@ class PPC_TangentCone:
 
     T = _ult_line_transformation(self.base_ring, self.normalized_point)
     T_inverse = T.inverse()
-    F = self.projective_plane_curve.get_polynomial()
+    F = self.projective_plane_curve.defining_polynomial()
     f = _apply_matrix(T, F, self.affine_patch)
     f_homo_comp_dict = f.homogeneous_components()
     minimal_degree = min(f_homo_comp_dict.keys())
@@ -1444,7 +1444,7 @@ class PPC_TangentCone:
     return _apply_matrix(T.inverse(), tangent_cone_polynomial)
 
 
-  def get_lines(self):
+  def line_components(self):
     r"""
     Return linear factors of the defining polynomial of `self`.
 
@@ -1461,9 +1461,9 @@ class PPC_TangentCone:
       sage: P = [2,1,1]
       sage: C = PPC_TangentCone(X, P); C
       Tangent cone of Projective Plane Curve with defining polynomial -x^3 + 5*x^2*z + y^2*z - 8*x*z^2 - 2*y*z^2 + 5*z^3 at [2, 1, 1]
-      sage: C.get_lines()
+      sage: C.line_components()
       [(x - y, 1), (x + y, 1)]
-      sage: h = C.get_polynomial(); h
+      sage: h = C.defining_polynomial(); h
       -x^2 + y^2
       sage: h.factor()
       (-1) * (x - y) * (x + y)
@@ -1476,9 +1476,9 @@ class PPC_TangentCone:
       sage: P = [2,1,1]
       sage: C = PPC_TangentCone(X, P); C
       Tangent cone of Projective Plane Curve with defining polynomial -x^3 + 6*x^2*z + y^2*z - 12*x*z^2 - 2*y*z^2 + 9*z^3 at [2, 1, 1]
-      sage: C.get_lines()
+      sage: C.line_components()
       [(y, 2)]
-      sage: h = C.get_polynomial(); h
+      sage: h = C.defining_polynomial(); h
       y^2
 
     A quartic with tacnode at (0:0:1).
@@ -1489,14 +1489,14 @@ class PPC_TangentCone:
       sage: P = [0,0,1]
       sage: C = PPC_TangentCone(X, P); C
       Tangent cone of Projective Plane Curve with defining polynomial -x^4 + y^2*z^2 at [0, 0, 1]
-      sage: C.get_lines()
+      sage: C.line_components()
       [(y, 2)]
-      sage: h = C.get_polynomial(); h
+      sage: h = C.defining_polynomial(); h
       y^2
     """
 
     L = []
-    tangent_cone_polynomial = self.get_polynomial()
+    tangent_cone_polynomial = self.defining_polynomial()
     for factor, factor_multiplicity in list(tangent_cone_polynomial.factor()):
       if factor.degree() == 1:
         L.append((factor, factor_multiplicity))
@@ -1524,7 +1524,7 @@ class PPC_TangentCone:
       Tangent cone of Projective Plane Curve with defining polynomial -x^3 + 5*x^2*z + y^2*z - 8*x*z^2 - 2*y*z^2 + 5*z^3 at [2, 1, 1]
       sage: C.embedded_lines()
       [(-x + y + z, 1), (x + y - 3*z, 1)]
-      sage: C.get_lines()
+      sage: C.line_components()
       [(x - y, 1), (x + y, 1)]
 
     A cuspidal cubic with cusp at (2:1:1).
@@ -1537,7 +1537,7 @@ class PPC_TangentCone:
       Tangent cone of Projective Plane Curve with defining polynomial -x^3 + 6*x^2*z + y^2*z - 12*x*z^2 - 2*y*z^2 + 9*z^3 at [2, 1, 1]
       sage: C.embedded_lines()
       [(y - z, 2)]
-      sage: C.get_lines()
+      sage: C.line_components()
       [(y, 2)]
 
     A quartic with tacnode at (0:0:1).
@@ -1550,7 +1550,7 @@ class PPC_TangentCone:
       Tangent cone of Projective Plane Curve with defining polynomial -x^4 + y^2*z^2 at [0, 0, 1]
       sage: C.embedded_lines()
       [(y, 2)]
-      sage: C.get_lines()
+      sage: C.line_components()
       [(y, 2)]
     """
 
@@ -1790,9 +1790,9 @@ class ProjectiveFlag:
     First, let
       K = self.base_ring,
       T = self.flag_transformation(),
-      F = self.proj_plane_curve.get_polynomial().
+      F = self.proj_plane_curve.defining_polynomial().
     Furthermore, let
-      (x0, x1, x2) = self.proj_plane_curve.get_standard_basis()
+      (x0, x1, x2) = self.proj_plane_curve.standard_basis()
     and
       G = F((x0,x1,x2)*T),
     i.e.
@@ -1822,7 +1822,7 @@ class ProjectiveFlag:
       raise TypeError
 
     T = self.base_change_matrix()
-    F = projective_plane_curve.get_polynomial()
+    F = projective_plane_curve.defining_polynomial()
     G = _apply_matrix(T, F)
 
     MILP = MixedIntegerLinearProgram(solver='PPL')
@@ -1861,9 +1861,9 @@ class ProjectiveFlag:
     First, let
       K = self.base_ring,
       T = self.flag_transformation(),
-      F = self.proj_plane_curve.get_polynomial().
+      F = self.proj_plane_curve.defining_polynomial().
     Furthermore, let
-      (x0, x1, x2) = self.proj_plane_curve.get_standard_basis()
+      (x0, x1, x2) = self.proj_plane_curve.standard_basis()
     and
       G = F((x0,x1,x2)*T),
     i.e.
@@ -1892,7 +1892,7 @@ class ProjectiveFlag:
       raise TypeError
 
     T = self.base_change_matrix()
-    F = projective_plane_curve.get_polynomial()
+    F = projective_plane_curve.defining_polynomial()
     G = _apply_matrix(T, F)
 
     maximum_is_zero = False
