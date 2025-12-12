@@ -537,7 +537,7 @@ class GradedReduction:
     Return `False` if `self` has a graded instability
     and `True` otherwise.
     """
-    from ProjectivePlaneCurves import ProjectivePlaneCurve
+    from plane_curves import ProjectivePlaneCurve
     reduced_curve = ProjectivePlaneCurve(self.normalized_reduction_polynomial())
     return reduced_curve.is_semistable()
 
@@ -547,7 +547,7 @@ class GradedReduction:
     Return `False` of `self` has a graded semiinstability
     and `True` otherwise.
     """
-    from ProjectivePlaneCurves import ProjectivePlaneCurve
+    from plane_curves import ProjectivePlaneCurve
     reduced_curve = ProjectivePlaneCurve(self.normalized_reduction_polynomial())
     return reduced_curve.is_stable()
 
@@ -599,7 +599,7 @@ class GradedReduction:
     if len(self.normalized_weight_vector()) != 3:
       raise NotImplementedError
 
-    from ProjectivePlaneCurves import ProjectivePlaneCurve
+    from plane_curves import ProjectivePlaneCurve
     reduced_curve = ProjectivePlaneCurve(self.normalized_reduction_polynomial())
     instability = reduced_curve.instability()
     if instability is None:
@@ -624,7 +624,7 @@ class GradedReduction:
     if all(x not in ZZ for x in differences):
       return None
 
-    from ProjectivePlaneCurves import ProjectivePlaneCurve
+    from plane_curves import ProjectivePlaneCurve
     reduced_curve = ProjectivePlaneCurve(self.normalized_reduction_polynomial())
 
     if all(x in ZZ for x in differences):

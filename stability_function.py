@@ -12,7 +12,7 @@
 
 
 from sage.all import *
-from LinearValuations import LinearValuation
+from linear_valuations import LinearValuation
 
 
 
