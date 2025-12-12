@@ -14,12 +14,7 @@ EXAMPLES:
 
 
 from sage.all import QQ, PolynomialRing, matrix, Infinity, lcm
-
-# import sys
-# sys.path.insert(0, '/home/stefan/code/MCLF/mclf')   # parent of the package dir, not .../mclf
-# import mclf
-# from mclf.padic_extensions.padic_number_fields import pAdicNumberField
-# from mclf.padic_extensions.approximate_factorizations import approximate_factorization
+from approximate_factors import approximate_factorization
 
 
 def resolve_cusp(F, v_K):
@@ -155,7 +150,7 @@ def approximate_solution(G, v_K, prec):
     c, b, _ = G[0].parent().gens()
     f = G[2].univariate_polynomial()
     f = lcm(a.denominator() for a in f.coefficients()) * f
-    F = approximate_factorization(Kh, f)
+    F = approximate_factorization(f, v_K)
     print(f"approximate factorization of f={f}:")
     print(F)
     print()
@@ -165,44 +160,30 @@ def approximate_solution(G, v_K, prec):
     # have a good way to choose the right factor at this point. Therefore,
     # we try all factors until a good one is found. 
     for g in F:
-        print(f"We try the factor g={g.approximate_polynomial()}")
-        # L is the stem field of g
-        L = Kh.simple_extension(g.approximate_polynomial())
-        v_L = L.valuation()
-        # we find an approximate root of g over L
-        gL = g.base_change(L, ignore_linear_factors=False)
-        for h in gL:
-            if h.degree() == 1:
-                alpha = -h.approximate_polynomial()[0]
-                break
-        else:
-            raise ValueError("something is wrong: no root found")
-        # now alpha is an approximate root of g over L
-        # beta and gamma are polynomials in alpha
-        # if alpha, beta, gamma is not a sufficiently good solution,
-        # we have to improve the precision of alpha and repeat
         N = prec
         while True:
-            print(f"We try to find alpha, beta, gamma with precision {N}." )
-            beta = L.approximation(- G[1](c, b, alpha).univariate_polynomial()[0], N)
-            gamma = L.approximation(- G[0](c, b, alpha).univariate_polynomial()[0], N)
-            if all([v_L(G[i](gamma, beta, alpha)) > prec for i in range(3)]):
-                print(f"We found a solution with precision {N}")
-                # ok, alpha, beta, gamma are solutions up to the desired precision
-                # but we stil have to check whether they all have positive valuation
-                if v_L(alpha) > 0 and v_L(beta) > 0 and v_L(gamma) > 0:
-                    return v_L, alpha, beta, gamma
-                else:
-                    # we assume that we got the wrong factor g of f
-                    print(f"But v_L(alpha)={v_L(alpha)}, v_L(beta)={v_L(beta)}, v_L(gamma)={v_L(gamma)}")
-                    print
-                    break
+            print(f"We try the factor g={g.approximate_factor(N)} with precison {N}")
+            # L is the stem field of g
+            L = K.extension(g.approximate_factor(), "alpha")
+            alpha = L.gen()
+            v_L = v_K.extension(L)
+            beta = - G[1](c, b, alpha).univariate_polynomial()[0]
+            gamma = - G[0](c, b, alpha).univariate_polynomial()[0]
+            if all(v_L(H(gamma, beta, alpha)) >= prec for H in G):
+                # alpha, beta, gamma are solutions up to the desired precision
+                # we exit the while loop
+                break
             else:
-                # we improve the precision of alpha
-                N += 5
-                # this is bad, because ``approximate_root`` only works (for the moment)
-                # if f has coefficients in ZZ
-                alpha = L.approximate_root(f, alpha, N)
+                N = N + 5
+
+        # we still have to check whether they all have positive valuation
+        if v_L(alpha) > 0 and v_L(beta) > 0 and v_L(gamma) > 0:
+            return v_L, alpha, beta, gamma
+        else:
+            # we assume that we got the wrong factor g of f
+            print(f"But v_L(alpha)={v_L(alpha)}, v_L(beta)={v_L(beta)}, v_L(gamma)={v_L(gamma)}")
+            print()
+            
     # if we get here, we are unlucky
     raise ValueError("No solution found!")
         

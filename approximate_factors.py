@@ -208,6 +208,7 @@ class ApproximatePrimeFactor(ApproximateFactor):
         self._base_valuation = v_K
         # we check whether this factor is really irreducible
         # as a side effect, we compute the next improved approximation
+        # note that phi has the correct degree, but v.phi() may not 
         F = v.equivalence_decomposition(f, compute_unit=False)
         assert len(F) == 1 and F[0][1] == 1, "this factor is not irreducible"
         phi = F[0][0]
