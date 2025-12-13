@@ -33,9 +33,10 @@ def resolve_cusp(F, v_K):
 
     OUTPUT:
 
-    a pair `(v_L, T)`, where `v_L` is an extension of `v_K` to a finite field
-    extension `L/K` and `T` is an upper triangular`(3,3)`-matrix over `L`,
-    representing the base change to the plane model resolving the cusp `P`.
+    a tripel `(v_L, T, \bar{F})`, where `v_L` is an extension of `v_K` to a finite field
+    extension `L/K`, `T` is an upper triangular`(3,3)`-matrix over `L`,
+    representing the base change to the plane model resolving the cusp `P`, and
+    `\bar{F}` is a semistable cubic, the resulting one-tail.
 
     """
     # check validity of the input
@@ -67,6 +68,7 @@ def resolve_cusp(F, v_K):
     z0, x0, y0 = F0.variables()
     F0 = F0(z0, x0 + a*z0, y0 + b*z0 + c*x0)
 
+    # the system of equations in a,b,c we want to (approximately) solve
     if p == 2:
         A = F0[4, 0, 0]
         B = F0[3, 1, 0]
@@ -75,40 +77,47 @@ def resolve_cusp(F, v_K):
         A = F0[4, 0, 0]
         B = F0[3, 0, 1]
         C = F0[2, 1, 1]
-    print(f"A = {A}")
-    print(f"B = {B}")
-    print(f"C ={C}")
-    print()
+    # we want to find an approximate solution alpha, beta, gamma for
+    # A=B=C=0, with valuations at least v_a,v_b,v_c
     J = R.ideal([A, B, C])
     G = J.groebner_basis()
     assert len(G) == 3, "Unexpected Groebner basis length."
 
-    # only for testing:
-    return G
-
-    prec = 5
+    f = G[2].univariate_polynomial()
+    f_factors = approximate_factorization(f, v_K)
+    # f is a univariate equation for alpha
+    # we have to identify the correct factor of f, whose root alpha
+    # leads to a solution with alpha, beta, gamma of positive valuation
+    
+    for g in f_factors:
+        # We set an initial precision for such a solution which should be
+        # sufficient for testing this
+        # THIS IS EXPERIMENTAL AND HAS TO BE REPLACED BY A FAILSAFE METHOD LATER!
+        prec = 5
+        while True:
+            v_L, alpha, beta, gamma = _solve1(G, g, v_K, prec)
+            if all(v_L(H(gamma, beta, alpha)) >= prec for H in G):
+                # alpha, beta, gamma are solutions up to the desired precision
+                # we exit the while loop
+                break
+            else:
+                prec += 2
+        if v_L(alpha) > 0 and v_L(beta) > 0 and v_L(gamma) > 0:
+            # we have found the correct factor g
+            break
+    else:
+        # no factor was found
+        raise ValueError("no solution was found!")
+    
+    # now g is the correct factor of f, but its current precision may not
+    # be sufficient
+    z, x, y = F.variables()
     while True:
-        v_L, alpha, beta, gamma = approximate_solution(G, v_K, prec)
-        print(f"alpha = {alpha}, beta={beta}, gamma={gamma}")
-        print(f"prec = {prec}")
-        print(f"v_L(A)={v_L(A(gamma,beta,alpha))}")
-        print(f"v_L(B)={v_L(B(gamma,beta,alpha))}")
-        print(f"v_L(C)={v_L(C(gamma,beta,alpha))}")
-        print()
-        L = v_L.domain()
-        z, x, y = F.variables()
         F1 = F(z, alpha*z + x, beta*z + gamma*x + y)
-        print(f"F1 = {F1}")
-        V = matrix(QQ, d+1, d+1)
-        t = Infinity
-        for i in range(d+1):
-            for j in range(d-i+1):
-                if 2*i + 3*j < 6:
-                    V[i, j] = v_L(F1.coefficient([d-i-j, i, j]))
-                    s = V[i, j]/(6-2*i-3*j)
-                    if s < t:
-                        t = s
-        print(f"V = {V}")
+        # we compute the matrix V with entries v_L(coef of x^i*y^j)
+        # and the "minimal slope" t to check if F1 represents,
+        # after scaling, a resolution of the cusp
+        V, t = _valuation_matrix(F1, d, v_L)
         if p == 2:
             tests = [(0,0), (1,0), (2,0)]
         else:
@@ -117,73 +126,57 @@ def resolve_cusp(F, v_K):
             break
         else:
             prec += 5
-    # this is not what should be returned. L is in general not yet the correct extension;
-    # we may need to add ramification to have t in the value group. Then we also have to 
-    # do another transformation.
-    return v_L, F1, t
+            v_L, alpha, beta, gamma = _solve1(G, g, v_K, prec)
 
+    # we now have to extend L such that it contains an element Pi with
+    # valuation t; then the reduction of F_2:=F_1(Pi^2*x,Pi^3*y,z)
+    
+    if not t in v_L.value_group():
+        e = (t*v_L.value_group().denominator()).denominator()
+        # we have to replace L by an extension with ramification index e,
+        # and compute alpha, beta, gamma again
+        v_L, alpha, beta, gamma = _solve1(G, g, v_K, prec, E=e)
+    L = v_L.domain()
+    Pi = v_L.element_with_valuation(t)
+    F1 = F(z, alpha*z + x, beta*z + gamma*x + y)
+    F2 = F1(z, Pi**2*x, Pi**3*y)/Pi**6
+    F2b = F2.map_coefficients(v_L.reduce, v_L.residue_field())
+    Fb = [Gb for Gb, _ in F2b.factor() if Gb.degree() == 3][0]
+    T = matrix(L, 3, 3, [1, alpha, beta, 0, Pi**2, Pi**2*gamma, 0, 0, Pi**3])
+    return v_L, T, Fb
+    
 
-def approximate_solution(G, v_K, prec):
-    r""" Approximate solution of the system defined by G.
+def _solve1(G, g, v_K, prec, E=1):
+    r""" Return v_L, alpha, beta, gamma
 
-    INPUT:
-
-    - ``G`` -- a list of three polynomials in `K[a,b,c]`
-    - ``v_K`` -- a discrete valuation on `K`
-    - ``prec`` -- desired precision
-
-    We assume that `G=[g_1, g_2, g_3]` is a Groebner basis of an ideal
-    defining a zero-dimensional scheme over `K`, with respect to the lexicographic
-    order with `c > b > a`. We further assume that `g_3` is monic and univariate
-    in `a`, that `g_2` is monic of degree one in `b` with coefficients in `K[a]`,
-    and that `g_1` is monic of degree one in `c` with coefficients in `K[a]`.
-
-    OUTPUT:
-
-    a tuple `(v_L, \alpha, \beta, \gamma)`, where `v_L` is an extension of `v_K`
-    to a finite field extension `L/K` and `\alpha, \beta, \gamma` are elements
-    of `L` with positive valuation, satisfying the system defined by `G` up to
-    precision `prec`.
-
+    This is a helper function for `resolve_cusp`.
+    
     """
+    b, c, _ = G[0].parent().gens()
     K = v_K.domain()
-    c, b, _ = G[0].parent().gens()
-    f = G[2].univariate_polynomial()
-    f = lcm(a.denominator() for a in f.coefficients()) * f
-    F = approximate_factorization(f, v_K)
-    print(f"approximate factorization of f={f}:")
-    print(F)
-    print()
-
-    # we have to choose the *right* factor of f, so that the solutions
-    # alpha, beta, gamma have positive valuations. At the moment I don't
-    # have a good way to choose the right factor at this point. Therefore,
-    # we try all factors until a good one is found. 
-    for g in F:
-        N = prec
-        while True:
-            print(f"We try the factor g={g.approximate_factor(N)} with precison {N}")
-            # L is the stem field of g
-            L = K.extension(g.approximate_factor(), "alpha")
-            alpha = L.gen()
-            v_L = v_K.extension(L)
-            beta = - G[1](c, b, alpha).univariate_polynomial()[0]
-            gamma = - G[0](c, b, alpha).univariate_polynomial()[0]
-            if all(v_L(H(gamma, beta, alpha)) >= prec for H in G):
-                # alpha, beta, gamma are solutions up to the desired precision
-                # we exit the while loop
-                break
-            else:
-                N = N + 5
-
-        # we still have to check whether they all have positive valuation
-        if v_L(alpha) > 0 and v_L(beta) > 0 and v_L(gamma) > 0:
-            return v_L, alpha, beta, gamma
-        else:
-            # we assume that we got the wrong factor g of f
-            print(f"But v_L(alpha)={v_L(alpha)}, v_L(beta)={v_L(beta)}, v_L(gamma)={v_L(gamma)}")
-            print()
-            
-    # if we get here, we are unlucky
-    raise ValueError("No solution found!")
+    if E == 1:
+        L = K.extension(g.approximate_factor(prec), "alpha")
+        v_L = v_K.extension(L)
+        alpha = L.gen()
+    else:
+        S = PolynomialRing(K, "pi")
+        pi = S.gen()
+        L = K.extension([g.approximate_factor(prec), pi**E-v_K.p()], ["alpha", "pi"])
+        alpha, pi = L.gens()
+        v_L = v_K.extension(L)
+    beta = v_L.simplify(-G[1](c, b, alpha).univariate_polynomial()[0], prec)
+    gamma = v_L.simplify(-G[0](c, b, alpha).univariate_polynomial()[0], prec)
+    return v_L, alpha, beta, gamma 
         
+
+def _valuation_matrix(F1, d, v_L):
+    V = matrix(QQ, d+1, d+1)
+    t = Infinity
+    for i in range(d+1):
+        for j in range(d-i+1):
+            if 2*i + 3*j < 6:
+                V[i, j] = v_L(F1.coefficient([d-i-j, i, j]))
+                s = V[i, j]/(6-2*i-3*j)
+                if s < t:
+                    t = s
+    return V, t

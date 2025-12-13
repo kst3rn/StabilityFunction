@@ -72,7 +72,7 @@ def approximate_factorization(f, v_K, g0=None, assume_squarefree=False,
     to `v_K` are returned.
 
     """
-    assert v_K.domain() == f.base_ring(), "the domain of v_K must be the base ring of f"
+    f = f.change_ring(v_K.domain())
     assert f.degree() > 0, "f must be nonconstant"
     if not assume_squarefree:
         f = f.radical() 
