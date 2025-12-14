@@ -11,7 +11,6 @@
 
 
 from sage.all import *
-from plane_curves import ProjectivePlaneCurve
 from linear_valuations import LinearValuation
 from transformations import _apply_matrix
 
@@ -806,5 +805,5 @@ class BTB_Point:
     v = self.linear_valuation()
     pi_K = self.base_ring_valuation().uniformizer()
     G = _apply_matrix(T, F)
-    return ProjectivePlaneCurve(G / pi_K**v(G))
+    return G / pi_K**v(G)
 
