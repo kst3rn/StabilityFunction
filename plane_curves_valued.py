@@ -10,8 +10,8 @@
 # ****************************************************************************
 
 from plane_curves import ProjectivePlaneCurve
-from extension_search import find_base_ring_extension
-from stability_function import StabilityFunction
+from extension_search import find_semistable_model
+
 
 class PlaneCurveOverValuedField(ProjectivePlaneCurve):
   r"""
@@ -58,18 +58,8 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
     r"""
     Return...
     """
-    if self.degree() != 4:
-      raise NotImplementedError("At the moment, self must be a quartic.")
-
-    F = self.defining_polynomial()
-    R = F.parent()
-    K = find_base_ring_extension(F, self.base_ring_valuation(), 4)
-    v_K = K.valuation(2)
-    R_K = R.change_ring(K)
-    F_K = R_K(F)
-    phiK = StabilityFunction(F_K, v_K)
-    a, b = phiK.global_minimum()
-    return b.hypersurface_model(F)
+    X = find_semistable_model(self.defining_polynomial(), self.base_ring_valuation())
+    return X
 
 
 
