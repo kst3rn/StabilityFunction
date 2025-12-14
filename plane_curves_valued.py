@@ -103,5 +103,17 @@ class PlaneModel(ProjectivePlaneCurve):
 
 
   def special_fiber(self):
-    raise NotImplementedError
+    r"""
+    Return the special fiber of `self`.
+    """
+    v = self.point_on_BruhatTitsBuilding().linear_valuation()
+    return ProjectivePlaneCurve(v.reduction(self.defining_polynomial()))
+
+
+  def has_semistable_reduction(self):
+    r"""
+    Return `True` if the special fiber of `self` is
+    semistable and `False` otherwise.
+    """
+    return self.special_fiber().is_semistable()
 
