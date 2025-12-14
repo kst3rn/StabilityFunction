@@ -68,6 +68,10 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
       Plane Model of Projective Plane Curve with defining polynomial 16*x^4 + y^4 + 8*y^3*z + 16*x*y*z^2 + 4*x*z^3 over Rational Field with 2-adic valuation
       sage: X.base_ring()
       Number Field in piL with defining polynomial x^12 + 2*x^6 + 2
+      sage: X.has_semistable_reduction()
+      True
+      sage: X.special_fiber()
+      Projective Plane Curve with defining polynomial x^4 + x^2*y^2 + y*z^3 over Finite Field of size 2
       sage:
       sage: F = 4*x^4 + 4*x*y^3 + y^4 + 2*x*z^3 + 4*y*z^3 + z^4
       sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
@@ -75,6 +79,10 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
       Plane Model of Projective Plane Curve with defining polynomial 4*x^4 + 4*x*y^3 + y^4 + 2*x*z^3 + 4*y*z^3 + z^4 over Rational Field with 2-adic valuation
       sage: X.base_ring()
       Number Field in piK with defining polynomial x^4 + 2*x^3 + 2*x^2 + 2
+      sage: X.has_semistable_reduction()
+      True
+      sage: X.special_fiber()
+      Projective Plane Curve with defining polynomial x^4 + x^2*y^2 + x*y^3 + y^3*z + y^2*z^2 + y*z^3 over Finite Field of size 2
     """
     btb_point, F = find_semistable_model(self.defining_polynomial(), self.base_ring_valuation())
     return PlaneModel(F, self, btb_point)
