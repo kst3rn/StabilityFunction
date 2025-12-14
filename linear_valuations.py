@@ -328,6 +328,53 @@ class LinearValuation:
     return min(values)
 
 
+  def reduction(self, polynomial):
+    r"""
+    Return the reduction of `polynomial`.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: E = identity_matrix(QQ, 3)
+      sage: w = [0,0,0]
+      sage: v = LinearValuation(R, QQ.valuation(2), E, w)
+      sage: f = 2*x + 4*y + 6*z
+      sage: v.reduction(f)
+      0
+      sage: f = 2*x + 4*y + 5*z
+      sage: v.reduction(f)
+      z
+      sage:
+      sage: v = LinearValuation(R, QQ.valuation(5), E, w)
+      sage: f = 2*x + 4*y + 5*z
+      sage: v.reduction(f)
+      2*x - y
+      sage: v.reduction(2)
+      2
+      sage: v.reduction(5)
+      0
+    """
+    if any(self.weight_vector()):
+      raise TypeError(f"The weight vector {self.weight_vector()} is not zero")
+
+    k = self.base_valuation().residue_field()
+    if polynomial == 0:
+      return k(0)
+    else:
+      F = self.domain()(polynomial)
+
+    N = len(self.weight_vector())
+    R = self.domain().change_ring(k)
+    G = _apply_matrix(self.base_change_matrix(), F)
+    F_reduction = k(0)
+    for mult_index, G_coeff in G.dict().items():
+      if self.base_valuation()(G_coeff) > 0:
+        continue
+      term_reduction = self.base_valuation().reduce(G_coeff)
+      term_reduction *= prod(R.gen(i)**mult_index[i] for i in range(N))
+      F_reduction += term_reduction
+    return F_reduction
+
+
   def initial_form(self, f):
     r"""
     Return the initial form of `f` with respect to `self`.
