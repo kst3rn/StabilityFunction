@@ -7,13 +7,13 @@ EXAMPLES:
     sage: from cusp_resolution import resolve_cusp
     sage: R.<z,x,y> = PolynomialRing(QQ, ("z","x","y"))
     sage: v_2 = QQ.valuation(2)
-    sage: F = 2*z^4 + 2*x*y*z^2 - x^3*z + y^2*z^2 + x^4 + y^4
+    sage: F = 2*z**4 + 2*x*y*z**2 - x**3*z + y**2*z**2 + x**4 + y**4
     sage: resolve_cusp(F, v_2)
 
 """
 
 
-from sage.all import QQ, PolynomialRing, matrix, Infinity, lcm
+from sage.all import QQ, PolynomialRing, matrix, Infinity, randint, Curve
 from approximate_factors import approximate_factorization
 
 
@@ -88,21 +88,31 @@ def resolve_cusp(F, v_K):
     # f is a univariate equation for alpha
     # we have to identify the correct factor of f, whose root alpha
     # leads to a solution with alpha, beta, gamma of positive valuation
+
     
     for g in f_factors:
+        # print(f"We try the factor g = {g.approximate_factor()} of degree {g.degree()}")
+        # print()
         # We set an initial precision for such a solution which should be
         # sufficient for testing this
         # THIS IS EXPERIMENTAL AND HAS TO BE REPLACED BY A FAILSAFE METHOD LATER!
         prec = 5
+        N = 25  # N=20 was insufficient in one example
         while True:
             v_L, alpha, beta, gamma = _solve1(G, g, v_K, prec)
-            if all(v_L(H(gamma, beta, alpha)) >= prec for H in G):
+            # print(f"solution over {v_L.domain()} with precision {prec}")
+            M = min(v_L(H(gamma, beta, alpha)) for H in G)
+            # print(f"M = {M}")
+            # print()
+            if M >= N:
                 # alpha, beta, gamma are solutions up to the desired precision
                 # we exit the while loop
                 break
             else:
-                prec += 2
-        if v_L(alpha) > 0 and v_L(beta) > 0 and v_L(gamma) > 0:
+                prec += 5
+        V = [v_L(a) for a in [alpha, beta, gamma]]
+        # print(f"V = {V}")
+        if all(v > 0 for v in V):
             # we have found the correct factor g
             break
     else:
@@ -180,3 +190,88 @@ def _valuation_matrix(F1, d, v_L):
                 if s < t:
                     t = s
     return V, t
+
+# ------------------------------------------------------------------------------------------------------
+
+#                    Tests
+
+def random_padic_integer(v_K):
+    r""" Return a random element of the ring of integers.
+    
+    INPUT:
+
+    - ``v_K`` -- a p-adic valuation on a number field `K`
+
+    OUTPUT:
+
+    a random element of the ring of integers of `v_K`.
+
+    """
+    K = v_K.domain()
+    pi = v_K.uniformizer()
+    t = v_K(pi)
+    v_K = v_K/t
+    a = K.random_element()
+    if a == 0:
+        return a
+    m = randint(0, 2)
+    return a*pi**(-v_K(a) + m)
+
+
+def random_curve_with_cusp(v_K, d=4):
+    r""" Return a random plane curve with a cusp.
+    
+    INPUT:
+
+    - ``v_K`` -- a p-adic valuation on a number field `K`
+    - ``d`` -- an integer `\geq 3`
+
+    OUTPUT:
+
+    A form `F` of degree `d` over `K` in `z,x,y,` which represents
+    an plane integeral model of a smooth plane curve over `K`. The special
+    fiber has a cusp at `(1:0:0)` in normal form, i.e. with leading term
+    `y^2-x^3`.
+
+    """
+    K = v_K.domain()
+    R = PolynomialRing(K, ("z", "x", "y"))
+    z, x, y = R.gens()
+    pi = v_K.uniformizer()
+    while True:
+        F = R.zero()
+        for i in range(d + 1):
+            for j in range(d - i + 1):
+                if (i,j) == (0,2):
+                    F += y**2*z**(d-2)
+                elif (i,j) == (3,0):
+                    F += -x**3*z**(d-3)
+                elif 2*i+3*j < 6:
+                    F += pi*random_padic_integer(v_K)*x**i*y**j*z**(d-i-j)
+                else:
+                    F += random_padic_integer(v_K)*x**i*y**j*z**(d-i-j)
+        X = Curve(F)
+        if X.is_smooth():
+            return F
+
+
+def test_suite(v_K, N):
+    for _ in range(N):
+        F = random_curve_with_cusp(v_K)
+        print(f"F = {F}")
+        v_L, _, Fb = resolve_cusp(F, v_K)
+        print(f" L = {v_L.domain()}")
+        print(f"Fb = {Fb}")
+        print()
+
+
+
+# ---------------------------------------------------------------------------------
+
+#               problematic examples
+
+R = PolynomialRing(QQ, ("z","x","y"))
+z, x, y = R.gens()
+F = -2*z**4 + 2*z**3*x - 4/83*z**2*x**2 - z*x**3 + 2*z**3*y + 4/3*z*x**2*y - 2*x**3*y + z**2*y**2 + 2*x**2*y**2 - y**4
+
+F = -40*z**3*x - z*x**3 - 21/109*x**4 + 8/13*z**3*y + 8*z**2*x*y + 2*z*x**2*y + 2*x**3*y + z**2*y**2 + z*x*y**2 - 4/7*x**2*y**2 - 2/11*z*y**3 + 2*x*y**3
