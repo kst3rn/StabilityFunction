@@ -276,7 +276,7 @@ class LinearValuation:
     OUTPUT:
     - a rational number
 
-    MATHEMATICAL INTERPRETATION:
+    ..MATH::
     First, let
       K   = self.polynomial_ring.base_ring(),
       E_0 = (x_0,...,x_n) = self.polynomial_ring.gens(),
