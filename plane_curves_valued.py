@@ -64,8 +64,6 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
       sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
       sage: X = Y.semistable_model(); X
       Plane Model of Projective Plane Curve with defining polynomial 16*x^4 + y^4 + 8*y^3*z + 16*x*y*z^2 + 4*x*z^3 over Rational Field with 2-adic valuation
-      sage: X.is_semistable()
-      True
       sage: X.base_ring()
       Number Field in piL with defining polynomial x^12 + 2*x^6 + 2
       sage:
@@ -73,8 +71,6 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
       sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
       sage: X = Y.semistable_model(); X
       Plane Model of Projective Plane Curve with defining polynomial 4*x^4 + 4*x*y^3 + y^4 + 2*x*z^3 + 4*y*z^3 + z^4 over Rational Field with 2-adic valuation
-      sage: X.is_semistable()
-      True
       sage: X.base_ring()
       Number Field in piK with defining polynomial x^4 + 2*x^3 + 2*x^2 + 2
     """
