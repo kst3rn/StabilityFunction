@@ -9,7 +9,9 @@
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
 
+from sage.all import identity_matrix
 from plane_curves import ProjectivePlaneCurve
+from linear_valuations import LinearValuation
 from extension_search import find_semistable_model
 
 
@@ -106,7 +108,11 @@ class PlaneModel(ProjectivePlaneCurve):
     r"""
     Return the special fiber of `self`.
     """
-    v = self.point_on_BruhatTitsBuilding().linear_valuation()
+    F = self.defining_polynomial()
+    R = F.parent()
+    E = identity_matrix(R.base_ring(), R.ngens())
+    v_K = self.point_on_BruhatTitsBuilding().base_ring_valuation()
+    v = LinearValuation(R, v_K, E, [0]*R.ngens())
     return ProjectivePlaneCurve(v.reduction(self.defining_polynomial()))
 
 

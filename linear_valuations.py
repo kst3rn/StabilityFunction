@@ -313,10 +313,11 @@ class LinearValuation:
       v_{E,u}(F) = min( v_K(a_i) + <i,u> : i in I ).
     """
 
-    if f == 0:
+    F = self.domain()(f)
+    if F == 0:
       return +Infinity
-    else:
-      F = self.domain()(f)
+    elif F.is_constant():
+      return self.base_valuation()(f)
 
     N = self.domain_ngens()
     G = _apply_matrix(self.base_change_matrix(), F)
@@ -355,17 +356,19 @@ class LinearValuation:
     """
     if any(self.weight_vector()):
       raise TypeError(f"The weight vector {self.weight_vector()} is not zero")
+    if self(polynomial) < 0:
+      raise ValueError(f"{polynomial} has negative valuation")
 
     k = self.base_valuation().residue_field()
+    R = self.domain().change_ring(k)
     if polynomial == 0:
-      return k(0)
+      return R(0)
     else:
       F = self.domain()(polynomial)
 
     N = len(self.weight_vector())
-    R = self.domain().change_ring(k)
     G = _apply_matrix(self.base_change_matrix(), F)
-    F_reduction = k(0)
+    F_reduction = R(0)
     for mult_index, G_coeff in G.dict().items():
       if self.base_valuation()(G_coeff) > 0:
         continue

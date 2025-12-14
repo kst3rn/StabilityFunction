@@ -855,5 +855,6 @@ class BTB_Point:
     v = b.linear_valuation()
     pi_K = b.base_ring_valuation().uniformizer()
     G = _apply_matrix(T, F)
-    return G / pi_K**v(G)
+    normalized_exponent = v(F) / v(pi_K)
+    return G / pi_K**normalized_exponent
 
