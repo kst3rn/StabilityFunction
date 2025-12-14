@@ -774,6 +774,10 @@ class BTB_Point:
     return len(set(trans_norm_weight_vector)) - 1
 
 
+  def is_vertex(self):
+    return self.minimal_simplex_dimension() == 0
+
+
   def ramification_index(self):
     r"""
     Return minimal positive integer `r` such that all coordinates
@@ -792,6 +796,24 @@ class BTB_Point:
       66
     """
     return lcm(b.denominator() for b in self.weight_vector())    
+
+
+  def move_to_origin(self):
+    r"""
+    Return ...
+
+    ..MATH::
+    """
+    if not self.is_vertex():
+      raise ValueError(f"self is not a vertex")
+
+    g = self.base_ring_valuation().value_group().gen()
+    normalized_weight_vector = [a / g for a in self.weight_vector()]
+
+    D = diagonal_matrix(self.base_ring(), normalized_weight_vector)
+    return BTB_Point(self.base_ring_valuation(),
+                     D * self.base_change_matrix(),
+                     [QQ(0)] * len(self.weight_vector()))
 
 
   def hypersurface_model(self, F):
