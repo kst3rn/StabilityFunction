@@ -58,8 +58,8 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
     r"""
     Return...
     """
-    X = find_semistable_model(self.defining_polynomial(), self.base_ring_valuation())
-    return X
+    btb_point, F = find_semistable_model(self.defining_polynomial(), self.base_ring_valuation())
+    return PlaneModel(F, self, btb_point)
 
 
 
@@ -68,8 +68,12 @@ class PlaneModel(ProjectivePlaneCurve):
   Construct...
   """
 
-  def __init__(self, polynomial, generic_fiber, base_change_matrix):
+  def __init__(self, polynomial, generic_fiber, btb_point):
     super().__init__(polynomial)
     self._generic_fiber = generic_fiber
-    self._base_change_matrix = base_change_matrix
+    self._bruhat_tits_building_point = btb_point
+
+
+  def point_on_BruhatTitsBuilding(self):
+    return self._bruhat_tits_building_point
 

@@ -28,7 +28,7 @@ def find_semistable_model(homogeneous_form, base_ring_valuation):
   F_K = R_K(F)
   phiK = StabilityFunction(F_K, v_K)
   a, b = phiK.global_minimum()
-  return b.hypersurface_model(F)
+  return (b, b.hypersurface_model(F))
 
 
 def find_base_ring_extension(homogeneous_form, base_ring_valuation, ramification_index):
