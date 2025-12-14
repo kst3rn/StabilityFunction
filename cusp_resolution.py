@@ -13,7 +13,7 @@ EXAMPLES:
 """
 
 
-from sage.all import QQ, PolynomialRing, matrix, Infinity, randint, Curve
+from sage.all import QQ, NumberField, PolynomialRing, matrix, Infinity, randint, Curve, SR
 from approximate_factors import approximate_factorization
 
 
@@ -85,45 +85,29 @@ def resolve_cusp(F, v_K):
 
     f = G[2].univariate_polynomial()
     f_factors = approximate_factorization(f, v_K)
+    # print(f"f_factors = {f_factors}")
     # f is a univariate equation for alpha
     # we have to identify the correct factor of f, whose root alpha
     # leads to a solution with alpha, beta, gamma of positive valuation
 
-    # We need a better and more failsafe way to increase the precision. 
-    # There are two precision parameters to play with:
-    # 1. the precision of the approximate factors of f
-    # 2. the minimal required valuation of H(gamma,beta,alpha), which is
-    #    a measure how good alpha, beta, gamma solve the equations.
-    # We can arbitrarily increase the first parameter, and then the second
-    # will increase as well (not clear how fast).
-    # The problem is that we do not know beforehand which factor gives a
-    # valid solution; it seems that typically it is only one of two or three,
-    # no matter how much we increase the precision.
-    # A necessary condition for an approximate solution to be "valid" is that
-    # the valuations of alpha, beta, gamma are positive; a sufficient condion
-    # is that it is *stably positive*, i.e. remains positive when improving
-    #  the precision. It would be good if we had a test for this! 
+    # beta and gamma are polynomials in alpha; we find the minimal valuation
+    # m of the coefficients of these polynomials
+    m1 = min(v_K(c) for c in G[0].coefficients())
+    m2 = min(v_K(c) for c in G[1].coefficients())
+    m = min(m1, m2)
+    # print(m1, m2, m)
+    
+    # we have to compute alpha with a precision strictly greater than 
+    # max(0, -m); because then we can already guarantee whether the valuation
+    # of beta and gamma are positive
     
     for g in f_factors:
         # print(f"We try the factor g = {g.approximate_factor()} of degree {g.degree()}")
         # print()
-        # We set an initial precision for such a solution which should be
-        # sufficient for testing this
-        # THIS IS EXPERIMENTAL AND HAS TO BE REPLACED BY A FAILSAFE METHOD LATER!
-        prec = 5
-        N = 25  # N=20 was insufficient in one example
-        while True:
-            v_L, alpha, beta, gamma = _solve1(G, g, v_K, prec)
-            # print(f"solution over {v_L.domain()} with precision {prec}")
-            M = min(v_L(H(gamma, beta, alpha)) for H in G)
-            # print(f"M = {M}")
-            # print()
-            if M >= N:
-                # alpha, beta, gamma are solutions up to the desired precision
-                # we exit the while loop
-                break
-            else:
-                prec += 5
+        prec = max(0, -m) + 2
+        # print(f"precision = {prec}")
+        v_L, alpha, beta, gamma = _solve1(G, g, v_K, prec)
+        # print(f"solution over {v_L.domain()} with precision {prec}")
         V = [v_L(a) for a in [alpha, beta, gamma]]
         # print(f"V = {V}")
         if all(v > 0 for v in V):
@@ -185,8 +169,8 @@ def _solve1(G, g, v_K, prec, E=1):
     else:
         S = PolynomialRing(K, "pi")
         pi = S.gen()
-        L = K.extension([g.approximate_factor(prec), pi**E-v_K.p()], ["alpha", "pi"])
-        alpha, pi = L.gens()
+        L = NumberField([g.approximate_factor(prec), pi**E-v_K.p()], ["alpha", "pi"])
+        alpha, pi, *_ = L.gens()
         v_L = v_K.extension(L)
     beta = v_L.simplify(-G[1](c, b, alpha).univariate_polynomial()[0], prec)
     gamma = v_L.simplify(-G[0](c, b, alpha).univariate_polynomial()[0], prec)
@@ -194,7 +178,7 @@ def _solve1(G, g, v_K, prec, E=1):
         
 
 def _valuation_matrix(F1, d, v_L):
-    V = matrix(QQ, d+1, d+1)
+    V = matrix(SR, d+1, d+1)
     t = Infinity
     for i in range(d+1):
         for j in range(d-i+1):
@@ -202,7 +186,7 @@ def _valuation_matrix(F1, d, v_L):
                 V[i, j] = v_L(F1.coefficient([d-i-j, i, j]))
                 s = V[i, j]/(6-2*i-3*j)
                 if s < t:
-                    t = s
+                    t = QQ(s)
     return V, t
 
 # ------------------------------------------------------------------------------------------------------
@@ -277,15 +261,3 @@ def test_suite(v_K, N):
         print(f" L = {v_L.domain()}")
         print(f"Fb = {Fb}")
         print()
-
-
-
-# ---------------------------------------------------------------------------------
-
-#               problematic examples
-
-R = PolynomialRing(QQ, ("z","x","y"))
-z, x, y = R.gens()
-F = -2*z**4 + 2*z**3*x - 4/83*z**2*x**2 - z*x**3 + 2*z**3*y + 4/3*z*x**2*y - 2*x**3*y + z**2*y**2 + 2*x**2*y**2 - y**4
-
-F = -40*z**3*x - z*x**3 - 21/109*x**4 + 8/13*z**3*y + 8*z**2*x*y + 2*z*x**2*y + 2*x**3*y + z**2*y**2 + z*x*y**2 - 4/7*x**2*y**2 - 2/11*z*y**3 + 2*x*y**3

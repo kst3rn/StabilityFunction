@@ -222,7 +222,7 @@ class ApproximatePrimeFactor(ApproximateFactor):
         phi = F[0][0]
         self._degree = phi.degree()
         if phi.degree() == f.degree():
-            self._prec = Infinity
+            self._precision = Infinity
         else:
             R = f.parent()
             S = PolynomialRing(R, "T")
