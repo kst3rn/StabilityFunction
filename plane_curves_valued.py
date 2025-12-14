@@ -101,3 +101,7 @@ class PlaneModel(ProjectivePlaneCurve):
   def point_on_BruhatTitsBuilding(self):
     return self._bruhat_tits_building_point
 
+
+  def special_fiber(self):
+    raise NotImplementedError
+
