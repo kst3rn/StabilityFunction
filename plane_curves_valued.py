@@ -56,7 +56,16 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
 
   def semistable_model(self):
     r"""
-    Return...
+    Return a semistable model of `self`.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: F = 16*x^4 + y^4 + 8*y^3*z + 16*x*y*z^2 + 4*x*z^3
+      sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
+      sage: X = Y.semistable_model(); X
+      Plane Model of Projective Plane Curve with defining polynomial 16*x^4 + y^4 + 8*y^3*z + 16*x*y*z^2 + 4*x*z^3 over Rational Field with 2-adic valuation
+      sage: X.is_semistable()
+      True
     """
     btb_point, F = find_semistable_model(self.defining_polynomial(), self.base_ring_valuation())
     return PlaneModel(F, self, btb_point)
@@ -72,6 +81,14 @@ class PlaneModel(ProjectivePlaneCurve):
     super().__init__(polynomial)
     self._generic_fiber = generic_fiber
     self._bruhat_tits_building_point = btb_point
+
+
+  def __repr__(self):
+    return f"Plane Model of {self.generic_fiber()}"
+
+
+  def generic_fiber(self):
+    return self._generic_fiber
 
 
   def point_on_BruhatTitsBuilding(self):
