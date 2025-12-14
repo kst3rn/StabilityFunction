@@ -4,8 +4,32 @@ from stability_function import StabilityFunction
 from plane_curves import ProjectivePlaneCurve
 from parametric_optimization import minimum_as_valuative_function
 
-def _tree_search():
-  return None
+
+def find_semistable_model(homogeneous_form, base_ring_valuation):
+  r"""
+  Try to find a semistable model.
+  """
+  if not homogeneous_form.is_homogeneous():
+    raise ValueError(f"{homogeneous_form} is not homogeneous")
+  if homogeneous_form.base_ring() != base_ring_valuation.domain():
+    raise ValueError(f"The base ring of {homogeneous_form} is not {base_ring_valuation.domain()}")
+  if homogeneous_form.base_ring() is not QQ:
+    raise ValueError(f"The base ring must be {QQ}")
+  if base_ring_valuation.residue_field() is not GF(2):
+    raise ValueError(f"The residue field of {base_ring_valuation} is not {GF(2)}")
+  if homogeneous_form.degree() != 4:
+    raise NotImplementedError()
+
+  F = homogeneous_form
+  R = F.parent()
+  K = find_base_ring_extension(F, base_ring_valuation, 4)
+  v_K = K.valuation(2)
+  R_K = R.change_ring(K)
+  F_K = R_K(F)
+  phiK = StabilityFunction(F_K, v_K)
+  a, b = phiK.global_minimum()
+  return b.hypersurface_model(F)
+
 
 def find_base_ring_extension(homogeneous_form, base_ring_valuation, ramification_index):
   r"""
@@ -30,6 +54,8 @@ def find_base_ring_extension(homogeneous_form, base_ring_valuation, ramification
     Number Field in piL with defining polynomial x^16 + 2
   """
 
+  if not homogeneous_form.is_homogeneous():
+    raise ValueError(f"{homogeneous_form} is not homogeneous")
   if homogeneous_form.base_ring() != base_ring_valuation.domain():
     raise ValueError(f"The base ring of {homogeneous_form} is not {base_ring_valuation.domain()}")
   if homogeneous_form.base_ring() is not QQ:
