@@ -89,6 +89,20 @@ def resolve_cusp(F, v_K):
     # we have to identify the correct factor of f, whose root alpha
     # leads to a solution with alpha, beta, gamma of positive valuation
 
+    # We need a better and more failsafe way to increase the precision. 
+    # There are two precision parameters to play with:
+    # 1. the precision of the approximate factors of f
+    # 2. the minimal required valuation of H(gamma,beta,alpha), which is
+    #    a measure how good alpha, beta, gamma solve the equations.
+    # We can arbitrarily increase the first parameter, and then the second
+    # will increase as well (not clear how fast).
+    # The problem is that we do not know beforehand which factor gives a
+    # valid solution; it seems that typically it is only one of two or three,
+    # no matter how much we increase the precision.
+    # A necessary condition for an approximate solution to be "valid" is that
+    # the valuations of alpha, beta, gamma are positive; a sufficient condion
+    # is that it is *stably positive*, i.e. remains positive when improving
+    #  the precision. It would be good if we had a test for this! 
     
     for g in f_factors:
         # print(f"We try the factor g = {g.approximate_factor()} of degree {g.degree()}")

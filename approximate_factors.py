@@ -3,14 +3,14 @@ Approximate factors of polynomials over (fake) p-adic number fields
 ===================================================================
 
 Let `K` be a number field and `v_K` a nontrivial discrete valuation on `K`.
-Let `hat{K}` denote the completion of `K` with respect to `v_K`.
+Let `\hat{K}` denote the completion of `K` with respect to `v_K`.
 
 A polynomial `f\in K[x]` is called *strongly irreducible* if it is
-irreducible over `\hat{K}`. Given `f\in K[x]`, a *strong factor* of `f`
+irreducible over `\hat{K}`. Given `f\in K[x]`, a *strong prime factor* of `f`
 is a monic irreducible factor `g\in\hat{K}[x]` of `f`.
 
 This module provides functionality for computing arbitrarily precise
-approximations of all strongly irreducible factors of a given polynomial
+approximations of all strong prime factors of a given polynomial
 `f\in K[x]`. It uses, in an essential way, the theory of MacLane on
 inductive valuations which is already implemented in Sage.
 
@@ -25,7 +25,9 @@ polynomial `g\in K[x]` there exists a unique MacLane pseudovaluation `v_g`
 such that `v_g(g)=\infty`. This is a maximal element of `V_K`.
     
 A MacLane valuation `v` is called an *approximate factor* of `f` if there exists
-a strong factor `g` of `f` such that `v\leq v_g`
+a strong factor `g` of `f` such that `v\leq v_g`. It is called an 
+*approximate prime factor* if there is a unique such factor `g`.
+
 
 EXAMPLES:
 
@@ -45,7 +47,7 @@ EXAMPLES:
 
 """
 
-from sage.all import SageObject, GaussValuation, Infinity
+from sage.all import SageObject, GaussValuation, Infinity, PolynomialRing
 from sage.geometry.newton_polygon import NewtonPolygon
 
 
@@ -63,8 +65,8 @@ def approximate_factorization(f, v_K, g0=None, assume_squarefree=False,
 
     OUTPUT:
 
-    a list of the irreducible factors of `f` over the completion of `K` at `v_K`.
-    The irreducible factors are objects of the class :class:`ApproximateFactor`.
+    A list of the approximate prime factors of `f` with respect to `v_K`.
+    These are objects of the class :class:`ApproximatePrimeFactor`.
 
     If `g_0` is given, then only the factors approximated by `g_0` are returned. 
 
@@ -127,6 +129,12 @@ class ApproximateFactor(SageObject):
 
     def __repr__(self):
         return f"approximate factor of {self._polynomial()} of degree {self.degree()}"
+    
+    def base_valuation(self):
+        return self._base_valuation
+    
+    def base_field(self):
+        return self.base_valuation().domain()
     
     def polynomial(self):
         return self._polynomial
@@ -206,22 +214,39 @@ class ApproximatePrimeFactor(ApproximateFactor):
         self._polynomial = f
         self._valuation = v
         self._base_valuation = v_K
+        self._value = v(f.parent().gen())
+
         # we check whether this factor is really irreducible
-        # as a side effect, we compute the next improved approximation
-        # note that phi has the correct degree, but v.phi() may not 
         F = v.equivalence_decomposition(f, compute_unit=False)
         assert len(F) == 1 and F[0][1] == 1, "this factor is not irreducible"
         phi = F[0][0]
-        self._phi = phi
         self._degree = phi.degree()
         if phi.degree() == f.degree():
             self._prec = Infinity
         else:
-            self._prec = v(v.phi())
+            R = f.parent()
+            S = PolynomialRing(R, "T")
+            x = R.gen()
+            T = S.gen()
+            F = f(x+T)
+            self._F = [F[i] for i in range(phi.degree() + 1)]
+            # these two attributes have to updated after every improvement step,
+            # in this order:
+            self._v_g = v.augmentation(v.phi(), Infinity)
+            self._compute_precision()
 
     def __repr__(self):
         return f"approximate prime factor of {self._polynomial()} of degree {self.degree()}"
     
+    def _compute_precision(self):
+        r""" Compute and store the current precision of this approximate prime factor.
+        
+        The *precision* of this 
+        """
+        v_g = self._v_g
+        F = self._F
+        self._precision = max((v_g(F[0]) - v_g(F[i]))/i for i in range(1, self.degree() + 1))
+
     def polynomial(self):
         return self._polynomial
     
@@ -234,8 +259,28 @@ class ApproximatePrimeFactor(ApproximateFactor):
         """
         return self._degree
     
-    def prec(self):
-        return self._prec
+    def value(self):
+        r""" Return the value of this approximate prime factor.
+
+        The *value* of this approximate prime factor is defined as
+        `v(x)`, where `v` is the inductive valuation represeting it.
+        It is equal to the valuation of a root `\alpha` of this factor,
+        in a suitable extension of the completed base field.
+ 
+        """
+        return self._value
+    
+    def precision(self):
+        r""" Return the precision of this approximate prime factor.
+        
+        The *precision* of this approximate prime factor is the valuation
+        `v_L(\alpha-\alpha_0)`, where `\alpha` is a root of this factor,
+        and `\alpha_0` is a root of the current approximation, closest to
+        `\alpha`. So it measures the accurary with which the root `\alpha`
+        is 'known' by the current approximation. 
+        
+        """
+        return self._precision
     
     def improve_approximation(self):
         r""" Improve the approximation of the approximate prime factor.
@@ -244,17 +289,17 @@ class ApproximatePrimeFactor(ApproximateFactor):
         by the next better approximation given by one MacLane step.
         
         """
-        if self.prec() < Infinity: 
+        if self.precision() < Infinity: 
             v0 = self.valuation()
             f = self.polynomial()
-            phi = v0.equivalence_decomposition(f)[0][0]
-            f1, f0 = f.quo_rem(phi)
+            g = v0.equivalence_decomposition(f)[0][0]
+            f1, f0 = f.quo_rem(g)
             t = v0(f0) - v0(f1)
-            v1 = v0.augmentation(phi, t)
-            F = v1.equivalence_decomposition(f)
-            assert len(F) == 1 and F[0][1] == 1, "something is wrong"
+            v1 = v0.augmentation(g, t)
+            v_g = v0.augmentation(g, Infinity)
             self._valuation = v1
-            self._prec = t
+            self._v_g = v_g
+            self._compute_precision()
 
     def approximate_factor(self, prec=None):
         r""" Return the current approximation of this approximate prime factor.
@@ -273,6 +318,24 @@ class ApproximatePrimeFactor(ApproximateFactor):
         if prec is None:
             return self.valuation().phi()
         else:
-            while self._prec < prec:
+            while self.precision() < prec:
                 self.improve_approximation()
             return self.valuation().phi()
+        
+
+# ---------------------------------------------------------------------------------------
+
+#     Tests
+
+
+def test_precision(g):
+    v_K = g.base_valuation()
+    K = v_K.domain()
+    print(f"value = {g.value()}")
+    for _ in range(10):
+        g0 = g.approximate_factor()
+        print(f"g0 = {g0}")
+        print(f"v(g_0) = {g.valuation()(g0)}")
+        print(f"prec = {g.precision()}")
+        print()
+        g.improve_approximation()
