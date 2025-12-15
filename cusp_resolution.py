@@ -4,11 +4,29 @@ Resolution of cusps on plane models of plane curves.
 
 EXAMPLES:
 
-    sage: from cusp_resolution import resolve_cusp
     sage: R.<z,x,y> = PolynomialRing(QQ, ("z","x","y"))
     sage: v_2 = QQ.valuation(2)
     sage: F = 2*z**4 + 2*x*y*z**2 - x**3*z + y**2*z**2 + x**4 + y**4
-    sage: resolve_cusp(F, v_2)
+
+This form represents an integral plane model of a smooth quartic over `\QQ`,
+whose special fiber with respect to the `2`-adic valuation has a cusp in
+normal form in `(1:0:0)`. We can resolve this cusp as follows:
+
+    sage: v_L, T, Fb = resolve_cusp(F, v_2)
+
+Here `v_L` is the unique extension of `v_2` to a finite extension `L` of `K=\QQ`,
+
+    sage: v_L.domain()
+    Number Field in alpha with defining polynomial a^8 + 13464*a^7 + 21040*a^6 - 6832/5*a^5 + 93040*a^4 + 39360/43*a^3 + 2820928*a^2 - 10112/443*a - 10816/367
+
+and `T` is a base change matrix with entries in `L` representing a plane model
+whose special fiber consists of a semistable plane cubic in Weierstrass normal form,
+
+    sage: Fb
+    x^3 + z^2*y + z*y^2
+
+plus the line at infinity. Thus this cubic is the one-tail of the semistable model
+corresponding to the cusp.  
 
 """
 
@@ -178,6 +196,9 @@ def _solve1(G, g, v_K, prec, E=1):
         
 
 def _valuation_matrix(F1, d, v_L):
+    r"""
+    Another helper function.
+    """
     V = matrix(SR, d+1, d+1)
     t = Infinity
     for i in range(d+1):
