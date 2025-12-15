@@ -25,8 +25,13 @@ polynomial `g\in K[x]` there exists a unique MacLane pseudovaluation `v_g`
 such that `v_g(g)=\infty`. This is a maximal element of `V_K`.
     
 A MacLane valuation `v` is called an *approximate factor* of `f` if there exists
-a strong factor `g` of `f` such that `v\leq v_g`. It is called an 
-*approximate prime factor* if there is a unique such factor `g`.
+a strong prime factor `g` of `f` such that `v\leq v_g`. It is called an 
+*approximate prime factor* if there is a unique such factor `g`, and then it
+is called an *approximation* of `g`.
+
+In our implementation, a strong prime factor `g` of `f` is represented by one of
+its approximations. Such an approximation can be improved, using MacLane's method,
+and any sequence of improvements will converge towards the 'true' prime factor `g`.
 
 
 EXAMPLES:
@@ -38,12 +43,34 @@ EXAMPLES:
     [approximate prime factor of x^6 + 4*x + 1 of degree 2,
      approximate prime factor of x^6 + 4*x + 1 of degree 4]
     
-    sage: g1 = F[0]
-    sage: g1.approximate_factor()
+    sage: g = F[0]
+    sage: g.approximate_factor()
     x + 1
 
-    sage: g1.approximate_factor(5)
-    x^2 + 12*x - 15
+We see that the degree of the prime factor is not necessary equal
+to its first approximation. But it is after one improvement:
+
+    sage: g.improve_approximation()
+    sage: g.approximate_factor()
+    x^2 +1 
+
+You can also force the approximation to have a guaranteed 
+precision:
+
+    sage: g.approximate_factor(10)
+    x^2 - 28/11*x + 7/23
+
+The *precision* of this approximation beeing `\geq N` means that
+the valuation of the difference between a root of the approximation
+and the nearest root of the true prime factor is `\geq N`. This is
+of the same rough magnitude as the valuation of the approximation,
+but may not be equal to it: 
+
+    sage: g.precision()
+    21/2
+
+    sage: g.valuation()(g.approximate_factor())
+    23/2
 
 """
 
@@ -114,6 +141,14 @@ class ApproximateFactor(SageObject):
     OUTPUT:
 
     an object representing this approximate factor.
+
+    This is the base class for :class:`ApproximatePrimeFactor`. It is only used
+    in the process of finding the factorization of an irreducible polynomial
+    into its strong prime factors, as approximations of factors which may not
+    be prime.
+
+    The method :meth:`mac_lane_step`, produces an improved approximation, which
+    may consists of several approximate factors. 
       
     """
     def __init__(self, f, v):
@@ -248,9 +283,13 @@ class ApproximatePrimeFactor(ApproximateFactor):
         self._precision = max((v_g(F[0]) - v_g(F[i]))/i for i in range(1, self.degree() + 1))
 
     def polynomial(self):
+        r""" Return the irreducible polynomial of which this is aan approximate prime factor.
+        """
         return self._polynomial
     
     def valuation(self):
+        r""" Return the inductive valuation underlying this approximate prime factor.
+        """
         return self._valuation
     
     def degree(self):
@@ -329,8 +368,6 @@ class ApproximatePrimeFactor(ApproximateFactor):
 
 
 def test_precision(g):
-    v_K = g.base_valuation()
-    K = v_K.domain()
     print(f"value = {g.value()}")
     for _ in range(10):
         g0 = g.approximate_factor()
