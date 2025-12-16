@@ -774,6 +774,10 @@ class BTB_Point:
     return len(set(trans_norm_weight_vector)) - 1
 
 
+  def is_vertex(self):
+    return self.minimal_simplex_dimension() == 0
+
+
   def ramification_index(self):
     r"""
     Return minimal positive integer `r` such that all coordinates
@@ -794,6 +798,51 @@ class BTB_Point:
     return lcm(b.denominator() for b in self.weight_vector())    
 
 
+  def move_to_origin(self):
+    r"""
+    Return ...
+
+    EXAMPLES::
+      sage: w = [0, 1, 2]
+      sage: E = identity_matrix(QQ, 3)
+      sage: b = BTB_Point(QQ.valuation(2), E, w)
+      sage: b_new = b.move_to_origin()
+      sage: b_new.weight_vector()
+      [0, 0, 0]
+      sage: b_new.base_change_matrix()
+      [1 0 0]
+      [0 2 0]
+      [0 0 4]
+      sage:
+      sage: w = [0, 1, 3]
+      sage: T = matrix(QQ, [[1,0,0],[2,1,0],[5,0,1]]); T
+      [1 0 0]
+      [2 1 0]
+      [5 0 1]
+      sage: b = BTB_Point(QQ.valuation(2), T, w)
+      sage: b_new = b.move_to_origin()
+      sage: b_new.weight_vector()
+      [0, 0, 0]
+      sage: b_new.base_change_matrix()
+      [ 1  0  0]
+      [ 4  2  0]
+      [40  0  8]
+    ..MATH::
+    """
+    if not self.is_vertex():
+      raise ValueError(f"self is not a vertex")
+
+    g = self.base_ring_valuation().value_group().gen()
+    normalized_weight_vector = [a / g for a in self.weight_vector()]
+    pi_K = self.base_ring_valuation().uniformizer()
+    pi_K_powers = [pi_K**a for a in normalized_weight_vector]
+
+    D = diagonal_matrix(self.base_ring(), pi_K_powers)
+    return BTB_Point(self.base_ring_valuation(),
+                     D * self.base_change_matrix(),
+                     [QQ(0)] * len(self.weight_vector()))
+
+
   def hypersurface_model(self, F):
     r"""
     Retrun the hypersurface model of `F` corresponding to `self`.
@@ -801,9 +850,11 @@ class BTB_Point:
     if self.minimal_simplex_dimension() != 0:
       raise TypeError(f"{self} is not a vertex")
 
-    T = self.base_change_matrix()
-    v = self.linear_valuation()
-    pi_K = self.base_ring_valuation().uniformizer()
+    b = self.move_to_origin()
+    T = b.base_change_matrix()
+    v = b.linear_valuation()
+    pi_K = b.base_ring_valuation().uniformizer()
     G = _apply_matrix(T, F)
-    return G / pi_K**v(G)
+    normalized_exponent = v(F) / v(pi_K)
+    return G / pi_K**normalized_exponent
 

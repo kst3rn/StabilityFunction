@@ -9,7 +9,9 @@
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
 
+from sage.all import identity_matrix
 from plane_curves import ProjectivePlaneCurve
+from linear_valuations import LinearValuation
 from extension_search import find_semistable_model
 
 
@@ -64,8 +66,23 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
       sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
       sage: X = Y.semistable_model(); X
       Plane Model of Projective Plane Curve with defining polynomial 16*x^4 + y^4 + 8*y^3*z + 16*x*y*z^2 + 4*x*z^3 over Rational Field with 2-adic valuation
-      sage: X.is_semistable()
+      sage: X.base_ring()
+      Number Field in piL with defining polynomial x^12 + 2*x^6 + 2
+      sage: X.has_semistable_reduction()
       True
+      sage: X.special_fiber()
+      Projective Plane Curve with defining polynomial x^4 + x^2*y^2 + y*z^3 over Finite Field of size 2
+      sage:
+      sage: F = 4*x^4 + 4*x*y^3 + y^4 + 2*x*z^3 + 4*y*z^3 + z^4
+      sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
+      sage: X = Y.semistable_model(); X
+      Plane Model of Projective Plane Curve with defining polynomial 4*x^4 + 4*x*y^3 + y^4 + 2*x*z^3 + 4*y*z^3 + z^4 over Rational Field with 2-adic valuation
+      sage: X.base_ring()
+      Number Field in piK with defining polynomial x^4 + 2*x^3 + 2*x^2 + 2
+      sage: X.has_semistable_reduction()
+      True
+      sage: X.special_fiber()
+      Projective Plane Curve with defining polynomial x^4 + x^2*y^2 + x*y^3 + y^3*z + y^2*z^2 + y*z^3 over Finite Field of size 2
     """
     btb_point, F = find_semistable_model(self.defining_polynomial(), self.base_ring_valuation())
     return PlaneModel(F, self, btb_point)
@@ -93,4 +110,24 @@ class PlaneModel(ProjectivePlaneCurve):
 
   def point_on_BruhatTitsBuilding(self):
     return self._bruhat_tits_building_point
+
+
+  def special_fiber(self):
+    r"""
+    Return the special fiber of `self`.
+    """
+    F = self.defining_polynomial()
+    R = F.parent()
+    E = identity_matrix(R.base_ring(), R.ngens())
+    v_K = self.point_on_BruhatTitsBuilding().base_ring_valuation()
+    v = LinearValuation(R, v_K, E, [0]*R.ngens())
+    return ProjectivePlaneCurve(v.reduction(self.defining_polynomial()))
+
+
+  def has_semistable_reduction(self):
+    r"""
+    Return `True` if the special fiber of `self` is
+    semistable and `False` otherwise.
+    """
+    return self.special_fiber().is_semistable()
 

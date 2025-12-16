@@ -680,7 +680,7 @@ class ProjectivePlaneCurve:
     if self.multiplicity(P) != 2:
       return False
 
-    tangent_lines = self.tangent_cone_at(P).line_components()
+    tangent_lines = self.tangent_cone_at(P).embedded_lines()
     if len(tangent_lines) > 1:
       return False
     P_tangent_line = tangent_lines[0][0]
