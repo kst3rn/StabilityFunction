@@ -4,22 +4,35 @@ Resolution of cusps on plane models of plane curves.
 
 EXAMPLES:
 
-    sage: from cusp_resolution import resolve_cusps
     sage: R.<z,x,y> = PolynomialRing(QQ, ("z","x","y"))
     sage: v_2 = QQ.valuation(2)
-    sage: F = 2*z^4 + 2*x*y*z^2 - x^3*z + y^2*z^2 + x^4 + y^4
-    sage: resolve_cusp(F, v_2)
+    sage: F = 2*z**4 + 2*x*y*z**2 - x**3*z + y**2*z**2 + x**4 + y**4
+
+This form represents an integral plane model of a smooth quartic over `\QQ`,
+whose special fiber with respect to the `2`-adic valuation has a cusp in
+normal form in `(1:0:0)`. We can resolve this cusp as follows:
+
+    sage: v_L, T, Fb = resolve_cusp(F, v_2)
+
+Here `v_L` is the unique extension of `v_2` to a finite extension `L` of `K=\QQ`,
+
+    sage: v_L.domain()
+    Number Field in alpha with defining polynomial a^8 + 13464*a^7 + 21040*a^6 - 6832/5*a^5 + 93040*a^4 + 39360/43*a^3 + 2820928*a^2 - 10112/443*a - 10816/367
+
+and `T` is a base change matrix with entries in `L` representing a plane model
+whose special fiber consists of a semistable plane cubic in Weierstrass normal form,
+
+    sage: Fb
+    x^3 + z^2*y + z*y^2
+
+plus the line at infinity. Thus this cubic is the one-tail of the semistable model
+corresponding to the cusp.  
 
 """
 
 
-from sage.all import QQ, PolynomialRing, matrix, Infinity, lcm
-
-import sys
-sys.path.insert(0, '/home/stefan/code/MCLF/mclf')   # parent of the package dir, not .../mclf
-import mclf
-from mclf.padic_extensions.padic_number_fields import pAdicNumberField
-from mclf.padic_extensions.approximate_factorizations import approximate_factorization
+from sage.all import QQ, NumberField, PolynomialRing, matrix, Infinity, randint, Curve, SR
+from approximate_factors import approximate_factorization
 
 
 def resolve_cusp(F, v_K):
@@ -27,23 +40,24 @@ def resolve_cusp(F, v_K):
 
     INPUT:
 
-    - ``F`` -- a trivariat form of degree `3` over a field `K`
+    - ``F`` -- a trivariat form of degree `\geq 3` over a field `K`
     - ``v_K`` -- a nontrivial discrete valuation on `K`
 
-    It is assumed that `F` that
-    - `F` defines a smmoth quartic curve `X`,
+    It is assumed that 
+    - `F` defines a smooth quartic curve `X`,
     - `F` is integral and primitive with respect to `v_K`, so that it defines
       an integral model `\mathcal{X}` of `X`, and
     - the special fiber has a cusp in normal form at the point `P=(1:0:0)`.
 
     OUTPUT:
 
-    a pair `(v_L, T)`, where `v_L` is an extension of `v_K` to a finite field
-    extension `L/K` and `T` is an upper triangular`(3,3)`-matrix over `L`,
-    representing the base change to the plane model resolving the cusp `P`.
+    a tripel `(v_L, T, \bar{F})`, where `v_L` is an extension of `v_K` to a finite field
+    extension `L/K`, `T` is an upper triangular`(3,3)`-matrix over `L`,
+    representing the base change to the plane model resolving the cusp `P`, and
+    `\bar{F}` is a semistable cubic, the resulting one-tail.
 
     """
-    # check validity of the input (to do)
+    # check validity of the input
     assert v_K.is_discrete_valuation()
     K = v_K.domain()
     F = F.change_ring(K)
@@ -72,6 +86,7 @@ def resolve_cusp(F, v_K):
     z0, x0, y0 = F0.variables()
     F0 = F0(z0, x0 + a*z0, y0 + b*z0 + c*x0)
 
+    # the system of equations in a,b,c we want to (approximately) solve
     if p == 2:
         A = F0[4, 0, 0]
         B = F0[3, 1, 0]
@@ -80,37 +95,55 @@ def resolve_cusp(F, v_K):
         A = F0[4, 0, 0]
         B = F0[3, 0, 1]
         C = F0[2, 1, 1]
-    print(f"A = {A}")
-    print(f"B = {B}")
-    print(f"C ={C}")
-    print()
+    # we want to find an approximate solution alpha, beta, gamma for
+    # A=B=C=0, with valuations at least v_a,v_b,v_c
     J = R.ideal([A, B, C])
     G = J.groebner_basis()
     assert len(G) == 3, "Unexpected Groebner basis length."
 
-    prec = 5
+    f = G[2].univariate_polynomial()
+    f_factors = approximate_factorization(f, v_K)
+    # print(f"f_factors = {f_factors}")
+    # f is a univariate equation for alpha
+    # we have to identify the correct factor of f, whose root alpha
+    # leads to a solution with alpha, beta, gamma of positive valuation
+
+    # beta and gamma are polynomials in alpha; we find the minimal valuation
+    # m of the coefficients of these polynomials
+    m1 = min(v_K(c) for c in G[0].coefficients())
+    m2 = min(v_K(c) for c in G[1].coefficients())
+    m = min(m1, m2)
+    # print(m1, m2, m)
+    
+    # we have to compute alpha with a precision strictly greater than 
+    # max(0, -m); because then we can already guarantee whether the valuation
+    # of beta and gamma are positive
+    
+    for g in f_factors:
+        # print(f"We try the factor g = {g.approximate_factor()} of degree {g.degree()}")
+        # print()
+        prec = max(0, -m) + 2
+        # print(f"precision = {prec}")
+        v_L, alpha, beta, gamma = _solve1(G, g, v_K, prec)
+        # print(f"solution over {v_L.domain()} with precision {prec}")
+        V = [v_L(a) for a in [alpha, beta, gamma]]
+        # print(f"V = {V}")
+        if all(v > 0 for v in V):
+            # we have found the correct factor g
+            break
+    else:
+        # no factor was found
+        raise ValueError("no solution was found!")
+    
+    # now g is the correct factor of f, but its current precision may not
+    # be sufficient
+    z, x, y = F.variables()
     while True:
-        v_L, alpha, beta, gamma = approximate_solution(G, v_K, prec)
-        print(f"alpha = {alpha}, beta={beta}, gamma={gamma}")
-        print(f"prec = {prec}")
-        print(f"v_L(A)={v_L(A(gamma,beta,alpha))}")
-        print(f"v_L(B)={v_L(B(gamma,beta,alpha))}")
-        print(f"v_L(C)={v_L(C(gamma,beta,alpha))}")
-        print()
-        L = v_L.domain()
-        z, x, y = F.variables()
         F1 = F(z, alpha*z + x, beta*z + gamma*x + y)
-        print(f"F1 = {F1}")
-        V = matrix(QQ, d+1, d+1)
-        t = Infinity
-        for i in range(d+1):
-            for j in range(d-i+1):
-                if 2*i + 3*j < 6:
-                    V[i, j] = v_L(F1.coefficient([d-i-j, i, j]))
-                    s = V[i, j]/(6-2*i-3*j)
-                    if s < t:
-                        t = s
-        print(f"V = {V}")
+        # we compute the matrix V with entries v_L(coef of x^i*y^j)
+        # and the "minimal slope" t to check if F1 represents,
+        # after scaling, a resolution of the cusp
+        V, t = _valuation_matrix(F1, d, v_L)
         if p == 2:
             tests = [(0,0), (1,0), (2,0)]
         else:
@@ -119,85 +152,133 @@ def resolve_cusp(F, v_K):
             break
         else:
             prec += 5
-    return v_L, F1, t
+            v_L, alpha, beta, gamma = _solve1(G, g, v_K, prec)
 
+    # we now have to extend L such that it contains an element Pi with
+    # valuation t; then the reduction of F_2:=F_1(Pi^2*x,Pi^3*y,z)
+    
+    if not t in v_L.value_group():
+        e = (t*v_L.value_group().denominator()).denominator()
+        # we have to replace L by an extension with ramification index e,
+        # and compute alpha, beta, gamma again
+        v_L, alpha, beta, gamma = _solve1(G, g, v_K, prec, E=e)
+    L = v_L.domain()
+    Pi = v_L.element_with_valuation(t)
+    F1 = F(z, alpha*z + x, beta*z + gamma*x + y)
+    F2 = F1(z, Pi**2*x, Pi**3*y)/Pi**6
+    F2b = F2.map_coefficients(v_L.reduce, v_L.residue_field())
+    Fb = [Gb for Gb, _ in F2b.factor() if Gb.degree() == 3][0]
+    T = matrix(L, 3, 3, [1, alpha, beta, 0, Pi**2, Pi**2*gamma, 0, 0, Pi**3])
+    return v_L, T, Fb
+    
 
-def approximate_solution(G, v_K, prec):
-    r""" Approximate solution of the system defined by G.
+def _solve1(G, g, v_K, prec, E=1):
+    r""" Return v_L, alpha, beta, gamma
 
+    This is a helper function for `resolve_cusp`.
+    
+    """
+    b, c, _ = G[0].parent().gens()
+    K = v_K.domain()
+    if E == 1:
+        L = K.extension(g.approximate_factor(prec), "alpha")
+        v_L = v_K.extension(L)
+        alpha = L.gen()
+    else:
+        S = PolynomialRing(K, "pi")
+        pi = S.gen()
+        L = NumberField([g.approximate_factor(prec), pi**E-v_K.p()], ["alpha", "pi"])
+        alpha, pi, *_ = L.gens()
+        v_L = v_K.extension(L)
+    beta = v_L.simplify(-G[1](c, b, alpha).univariate_polynomial()[0], prec)
+    gamma = v_L.simplify(-G[0](c, b, alpha).univariate_polynomial()[0], prec)
+    return v_L, alpha, beta, gamma 
+        
+
+def _valuation_matrix(F1, d, v_L):
+    r"""
+    Another helper function.
+    """
+    V = matrix(SR, d+1, d+1)
+    t = Infinity
+    for i in range(d+1):
+        for j in range(d-i+1):
+            if 2*i + 3*j < 6:
+                V[i, j] = v_L(F1.coefficient([d-i-j, i, j]))
+                s = V[i, j]/(6-2*i-3*j)
+                if s < t:
+                    t = QQ(s)
+    return V, t
+
+# ------------------------------------------------------------------------------------------------------
+
+#                    Tests
+
+def random_padic_integer(v_K):
+    r""" Return a random element of the ring of integers.
+    
     INPUT:
 
-    - ``G`` -- a list of three polynomials in `K[a,b,c]`
-    - ``v_K`` -- a discrete valuation on `K`
-    - ``prec`` -- desired precision
-
-    We assume that `G=[g_1, g_2, g_3]` is a Groebner basis of an ideal
-    defining a zero-dimensional scheme over `K`, with respect to the lexicographic
-    order with `c > b > a`. We further assume that `g_3` is monic and univariate
-    in `a`, that `g_2` is monic of degree one in `b` with coefficients in `K[a]`,
-    and that `g_1` is monic of degree one in `c` with coefficients in `K[a]`.
+    - ``v_K`` -- a p-adic valuation on a number field `K`
 
     OUTPUT:
 
-    a tuple `(v_L, \alpha, \beta, \gamma)`, where `v_L` is an extension of `v_K`
-    to a finite field extension `L/K` and `\alpha, \beta, \gamma` are elements
-    of `L` with positive valuation, satisfying the system defined by `G` up to
-    precision `prec`.
+    a random element of the ring of integers of `v_K`.
 
     """
     K = v_K.domain()
-    Kh = pAdicNumberField(K, v_K)
-    c, b, a = G[0].parent().gens()
-    f = G[2].univariate_polynomial()
-    f = lcm(a.denominator() for a in f.coefficients()) * f
-    F = approximate_factorization(Kh, f)
-    print(f"approximate factorization of f={f}:")
-    print(F)
-    print()
+    pi = v_K.uniformizer()
+    t = v_K(pi)
+    v_K = v_K/t
+    a = K.random_element()
+    if a == 0:
+        return a
+    m = randint(0, 2)
+    return a*pi**(-v_K(a) + m)
 
-    # we have to choose the *right* factor of f, so that the solutions
-    # alpha, beta, gamma have positive valuations. At the moment I don't
-    # have a good way to choose the right factor at this point. Therefore,
-    # we try all factors until a good one is found. 
-    for g in F:
-        print(f"We try the factor g={g.approximate_polynomial()}")
-        # L is the stem field of g
-        L = Kh.simple_extension(g.approximate_polynomial())
-        v_L = L.valuation()
-        # we find an approximate root of g over L
-        gL = g.base_change(L, ignore_linear_factors=False)
-        for h in gL:
-            if h.degree() == 1:
-                alpha = -h.approximate_polynomial()[0]
-                break
-        else:
-            raise ValueError("something is wrong: no root found")
-        # now alpha is an approximate root of g over L
-        # beta and gamma are polynomials in alpha
-        # if alpha, beta, gamma is not a sufficiently good solution,
-        # we have to improve the precision of alpha and repeat
-        N = prec
-        while True:
-            print(f"We try to find alpha, beta, gamma with precision {N}." )
-            beta = L.approximation(- G[1](c, b, alpha).univariate_polynomial()[0], N)
-            gamma = L.approximation(- G[0](c, b, alpha).univariate_polynomial()[0], N)
-            if all([v_L(G[i](gamma, beta, alpha)) > prec for i in range(3)]):
-                print(f"We found a solution with precision {N}")
-                # ok, alpha, beta, gamma are solutions up to the desired precision
-                # but we stil have to check whether they all have positive valuation
-                if v_L(alpha) > 0 and v_L(beta) > 0 and v_L(gamma) > 0:
-                    return v_L, alpha, beta, gamma
+
+def random_curve_with_cusp(v_K, d=4):
+    r""" Return a random plane curve with a cusp.
+    
+    INPUT:
+
+    - ``v_K`` -- a p-adic valuation on a number field `K`
+    - ``d`` -- an integer `\geq 3`
+
+    OUTPUT:
+
+    A form `F` of degree `d` over `K` in `z,x,y,` which represents
+    an plane integeral model of a smooth plane curve over `K`. The special
+    fiber has a cusp at `(1:0:0)` in normal form, i.e. with leading term
+    `y^2-x^3`.
+
+    """
+    K = v_K.domain()
+    R = PolynomialRing(K, ("z", "x", "y"))
+    z, x, y = R.gens()
+    pi = v_K.uniformizer()
+    while True:
+        F = R.zero()
+        for i in range(d + 1):
+            for j in range(d - i + 1):
+                if (i,j) == (0,2):
+                    F += y**2*z**(d-2)
+                elif (i,j) == (3,0):
+                    F += -x**3*z**(d-3)
+                elif 2*i+3*j < 6:
+                    F += pi*random_padic_integer(v_K)*x**i*y**j*z**(d-i-j)
                 else:
-                    # we assume that we got the wrong factor g of f
-                    print(f"But v_L(alpha)={v_L(alpha)}, v_L(beta)={v_L(beta)}, v_L(gamma)={v_L(gamma)}")
-                    print
-                    break
-            else:
-                # we improve the precision of alpha
-                N += 5
-                # this is bad, because ``approximate_root`` only works (for the moment)
-                # if f has coefficients in ZZ
-                alpha = L.approximate_root(f, alpha, N)
-    # if we get here, we are unlucky
-    raise ValueError("No solution found!")
-        
+                    F += random_padic_integer(v_K)*x**i*y**j*z**(d-i-j)
+        X = Curve(F)
+        if X.is_smooth():
+            return F
+
+
+def test_suite(v_K, N):
+    for _ in range(N):
+        F = random_curve_with_cusp(v_K)
+        print(f"F = {F}")
+        v_L, _, Fb = resolve_cusp(F, v_K)
+        print(f" L = {v_L.domain()}")
+        print(f"Fb = {Fb}")
+        print()
