@@ -10,8 +10,8 @@
 # ****************************************************************************
 
 from sage.all import identity_matrix
-from plane_curves import ProjectivePlaneCurve
-from linear_valuations import LinearValuation
+from curves import ProjectivePlaneCurve
+from valuations import LinearValuation
 
 
 class PlaneCurveOverValuedField(ProjectivePlaneCurve):
@@ -83,7 +83,7 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
       sage: X.special_fiber()
       Projective Plane Curve with defining polynomial x^4 + x^2*y^2 + x*y^3 + y^3*z + y^2*z^2 + y*z^3 over Finite Field of size 2
     """
-    from extension_search import find_semistable_model
+    from stability import find_semistable_model
     btb_point, F = find_semistable_model(self.defining_polynomial(), self.base_ring_valuation())
     return PlaneModel(F, self, btb_point)
 
