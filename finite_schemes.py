@@ -1,22 +1,22 @@
 from sage.all import GF, lcm
 
 
-def _rationalizator_over_GF(J):
+def _split_closed_points_over_GF(J):
   r"""
   Return the minimal extension of the base field of `J` making
-  all closed points of V(J) rational.
+  all closed points of the scheme V(J) rational.
 
   INPUT:
-  - ``J`` -- an ideal of dimension zero in K[x,y].
+  - ``J`` -- an ideal in K[x,y] of dimension zero.
 
   OUTPUT:
   A finite field extension of K making all closed points
-  of the variety defined by J rational.
+  of the variety defined by `J` rational.
 
   EXAMPLES::
     sage: R.<x,y> = GF(2)[]
     sage: J = R.ideal(x^2 + x + 1, y^2 + y + 1)
-    sage: L = _rationalizator_over_GF(J); L
+    sage: L = _split_closed_points_over_GF(J); L
     Finite Field in z2 of size 2^2
     sage: RL = R.change_ring(L)
     sage: JL = J.change_ring(RL)
@@ -30,7 +30,7 @@ def _rationalizator_over_GF(J):
     Ideal (y + z2, x + (z2 + 1)) of Multivariate Polynomial Ring in x, y over Finite Field in z2 of size 2^2]
     sage: 
     sage: J = R.ideal(x^3 + x + 1, y + x)
-    sage: L = _rationalizator_over_GF(J); L
+    sage: L = _split_closed_points_over_GF(J); L
     Finite Field in z3 of size 2^3
     sage: RL = R.change_ring(L)
     sage: JL = J.change_ring(RL)
