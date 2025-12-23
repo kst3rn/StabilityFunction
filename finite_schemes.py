@@ -85,15 +85,8 @@ class FiniteProjectiveScheme:
 
   def splitting_field(self):
     r"""
-    Return the minimal extension of the base field of `J` making
-    all closed points of the scheme V(J) rational.
-
-    INPUT:
-    - ``J`` -- an ideal in K[x,y] of dimension zero.
-
-    OUTPUT:
-    A finite field extension of K making all closed points
-    of the variety defined by `J` rational.
+    Return the minimal extension of the base field
+    of `self` making all closed points rational.
 
     EXAMPLES::
       sage: R.<x,y,z> = GF(2)[]
