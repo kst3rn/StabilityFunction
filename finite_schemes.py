@@ -1,7 +1,7 @@
 from sage.all import GF, lcm
 
 
-class FiniteProjectiveScheme:
+class FiniteScheme:
   r"""
   Construct a finite scheme to the following conditions.
 
@@ -15,6 +15,12 @@ class FiniteProjectiveScheme:
 
     INPUT:
     - ``defining_ideal`` -- homogeneous ideal in K[x_0, x_1, x_2].
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: J = R.ideal([x^3 + x*z^2 + z^3, x + y])
+      sage: X = FiniteScheme(J); X
+      Finite Scheme V₊(x^3 + x*z^2 + z^3, x + y) over Rational Field
     """
     if not defining_ideal.dimension() - 1 == 0:
       raise ValueError(f"{defining_ideal} does not define a projective scheme of dimension 0.")
@@ -22,7 +28,7 @@ class FiniteProjectiveScheme:
 
 
   def __repr__(self):
-    return f"Finite Projective Scheme with defining ideal {self.defining_ideal()}"
+    return f"Finite Scheme V\u208A{tuple(self.defining_ideal().gens())} over {self.base_ring()}"
 
 
   def defining_ideal(self):
@@ -39,20 +45,16 @@ class FiniteProjectiveScheme:
 
     EXAMPLES::
       sage: R.<x,y,z> = GF(2)[]
-      sage: J = R.ideal([x^3 + x*z^2 + z^3, x*z^2 + y*z^2])
-      sage: X = FiniteProjectiveScheme(J)
-      sage: 
-      sage: R.<x,y,z> = GF(2)[]
-      sage: J = R.ideal([x^3 + x*z^2 + z^3, x*z^2 + y*z^2])
-      sage: X = FiniteProjectiveScheme(J); X
-      Finite Projective Scheme with defining ideal Ideal (x^3 + x*z^2 + z^3, x*z^2 + y*z^2) of Multivariate Polynomial Ring in x, y, z over Finite Field of size 2
+      sage: J = R.ideal([x^3 + x*z^2 + z^3, x + y])
+      sage: X = FiniteScheme(J); X
+      Finite Scheme V₊(x^3 + x*z^2 + z^3, x + y) over Finite Field of size 2
       sage: X.base_change(GF(2^3))
-      Finite Projective Scheme with defining ideal Ideal (x^3 + x*z^2 + z^3, x*z^2 + y*z^2) of Multivariate Polynomial Ring in x, y, z over Finite Field in z3 of size 2^3
+      Finite Scheme V₊(x^3 + x*z^2 + z^3, x + y) over Finite Field in z3 of size 2^3
     """
     R = self.defining_ideal().ring()
     R_L = R.change_ring(L)
     J_L = self.defining_ideal().change_ring(R_L)
-    return FiniteProjectiveScheme(J_L)
+    return FiniteScheme(J_L)
 
 
   def closed_points(self, defining_ideals=True):
@@ -62,25 +64,25 @@ class FiniteProjectiveScheme:
     EXAMPLES::
       sage: R.<x,y,z> = QQ[]
       sage: J = R.ideal([x^2 + y*z + z^2, y^2 + y*z + z^2])
-      sage: X = FiniteProjectiveScheme(J)
+      sage: X = FiniteScheme(J)
       sage: X.closed_points()
-      [Ideal (y^2 + y*z + z^2, x - y) of Multivariate Polynomial Ring in x, y, z over Rational Field,
-      Ideal (y^2 + y*z + z^2, x + y) of Multivariate Polynomial Ring in x, y, z over Rational Field]
+      [Ideal (y^2 + y*z + z^2, x + y) of Multivariate Polynomial Ring in x, y, z over Rational Field,
+      Ideal (y^2 + y*z + z^2, x - y) of Multivariate Polynomial Ring in x, y, z over Rational Field]
       sage: X.closed_points(defining_ideals=False)
-      [Finite Projective Scheme with defining ideal Ideal (y^2 + y*z + z^2, x - y) of Multivariate Polynomial Ring in x, y, z over Rational Field,
-      Finite Projective Scheme with defining ideal Ideal (y^2 + y*z + z^2, x + y) of Multivariate Polynomial Ring in x, y, z over Rational Field]
+      [Finite Scheme V₊(y^2 + y*z + z^2, x - y) over Rational Field,
+      Finite Scheme V₊(y^2 + y*z + z^2, x + y) over Rational Field]
 
       sage: R.<x,y,z> = GF(2)[]
       sage: J = R.ideal([x^3 + x*z^2 + z^3, x*z^2 + y*z^2])
-      sage: X = FiniteProjectiveScheme(J)
-      sage: X.closed_points()
-      [Ideal (z, x) of Multivariate Polynomial Ring in x, y, z over Finite Field of size 2,
-      Ideal (y^3 + y*z^2 + z^3, x + y) of Multivariate Polynomial Ring in x, y, z over Finite Field of size 2]
+      sage: X = FiniteScheme(J)
+      sage: X.closed_points(defining_ideals=False)
+      [Finite Scheme V₊(z, x) over Finite Field of size 2,
+      Finite Scheme V₊(y^3 + y*z^2 + z^3, x + y) over Finite Field of size 2]
     """
     ideals = self.defining_ideal().minimal_associated_primes()
     if defining_ideals:
       return ideals
-    return [FiniteProjectiveScheme(I) for I in ideals]
+    return [FiniteScheme(I) for I in ideals]
 
 
   def splitting_field(self):
@@ -91,41 +93,41 @@ class FiniteProjectiveScheme:
     EXAMPLES::
       sage: R.<x,y,z> = GF(2)[]
       sage: J = R.ideal([x^3 + x*z^2 + z^3, x*z^2 + y*z^2])
-      sage: X = FiniteProjectiveScheme(J)
+      sage: X = FiniteScheme(J)
       sage: L = X.splitting_field(); L
       Finite Field in z3 of size 2^3
       sage: X_L = X.base_change(L)
-      sage: X_L.closed_points()
-      [Ideal (z, x) of Multivariate Polynomial Ring in x, y, z over Finite Field in z3 of size 2^3,
-      Ideal (y + (z3^2 + z3)*z, x + (z3^2 + z3)*z) of Multivariate Polynomial Ring in x, y, z over Finite Field in z3 of size 2^3,
-      Ideal (y + (z3^2)*z, x + (z3^2)*z) of Multivariate Polynomial Ring in x, y, z over Finite Field in z3 of size 2^3,
-      Ideal (y + z3*z, x + z3*z) of Multivariate Polynomial Ring in x, y, z over Finite Field in z3 of size 2^3]
-      sage: X.closed_points()
-      [Ideal (z, x) of Multivariate Polynomial Ring in x, y, z over Finite Field of size 2,
-      Ideal (y^3 + y*z^2 + z^3, x + y) of Multivariate Polynomial Ring in x, y, z over Finite Field of size 2]
+      sage: X_L.closed_points(defining_ideals=False)
+      [Finite Scheme V₊(z, x) over Finite Field in z3 of size 2^3,
+      Finite Scheme V₊(y + (z3^2 + z3)*z, x + (z3^2 + z3)*z) over Finite Field in z3 of size 2^3,
+      Finite Scheme V₊(y + (z3^2)*z, x + (z3^2)*z) over Finite Field in z3 of size 2^3,
+      Finite Scheme V₊(y + z3*z, x + z3*z) over Finite Field in z3 of size 2^3]
+      sage: X.closed_points(defining_ideals=False)
+      [Finite Scheme V₊(z, x) over Finite Field of size 2,
+      Finite Scheme V₊(y^3 + y*z^2 + z^3, x + y) over Finite Field of size 2]
       sage:
       sage: J = R.ideal([x^3 + x*z^2 + z^3, x + y])
-      sage: X = FiniteProjectiveScheme(J)
+      sage: X = FiniteScheme(J)
       sage: L = X.splitting_field(); L
       Finite Field in z3 of size 2^3
       sage: X_L = X.base_change(L)
-      sage: X_L.closed_points()
-      [Ideal (x + y, (z3 + 1)*y + z) of Multivariate Polynomial Ring in x, y, z over Finite Field in z3 of size 2^3,
-      Ideal (x + y, (z3^2 + 1)*y + z) of Multivariate Polynomial Ring in x, y, z over Finite Field in z3 of size 2^3,
-      Ideal (x + y, (z3^2 + z3 + 1)*y + z) of Multivariate Polynomial Ring in x, y, z over Finite Field in z3 of size 2^3]
-      sage: X.closed_points()
-      [Ideal (y^3 + y*z^2 + z^3, x + y) of Multivariate Polynomial Ring in x, y, z over Finite Field of size 2]
+      sage: X_L.closed_points(defining_ideals=False)
+      [Finite Scheme V₊(x + y, (z3 + 1)*y + z) over Finite Field in z3 of size 2^3,
+      Finite Scheme V₊(x + y, (z3^2 + 1)*y + z) over Finite Field in z3 of size 2^3,
+      Finite Scheme V₊(x + y, (z3^2 + z3 + 1)*y + z) over Finite Field in z3 of size 2^3]
+      sage: X.closed_points(defining_ideals=False)
+      [Finite Scheme V₊(y^3 + y*z^2 + z^3, x + y) over Finite Field of size 2]
       sage:
       sage: J = R.ideal([x^2 + y*z + z^2, y^2 + y*z + z^2])
-      sage: X = FiniteProjectiveScheme(J)
+      sage: X = FiniteScheme(J)
       sage: L = X.splitting_field(); L
       Finite Field in z2 of size 2^2
       sage: X_L = X.base_change(L)
-      sage: X_L.closed_points()
-      [Ideal (y + (z2 + 1)*z, x + (z2 + 1)*z) of Multivariate Polynomial Ring in x, y, z over Finite Field in z2 of size 2^2,
-      Ideal (y + z2*z, x + z2*z) of Multivariate Polynomial Ring in x, y, z over Finite Field in z2 of size 2^2]
-      sage: X.closed_points()
-      [Ideal (y^2 + y*z + z^2, x + y) of Multivariate Polynomial Ring in x, y, z over Finite Field of size 2]
+      sage: X_L.closed_points(defining_ideals=False)
+      [Finite Scheme V₊(y + (z2 + 1)*z, x + (z2 + 1)*z) over Finite Field in z2 of size 2^2,
+      Finite Scheme V₊(y + z2*z, x + z2*z) over Finite Field in z2 of size 2^2]
+      sage: X.closed_points(defining_ideals=False)
+      [Finite Scheme V₊(y^2 + y*z + z^2, x + y) over Finite Field of size 2]
     """
     if not (self.base_ring().is_field() and self.base_ring().is_finite()):
       raise NotImplementedError(f"{self.base_ring()} is not a finite field.")
