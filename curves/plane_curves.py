@@ -13,6 +13,7 @@
 from functools import cached_property
 from functools import cache
 from sage.all import *
+from finite_schemes import FiniteScheme
 from geometry_utils import _apply_matrix, _ult_line_transformation, _uut_line_transformation, _ult_plane_transformation, _uut_plane_transformation, _ult_flag_transformation, _uut_flag_transformation, _move_point_and_line_to_001_and_x0, _normalize_by_last_nonzero_entry
 
 
@@ -83,6 +84,59 @@ class ProjectivePlaneCurve:
     new_poly = phi(self.defining_polynomial())
 
     return ProjectivePlaneCurve(new_poly)
+
+
+  def fano_scheme(self):
+    r"""
+    Return the Fano scheme of lines in `self`.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = GF(2)[]
+      sage: f = x * (x + y + z)
+      sage: X = ProjectivePlaneCurve(f)
+      sage: F1X = X.fano_scheme(); F1X
+      Finite Scheme V₊(u1*u2 + u2^2, u0*u2 + u2^2, u1^2 + u1*u2, u0*u1 + u0*u2, u0*u1 + u1^2) over Finite Field of size 2
+      sage: F1X.closed_points(defining_ideals=False)
+      [Finite Scheme V₊(u2, u1) over Finite Field of size 2,
+      Finite Scheme V₊(u1 + u2, u0 + u2) over Finite Field of size 2]
+      sage: F1X.splitting_field()
+      Finite Field of size 2
+
+      We can detect hidden line components of `self`.
+      sage: f = x^2 + y^2 + z^2 + x*y + x*z + y*z
+      sage: X = ProjectivePlaneCurve(f)
+      sage: len(X.irreducible_components())
+      1
+      sage: F1X = X.fano_scheme()
+      sage: F1X.closed_points(defining_ideals=False)
+      [Finite Scheme V₊(u1^2 + u1*u2 + u2^2, u0 + u1 + u2) over Finite Field of size 2]
+      sage: L = F1X.splitting_field();
+      Finite Field in z2 of size 2^2
+      sage: F1X_L = F1X.base_change(L)
+      sage: F1X_L.closed_points(defining_ideals=False)
+      [Finite Scheme V₊(u1 + (z2 + 1)*u2, u0 + z2*u2) over Finite Field in z2 of size 2^2,
+      Finite Scheme V₊(u1 + z2*u2, u0 + (z2 + 1)*u2) over Finite Field in z2 of size 2^2]
+      sage: X_L = X.base_change(L)
+      sage: X_L.irreducible_components()
+      [Projective Plane Curve with defining polynomial (z2 + 1)*x + z2*y + z over Finite Field in z2 of size 2^2,
+      Projective Plane Curve with defining polynomial z2*x + (z2 + 1)*y + z over Finite Field in z2 of size 2^2]
+    """
+    F = self.defining_polynomial()
+
+    # Create the dual ring K[u0,u1,u2].
+    Ru = PolynomialRing(self.base_ring(), names='u0,u1,u2')
+    u0, u1, u2 = Ru.gens()
+
+    # Create K[u0,u1,u2][x0,x1,x2].
+    Rx = F.parent().change_ring(Ru)
+    x0,x1,x2 = Rx.gens()
+
+    # Substitute x -> u \times x and extract coefficients.
+    cross_prod = [u1*x2 - u2*x1,
+                  u2*x0 - u0*x2,
+                  u0*x1 - u1*x0]
+    G = F(cross_prod)
+    return FiniteScheme(Ru.ideal(G.coefficients()))
 
 
   def tangent_cone_at(self, P):
