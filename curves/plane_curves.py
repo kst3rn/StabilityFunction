@@ -139,6 +139,36 @@ class ProjectivePlaneCurve:
     return FiniteScheme(Ru.ideal(G.coefficients()))
 
 
+  def splitting_field_of_line_components(self):
+    r"""
+    Return the minimal field extension of the base field
+    of `self` where all line components of the base change
+    of `self` to an algebraic closure are defined.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = GF(2)[]
+      sage: f = x * (x + y + z)
+      sage: X = ProjectivePlaneCurve(f)
+      sage: L = X.splitting_field_of_line_components(); L
+      Finite Field of size 2
+      sage: X.irreducible_components()
+      [Projective Plane Curve with defining polynomial x over Finite Field of size 2,
+      Projective Plane Curve with defining polynomial x + y + z over Finite Field of size 2]
+
+      sage: f = x^2 + y^2 + z^2 + x*y + x*z + y*z
+      sage: X = ProjectivePlaneCurve(f)
+      sage: len(X.irreducible_components())
+      1
+      sage: L = X.splitting_field_of_line_components(); L
+      Finite Field in z2 of size 2^2
+      sage: X_L = X.base_change(L)
+      sage: X_L.irreducible_components()
+      [Projective Plane Curve with defining polynomial (z2 + 1)*x + z2*y + z over Finite Field in z2 of size 2^2,
+      Projective Plane Curve with defining polynomial z2*x + (z2 + 1)*y + z over Finite Field in z2 of size 2^2]
+    """
+    return self.fano_scheme().splitting_field()
+
+
   def tangent_cone_at(self, P):
     r"""
     Return the tangent cone of self at the point `P`.
