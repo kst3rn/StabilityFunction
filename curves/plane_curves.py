@@ -214,6 +214,21 @@ class ProjectivePlaneCurve:
     return FiniteScheme(J).splitting_field()
 
 
+  def stability_field(self):
+    r"""
+    Return a field extension of the base field of `self` where
+    at least one semiinstability is defined if there exists a
+    semiinstability over the algebraic closure of the base field.
+    """
+    if not (self.base_ring().is_field() and self.base_ring().is_finite()):
+      raise NotImplementedError(f"{self.base_ring()} is not a finite field.")
+
+    d1 = self.splitting_field_of_line_components().degree()
+    d2 = self.splitting_field_of_singular_points().degree()
+    p = self.base_ring().characteristic()
+    return GF(p**lcm(d1,d2))
+
+
   def tangent_cone_at(self, P):
     r"""
     Return the tangent cone of self at the point `P`.
@@ -689,6 +704,14 @@ class ProjectivePlaneCurve:
 
     return [ProjectivePlaneCurve(factor)
             for factor, multiplicity in self._decompose]
+
+
+  def line_components(self):
+    r"""
+    Return the line components of `self`.
+    """
+    return [ProjectivePlaneCurve(factor) for factor, m in self._decompose
+            if factor.degree() == 1]
 
 
   def nonreduced_components(self):
