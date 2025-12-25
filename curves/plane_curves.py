@@ -219,6 +219,18 @@ class ProjectivePlaneCurve:
     Return a field extension of the base field of `self` where
     at least one semiinstability is defined if there exists a
     semiinstability over the algebraic closure of the base field.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = GF(2)[]
+      sage: f = (x*y + z^2) * (x^2 + x*y + y^2)
+      sage: X = ProjectivePlaneCurve(f)
+      sage: L = X.stability_field(); L
+      Finite Field in z2 of size 2^2
+      sage: X_L = X.base_change(L)
+      sage: X_L.rational_semiinstability()
+      Projective flag given by [z2, z2 + 1, 1] and z2*x + y
+      sage: X.rational_semiinstability()
+      None
     """
     if not (self.base_ring().is_field() and self.base_ring().is_finite()):
       raise NotImplementedError(f"{self.base_ring()} is not a finite field.")
@@ -474,27 +486,86 @@ class ProjectivePlaneCurve:
       if m == self.degree() / 2 and G.degree() == 2:
         return False
 
+    # Base change to the field where at least one
+    # semiinstability become rational.
+    L = self.stability_field()
+    X_L = self.base_change(L)
+
     # Search for a line of multiplicity d/3.
-    if self.degree() % 3 == 0:
-      for Y, m in self._decompose:
-        if Y.degree() == 1 and m == self.degree() / 3:
+    if X_L.degree() % 3 == 0:
+      for Y, m in X_L._decompose:
+        if Y.degree() == 1 and m == X_L.degree() / 3:
           return False
 
     # Search for point of multiplicity 2d/3 or a point
     # of multiplicity d/3 < m <= 2d/3 and a line in the
     # tangent cone of multiplicity >= m/2.
-    X_red_sing = self._reduced_singular_points
-    for P in X_red_sing:
-      m = self.multiplicity(P)
-      if m == 2 * self.degree() / 3:
+    for P in X_L._reduced_singular_points:
+      m = X_L.multiplicity(P)
+      if m == 2 * X_L.degree() / 3:
         return False
-      elif m > self.degree() / 3:
-        for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
+      elif m > X_L.degree() / 3:
+        for L, L_mult in PPC_TangentCone(X_L, P).embedded_lines():
           if L_mult >= m / 2:
-            if ProjectiveFlag(self.base_ring(), P, L).is_semiunstable(self):
+            if ProjectiveFlag(X_L.base_ring(), P, L).is_semiunstable(X_L):
               return False
 
     return True
+
+
+  def rational_semiinstability(self):
+    r"""
+    Return a semiinstability defined over the base field
+    of `self` if it exists.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: f = z^2*y - x^3
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.rational_semiinstability()
+      Projective flag given by [0, 1, 0]
+
+    There might be no rational semiinstability although the
+    curve is not stable.
+      sage: R.<x,y,z> = GF(2)[]
+      sage: f = (x*y + z^2) * (x^2 + x*y + y^2)
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.rational_semiinstability()
+      None
+      sage: X_L = X.base_change(GF(2^2))
+      sage: X_L.rational_semiinstability()
+      Projective flag given by [z2, z2 + 1, 1] and z2*x + y
+    """
+    if self.is_smooth():
+      return None
+
+    # X_red is a conic.
+    if self.degree() % 2 == 0:
+      G, m = self._decompose[0]
+      if m == self.degree() / 2 and G.degree() == 2:
+        return False
+
+    # Search for a line of multiplicity d/3.
+    if self.degree() % 3 == 0:
+      for L, m in self.line_components():
+        if m == self.degree() / 3:
+          return ProjectiveFlag(self.base_ring(), None, L)
+
+    # Search for point of multiplicity 2d/3 or a point
+    # of multiplicity d/3 < m <= 2d/3 and a line in the
+    # tangent cone of multiplicity >= m/2.
+    for P in self._reduced_singular_points:
+      m = self.multiplicity(P)
+      if m == 2 * self.degree() / 3:
+        return ProjectiveFlag(self.base_ring(), P, None)
+      elif m > self.degree() / 3:
+        for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
+          if L_mult >= m / 2:
+            proj_flag = ProjectiveFlag(self.base_ring(), P, L)
+            if proj_flag.is_semiunstable(self):
+              return proj_flag
+
+    return None
 
 
   def instability(self):
@@ -710,7 +781,8 @@ class ProjectivePlaneCurve:
     r"""
     Return the line components of `self`.
     """
-    return [ProjectivePlaneCurve(factor) for factor, m in self._decompose
+    return [(ProjectivePlaneCurve(factor), multiplicity)
+            for factor, multiplicity in self._decompose
             if factor.degree() == 1]
 
 
