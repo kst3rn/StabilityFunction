@@ -175,6 +175,12 @@ class ProjectivePlaneCurve:
     of `self` where all singularities of the reduced
     subscheme of `self` are rational.
 
+    .. NOTE::
+    Over a perfect field a reduced scheme is geometrically
+    reduced. Thus, as long as the base field of `self` is
+    perfect, this method returns the minimal field extension
+    where all singularities of `self` are rational.
+
     EXAMPLES::
       sage: R.<x,y,z> = GF(2)[]
       sage: f = x^2 + z^2 + x*y
