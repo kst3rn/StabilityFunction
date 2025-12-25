@@ -22,7 +22,7 @@ class FiniteScheme:
       sage: X = FiniteScheme(J); X
       Finite Scheme V₊(x^3 + x*z^2 + z^3, x + y) over Rational Field
     """
-    if not defining_ideal.dimension() - 1 == 0:
+    if defining_ideal.dimension() - 1 > 0:
       raise ValueError(f"{defining_ideal} does not define a projective scheme of dimension 0.")
     self._defining_ideal = defining_ideal
 
@@ -80,6 +80,8 @@ class FiniteScheme:
       Finite Scheme V₊(y^3 + y*z^2 + z^3, x + y) over Finite Field of size 2]
     """
     ideals = self.defining_ideal().minimal_associated_primes()
+    irr_id = self.defining_ideal().ring().irrelevant_ideal()
+    ideals = [J for J in ideals if J != irr_id]
     if defining_ideals:
       return ideals
     return [FiniteScheme(I) for I in ideals]
