@@ -169,6 +169,45 @@ class ProjectivePlaneCurve:
     return self.fano_scheme().splitting_field()
 
 
+  def splitting_field_of_singular_points(self):
+    r"""
+    Return the minimal field extension of the base field
+    of `self` where all singularities of the reduced
+    subscheme of `self` are rational.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = GF(2)[]
+      sage: f = x^2 + z^2 + x*y
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.splitting_field_of_singular_points()
+      Finite Field of size 2
+      sage: X.is_smooth()
+      True
+      sage:
+      sage: f = (x*y + z^2) * (x^2 + x*y + y^2)
+      sage: X = ProjectivePlaneCurve(f)
+      sage: L = X.splitting_field_of_singular_points(); L
+      Finite Field in z2 of size 2^2
+      sage: X_L = X.base_change(L)
+      sage: X_L.singular_points()
+      [(0 : 0 : 1), (z2 : z2 + 1 : 1), (z2 + 1 : z2 : 1)]
+      sage: X.singular_points()
+      [(0 : 0 : 1)]
+      sage: 
+      sage: f = x^4 + x^2*y^2 + y^4 + x*y*z^2 + x*z^3 + y*z^3 + z^4
+      sage: X = ProjectivePlaneCurve(f)
+      sage: L = X.splitting_field_of_singular_points(); L
+      Finite Field in z2 of size 2^2
+      sage: X_L = X.base_change(L)
+      sage: X_L.singular_points()
+      [(z2 : 1 : 0), (z2 + 1 : 1 : 0)]
+      sage: X.singular_points()
+      []
+    """
+    J = self.reduced_subscheme().singular_subscheme_defining_ideal()
+    return FiniteScheme(J).splitting_field()
+
+
   def tangent_cone_at(self, P):
     r"""
     Return the tangent cone of self at the point `P`.
@@ -720,6 +759,24 @@ class ProjectivePlaneCurve:
     """
 
     return self.plane_curve.singular_points()
+
+
+  def singular_subscheme_defining_ideal(self):
+    r"""
+    Return the defining ideal of the singular subscheme
+    of `self`.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: f = x^2 + z^2 + x*y
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.singular_subscheme_defining_ideal()
+      Ideal (x^2 + x*y + z^2, 2*x + y, x, 2*z) of Multivariate Polynomial Ring in x, y, z over Rational Field
+      sage: f.factor()
+    """
+    F = self.defining_polynomial()
+    R = F.parent()
+    return R.ideal([F] + F.gradient())
 
 
   def is_A2_singularity(self, P):
