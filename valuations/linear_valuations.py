@@ -77,7 +77,7 @@ class LinearValuation:
     sage: v(f) == min(v(y1^2), v(6*y1*y2), v(8*y2^2))
     True
 
-  ..MATH::
+  .. MATH::
   First, let
     K   = polynomial_ring.base_ring(),
     E_0 = (x_0,...,x_n) = polynomial_ring.gens(),
@@ -177,7 +177,7 @@ class LinearValuation:
       sage: v(f) == min(v(y1^2), v(6*y1*y2), v(8*y2^2))
       True
 
-    ..MATH::
+    .. MATH::
     First, let
       K   = polynomial_ring.base_ring(),
       E_0 = (x_0,...,x_n) = polynomial_ring.gens(),
@@ -276,7 +276,7 @@ class LinearValuation:
     OUTPUT:
     - a rational number
 
-    ..MATH::
+    .. MATH::
     First, let
       K   = self.polynomial_ring.base_ring(),
       E_0 = (x_0,...,x_n) = self.polynomial_ring.gens(),
