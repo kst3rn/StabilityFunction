@@ -134,13 +134,13 @@ class FiniteScheme:
     if not (self.base_ring().is_field() and self.base_ring().is_finite()):
       raise NotImplementedError(f"{self.base_ring()} is not a finite field.")
 
-    residue_field_degrees = []
+    residue_field_extension_degrees = []
     for P in self.closed_points(defining_ideals=True):
       f = P.hilbert_polynomial()
       deg = f.leading_coefficient() * f.degree().factorial()
-      residue_field_degrees.append(deg)
-    if not residue_field_degrees:
+      residue_field_extension_degrees.append(deg)
+    if not residue_field_extension_degrees:
       return self.base_ring()
-    splitting_field_degree = lcm(residue_field_degrees)
+    splitting_field_ext_deg = lcm(residue_field_extension_degrees)
     q = self.base_ring().order()
-    return GF(q**splitting_field_degree)
+    return GF(q**splitting_field_ext_deg)
