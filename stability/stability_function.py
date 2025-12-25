@@ -827,7 +827,7 @@ class BTB_Point:
       [ 1  0  0]
       [ 4  2  0]
       [40  0  8]
-    ..MATH::
+    .. MATH::
     """
     if not self.is_vertex():
       raise ValueError(f"self is not a vertex")

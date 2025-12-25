@@ -13,6 +13,7 @@
 from functools import cached_property
 from functools import cache
 from sage.all import *
+from finite_schemes import FiniteScheme
 from geometry_utils import _apply_matrix, _ult_line_transformation, _uut_line_transformation, _ult_plane_transformation, _uut_plane_transformation, _ult_flag_transformation, _uut_flag_transformation, _move_point_and_line_to_001_and_x0, _normalize_by_last_nonzero_entry
 
 
@@ -83,6 +84,161 @@ class ProjectivePlaneCurve:
     new_poly = phi(self.defining_polynomial())
 
     return ProjectivePlaneCurve(new_poly)
+
+
+  def fano_scheme(self):
+    r"""
+    Return the Fano scheme of lines in `self`.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = GF(2)[]
+      sage: f = x * (x + y + z)
+      sage: X = ProjectivePlaneCurve(f)
+      sage: F1X = X.fano_scheme(); F1X
+      Finite Scheme V₊(u1*u2 + u2^2, u0*u2 + u2^2, u1^2 + u1*u2, u0*u1 + u0*u2, u0*u1 + u1^2) over Finite Field of size 2
+      sage: F1X.closed_points(defining_ideals=False)
+      [Finite Scheme V₊(u2, u1) over Finite Field of size 2,
+      Finite Scheme V₊(u1 + u2, u0 + u2) over Finite Field of size 2]
+      sage: F1X.splitting_field()
+      Finite Field of size 2
+
+      We can detect hidden line components of `self`.
+      sage: f = x^2 + y^2 + z^2 + x*y + x*z + y*z
+      sage: X = ProjectivePlaneCurve(f)
+      sage: len(X.irreducible_components())
+      1
+      sage: F1X = X.fano_scheme()
+      sage: F1X.closed_points(defining_ideals=False)
+      [Finite Scheme V₊(u1^2 + u1*u2 + u2^2, u0 + u1 + u2) over Finite Field of size 2]
+      sage: L = F1X.splitting_field();
+      Finite Field in z2 of size 2^2
+      sage: F1X_L = F1X.base_change(L)
+      sage: F1X_L.closed_points(defining_ideals=False)
+      [Finite Scheme V₊(u1 + (z2 + 1)*u2, u0 + z2*u2) over Finite Field in z2 of size 2^2,
+      Finite Scheme V₊(u1 + z2*u2, u0 + (z2 + 1)*u2) over Finite Field in z2 of size 2^2]
+      sage: X_L = X.base_change(L)
+      sage: X_L.irreducible_components()
+      [Projective Plane Curve with defining polynomial (z2 + 1)*x + z2*y + z over Finite Field in z2 of size 2^2,
+      Projective Plane Curve with defining polynomial z2*x + (z2 + 1)*y + z over Finite Field in z2 of size 2^2]
+    """
+    F = self.defining_polynomial()
+
+    # Create the dual ring K[u0,u1,u2].
+    Ru = PolynomialRing(self.base_ring(), names='u0,u1,u2')
+    u0, u1, u2 = Ru.gens()
+
+    # Create K[u0,u1,u2][x0,x1,x2].
+    Rx = F.parent().change_ring(Ru)
+    x0,x1,x2 = Rx.gens()
+
+    # Substitute x -> u \times x and extract coefficients.
+    cross_prod = [u1*x2 - u2*x1,
+                  u2*x0 - u0*x2,
+                  u0*x1 - u1*x0]
+    G = F(cross_prod)
+    return FiniteScheme(Ru.ideal(G.coefficients()))
+
+
+  def splitting_field_of_line_components(self):
+    r"""
+    Return the minimal field extension of the base field
+    of `self` where all line components of the base change
+    of `self` to an algebraic closure are defined.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = GF(2)[]
+      sage: f = x * (x + y + z)
+      sage: X = ProjectivePlaneCurve(f)
+      sage: L = X.splitting_field_of_line_components(); L
+      Finite Field of size 2
+      sage: X.irreducible_components()
+      [Projective Plane Curve with defining polynomial x over Finite Field of size 2,
+      Projective Plane Curve with defining polynomial x + y + z over Finite Field of size 2]
+
+      sage: f = x^2 + y^2 + z^2 + x*y + x*z + y*z
+      sage: X = ProjectivePlaneCurve(f)
+      sage: len(X.irreducible_components())
+      1
+      sage: L = X.splitting_field_of_line_components(); L
+      Finite Field in z2 of size 2^2
+      sage: X_L = X.base_change(L)
+      sage: X_L.irreducible_components()
+      [Projective Plane Curve with defining polynomial (z2 + 1)*x + z2*y + z over Finite Field in z2 of size 2^2,
+      Projective Plane Curve with defining polynomial z2*x + (z2 + 1)*y + z over Finite Field in z2 of size 2^2]
+    """
+    return self.fano_scheme().splitting_field()
+
+
+  def splitting_field_of_singular_points(self):
+    r"""
+    Return the minimal field extension of the base field
+    of `self` where all singularities of the reduced
+    subscheme of `self` are rational.
+
+    .. NOTE::
+    Over a perfect field a reduced scheme is geometrically
+    reduced. Thus, as long as the base field of `self` is
+    perfect, this method returns the minimal field extension
+    where all singularities of `self` are rational.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = GF(2)[]
+      sage: f = x^2 + z^2 + x*y
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.splitting_field_of_singular_points()
+      Finite Field of size 2
+      sage: X.is_smooth()
+      True
+      sage:
+      sage: f = (x*y + z^2) * (x^2 + x*y + y^2)
+      sage: X = ProjectivePlaneCurve(f)
+      sage: L = X.splitting_field_of_singular_points(); L
+      Finite Field in z2 of size 2^2
+      sage: X_L = X.base_change(L)
+      sage: X_L.singular_points()
+      [(0 : 0 : 1), (z2 : z2 + 1 : 1), (z2 + 1 : z2 : 1)]
+      sage: X.singular_points()
+      [(0 : 0 : 1)]
+      sage: 
+      sage: f = x^4 + x^2*y^2 + y^4 + x*y*z^2 + x*z^3 + y*z^3 + z^4
+      sage: X = ProjectivePlaneCurve(f)
+      sage: L = X.splitting_field_of_singular_points(); L
+      Finite Field in z2 of size 2^2
+      sage: X_L = X.base_change(L)
+      sage: X_L.singular_points()
+      [(z2 : 1 : 0), (z2 + 1 : 1 : 0)]
+      sage: X.singular_points()
+      []
+    """
+    J = self.reduced_subscheme().singular_subscheme_defining_ideal()
+    return FiniteScheme(J).splitting_field()
+
+
+  def stability_field(self):
+    r"""
+    Return a field extension of the base field of `self` where
+    at least one semiinstability is defined if there exists a
+    semiinstability over the algebraic closure of the base field.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = GF(2)[]
+      sage: f = (x*y + z^2) * (x^2 + x*y + y^2)
+      sage: X = ProjectivePlaneCurve(f)
+      sage: L = X.stability_field(); L
+      Finite Field in z2 of size 2^2
+      sage: X_L = X.base_change(L)
+      sage: X_L.rational_semiinstability()
+      Projective flag given by [z2, z2 + 1, 1] and z2*x + y
+      sage: X.rational_semiinstability()
+      None
+    """
+    if not (self.base_ring().is_field() and self.base_ring().is_finite()):
+      raise NotImplementedError(f"{self.base_ring()} is not a finite field.")
+
+    d1 = self.splitting_field_of_line_components().degree()
+    d2 = self.splitting_field_of_singular_points().degree()
+    p = self.base_ring().characteristic()
+    return GF(p**lcm(d1,d2))
 
 
   def tangent_cone_at(self, P):
@@ -330,27 +486,86 @@ class ProjectivePlaneCurve:
       if m == self.degree() / 2 and G.degree() == 2:
         return False
 
+    # Base change to the field where at least one
+    # semiinstability become rational.
+    L = self.stability_field()
+    X_L = self.base_change(L)
+
     # Search for a line of multiplicity d/3.
-    if self.degree() % 3 == 0:
-      for Y, m in self._decompose:
-        if Y.degree() == 1 and m == self.degree() / 3:
+    if X_L.degree() % 3 == 0:
+      for Y, m in X_L._decompose:
+        if Y.degree() == 1 and m == X_L.degree() / 3:
           return False
 
     # Search for point of multiplicity 2d/3 or a point
     # of multiplicity d/3 < m <= 2d/3 and a line in the
     # tangent cone of multiplicity >= m/2.
-    X_red_sing = self._reduced_singular_points
-    for P in X_red_sing:
-      m = self.multiplicity(P)
-      if m == 2 * self.degree() / 3:
+    for P in X_L._reduced_singular_points:
+      m = X_L.multiplicity(P)
+      if m == 2 * X_L.degree() / 3:
         return False
-      elif m > self.degree() / 3:
-        for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
+      elif m > X_L.degree() / 3:
+        for L, L_mult in PPC_TangentCone(X_L, P).embedded_lines():
           if L_mult >= m / 2:
-            if ProjectiveFlag(self.base_ring(), P, L).is_semiunstable(self):
+            if ProjectiveFlag(X_L.base_ring(), P, L).is_semiunstable(X_L):
               return False
 
     return True
+
+
+  def rational_semiinstability(self):
+    r"""
+    Return a semiinstability defined over the base field
+    of `self` if it exists.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: f = z^2*y - x^3
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.rational_semiinstability()
+      Projective flag given by [0, 1, 0]
+
+    There might be no rational semiinstability although the
+    curve is not stable.
+      sage: R.<x,y,z> = GF(2)[]
+      sage: f = (x*y + z^2) * (x^2 + x*y + y^2)
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.rational_semiinstability()
+      None
+      sage: X_L = X.base_change(GF(2^2))
+      sage: X_L.rational_semiinstability()
+      Projective flag given by [z2, z2 + 1, 1] and z2*x + y
+    """
+    if self.is_smooth():
+      return None
+
+    # X_red is a conic.
+    if self.degree() % 2 == 0:
+      G, m = self._decompose[0]
+      if m == self.degree() / 2 and G.degree() == 2:
+        return False
+
+    # Search for a line of multiplicity d/3.
+    if self.degree() % 3 == 0:
+      for L, m in self.line_components():
+        if m == self.degree() / 3:
+          return ProjectiveFlag(self.base_ring(), None, L)
+
+    # Search for point of multiplicity 2d/3 or a point
+    # of multiplicity d/3 < m <= 2d/3 and a line in the
+    # tangent cone of multiplicity >= m/2.
+    for P in self._reduced_singular_points:
+      m = self.multiplicity(P)
+      if m == 2 * self.degree() / 3:
+        return ProjectiveFlag(self.base_ring(), P, None)
+      elif m > self.degree() / 3:
+        for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
+          if L_mult >= m / 2:
+            proj_flag = ProjectiveFlag(self.base_ring(), P, L)
+            if proj_flag.is_semiunstable(self):
+              return proj_flag
+
+    return None
 
 
   def instability(self):
@@ -562,6 +777,15 @@ class ProjectivePlaneCurve:
             for factor, multiplicity in self._decompose]
 
 
+  def line_components(self):
+    r"""
+    Return the line components of `self`.
+    """
+    return [(ProjectivePlaneCurve(factor), multiplicity)
+            for factor, multiplicity in self._decompose
+            if factor.degree() == 1]
+
+
   def nonreduced_components(self):
     r"""
     Return the list of nonreduced components with corresponding
@@ -636,6 +860,24 @@ class ProjectivePlaneCurve:
     """
 
     return self.plane_curve.singular_points()
+
+
+  def singular_subscheme_defining_ideal(self):
+    r"""
+    Return the defining ideal of the singular subscheme
+    of `self`.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: f = x^2 + z^2 + x*y
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.singular_subscheme_defining_ideal()
+      Ideal (x^2 + x*y + z^2, 2*x + y, x, 2*z) of Multivariate Polynomial Ring in x, y, z over Rational Field
+      sage: f.factor()
+    """
+    F = self.defining_polynomial()
+    R = F.parent()
+    return R.ideal([F] + F.gradient())
 
 
   def is_A2_singularity(self, P):
