@@ -1,4 +1,7 @@
-from sage.all import *
+from copy import copy
+import itertools
+from sage.matrix.constructor import matrix, zero_matrix, identity_matrix
+from sage.modules.free_module_element import vector
 
 
 def _apply_matrix(T, F, i=None):
@@ -750,6 +753,43 @@ def _move_point_and_line_to_001_and_x0(base_ring, P, L):
     row1[i] =  0
 
   return matrix(base_ring, [row0, row1, P])
+
+
+def _unipotent_lower_triangular_matrices(R, n):
+  r"""
+  Creates an iterator for all n by n unipotent lower triangular
+  matrices over the finite ring `R`.
+
+  INPUT:
+  - ``R`` -- finite ring.
+  - ``n`` -- positive integer defining the matrix size `n`.
+
+  YIELDS:
+  The next n by n unipotent lower triangular matrix.
+  """
+  indices = [(r, c) for r in range(n) for c in range(r)]
+  template = identity_matrix(R, n)
+  iterator = itertools.product(R, repeat=len(indices))
+  for values in iterator:
+    if not any(values):
+      continue
+    M = copy(template)
+    for (r, c), val in zip(indices, values):
+      M[r, c] = val
+    yield M
+
+
+def _unipotent_integral_matrices(R, n, weight_vector):
+  r"""
+  Creates an iterator for certain n by n unipotent matrices T
+  over the finite ring `R` such that the implication
+    (weight_vector[j] - weight_vector[i] < 0) => (T[i][j] = 0)
+  holds.
+  """
+  P = _sorting_permutation_matrix(weight_vector)
+  P_inverse = P.transpose()
+  for M in _unipotent_lower_triangular_matrices(R, n):
+    yield P * M * P_inverse
 
 
 def _min_index_of_nonzero_entry(L):
