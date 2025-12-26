@@ -11,7 +11,6 @@
 
 
 from functools import cached_property
-from functools import cache
 from sage.all import *
 from finite_schemes import FiniteScheme
 from geometry_utils import _apply_matrix, _ult_line_transformation, _uut_line_transformation, _ult_plane_transformation, _uut_plane_transformation, _ult_flag_transformation, _uut_flag_transformation, _move_point_and_line_to_001_and_x0, _normalize_by_last_nonzero_entry
@@ -293,7 +292,6 @@ class ProjectivePlaneCurve:
     return PPC_TangentCone(self, P)
 
 
-  @cache
   def is_smooth(self):
     r"""
     Return `True` if `self` is smooth and `False` otherwise.
@@ -313,7 +311,6 @@ class ProjectivePlaneCurve:
       sage: X.is_smooth()
       True
     """
-
     return self.plane_curve.is_smooth()
 
 
