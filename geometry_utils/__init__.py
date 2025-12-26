@@ -8,6 +8,8 @@ from .transformations import (
   _uut_plane_transformation,
   _ult_flag_transformation,
   _uut_flag_transformation,
+  _unipotent_lower_triangular_matrices,
+  _unipotent_integral_matrices,
   _move_point_and_line_to_001_and_x0,
   _normalize_by_last_nonzero_entry
 )
@@ -20,6 +22,8 @@ __all__ = [
   '_uut_plane_transformation',
   '_ult_flag_transformation',
   '_uut_flag_transformation',
+  '_unipotent_lower_triangular_matrices',
+  '_unipotent_integral_matrices',
   '_move_point_and_line_to_001_and_x0',
   '_normalize_by_last_nonzero_entry'
 ]
