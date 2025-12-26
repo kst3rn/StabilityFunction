@@ -662,7 +662,7 @@ def _integral_flag_transformation(Vector, linear_form, weight_vector):
 
   base_field = linear_form.base_ring()
   T1 = _integral_line_transformation(base_field, Vector, weight_vector)
-  T2 = _integral_plane_transformation(_apply_matrix(T1.inverse(), linear_form), weight_vector)[0]
+  T2 = _integral_plane_transformation(_apply_matrix(T1, linear_form), weight_vector)[0]
 
   return T2 * T1
 
