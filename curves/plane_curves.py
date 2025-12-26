@@ -379,6 +379,22 @@ class ProjectivePlaneCurve:
     return self.is_reduced()
 
 
+  def is_conic(self):
+    r"""
+    Return `True` if `self` is a conic.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: X = ProjectivePlaneCurve(x^2 + x*y + z^2)
+      sage: X.is_conic()
+      True
+      sage: X = ProjectivePlaneCurve(x^3 + y^3 + z^3)
+      sage: X.is_conic()
+      False
+    """
+    return self.degree() == 2
+
+
   def is_semistable(self):
     r"""
     Return `True` if `self` is semistable and `False` otherwise.
@@ -524,6 +540,11 @@ class ProjectivePlaneCurve:
       sage: X = ProjectivePlaneCurve(f)
       sage: X.rational_semiinstability()
       Projective flag given by [0, 1, 0]
+      sage:
+      sage: f = (x^2 + x*y + z^2)^7
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.rational_semiinstability()
+      Projective flag given by [0, 1, 0] and x
 
     There might be no rational semiinstability although the
     curve is not stable.
@@ -539,11 +560,14 @@ class ProjectivePlaneCurve:
     if self.is_smooth():
       return None
 
-    # X_red is a conic.
-    if self.degree() % 2 == 0:
-      G, m = self._decompose[0]
-      if m == self.degree() / 2 and G.degree() == 2:
-        return False
+    # X_red is smooth conic.
+    if self.degree() % 2 == 0 and self.number_of_irred_comp() == 1:
+      X_red = self.reduced_subscheme()
+      if X_red.is_conic(): # irreducible conic is smooth
+        P = X_red.rational_point()
+        if P is not None:
+          L = X_red.tangent_cone_at(P).embedded_lines()[0][0]
+          return ProjectiveFlag(self.base_ring(), P, L)
 
     # Search for a line of multiplicity d/3.
     if self.degree() % 3 == 0:
@@ -845,6 +869,29 @@ class ProjectivePlaneCurve:
     return [(multiplicity, ProjectivePlaneCurve(factor))
             for factor, multiplicity in self._decompose
             if multiplicity > 1]
+
+
+  def rational_point(self):
+    r"""
+    Return a rational point if it exists and `None` otherwise.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: X = ProjectivePlaneCurve(x^2 + y^2 + z^2)
+      sage: X.rational_point()
+      None
+      sage: X = ProjectivePlaneCurve(x^2 + x*y + z^2)
+      sage: X.rational_point()
+      (0 : 1 : 0)
+    """
+    if not self.is_conic():
+      raise NotImplementedError("Only implemented for conics.")
+
+    C = Conic(self.base_ring(), self.defining_polynomial())
+    try:
+      return C.rational_point()
+    except ValueError:
+      return None
 
 
   def rational_points(self):
