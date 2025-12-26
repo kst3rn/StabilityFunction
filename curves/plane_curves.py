@@ -1021,21 +1021,25 @@ class ProjectivePlaneCurve:
     Return the list of all A2 cusps singularities on `self`.
 
     EXAMPLES:
-      sage: R.<x0,x1,x2> = QQ[]
-      sage: f = (x2*x1^2 - x0^3) * (x2*(x1 - x2)^2 - (x0 - x2)^3) * ((x1 - x2)^2 - x0^2)
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (z*y^2 - x^3) * (z*(y - z)^2 - (x - z)^3) * ((y - z)^2 - x^2)
       sage: X = ProjectivePlaneCurve(f)
       sage: X.cusps()
-      [(0 : 0 : 1)]
-      sage:
-      sage: f = (x2*x1^2 - x0^3) * (x2*x1^2 - (x0 - x2)^3) * ((x1 - 2*x2)^2 - x0^2)
+      [Projective flag given by [0, 0, 1] and y]
+      sage: 
+      sage: f = (z*y^2 - x^3) * (z*y^2 - (x - z)^3) * ((y - 2*z)^2 - x^2)
       sage: X = ProjectivePlaneCurve(f)
       sage: X.cusps()
-      [(0 : 0 : 1), (1 : 0 : 1)]
+      [Projective flag given by [0, 0, 1] and y,
+      Projective flag given by [1, 0, 1] and y]
     """
-
     X_red_sing = self.reduced_subscheme().singular_points()
-
-    return [P for P in X_red_sing if self.is_A2_singularity(P)]
+    cusp_points = [P for P in X_red_sing if self.is_A2_singularity(P)]
+    cusps = []
+    for P in cusp_points:
+      L = self.tangent_cone_at(P).embedded_lines()[0][0]
+      cusps.append(ProjectiveFlag(self.base_ring(), P, L))
+    return cusps
 
 
   def multiplicity(self, P):
@@ -1947,6 +1951,20 @@ class ProjectiveFlag:
     if self.point is None or self.line is None:
       return 0
     return 1
+
+
+  def move_to_001_and_x0(self):
+    r"""
+    Return an invertible matrix moving `self` to the
+    projective flag given by the point (0:0:1) and the
+    line V_+(x0).
+    """
+    if self.dimension() == 0:
+      raise NotImplementedError("Only implemented for flags of dimension 1.")
+    K = self.base_ring()
+    P = self.point
+    L = self.line
+    return _move_point_and_line_to_001_and_x0(K, P, L)
 
 
   def base_change_matrix(self, matrix_form = 'uut'):
