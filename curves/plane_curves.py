@@ -11,7 +11,6 @@
 
 
 from functools import cached_property
-from functools import cache
 from sage.all import *
 from finite_schemes import FiniteScheme
 from geometry_utils import _apply_matrix, _ult_line_transformation, _uut_line_transformation, _ult_plane_transformation, _uut_plane_transformation, _ult_flag_transformation, _uut_flag_transformation, _move_point_and_line_to_001_and_x0, _normalize_by_last_nonzero_entry
@@ -293,7 +292,6 @@ class ProjectivePlaneCurve:
     return PPC_TangentCone(self, P)
 
 
-  @cache
   def is_smooth(self):
     r"""
     Return `True` if `self` is smooth and `False` otherwise.
@@ -313,7 +311,6 @@ class ProjectivePlaneCurve:
       sage: X.is_smooth()
       True
     """
-
     return self.plane_curve.is_smooth()
 
 
@@ -377,6 +374,22 @@ class ProjectivePlaneCurve:
     if len(self._decompose) > 1:
       return False
     return self.is_reduced()
+
+
+  def is_conic(self):
+    r"""
+    Return `True` if `self` is a conic.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: X = ProjectivePlaneCurve(x^2 + x*y + z^2)
+      sage: X.is_conic()
+      True
+      sage: X = ProjectivePlaneCurve(x^3 + y^3 + z^3)
+      sage: X.is_conic()
+      False
+    """
+    return self.degree() == 2
 
 
   def is_semistable(self):
@@ -524,6 +537,11 @@ class ProjectivePlaneCurve:
       sage: X = ProjectivePlaneCurve(f)
       sage: X.rational_semiinstability()
       Projective flag given by [0, 1, 0]
+      sage:
+      sage: f = (x^2 + x*y + z^2)^7
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.rational_semiinstability()
+      Projective flag given by [0, 1, 0] and x
 
     There might be no rational semiinstability although the
     curve is not stable.
@@ -539,11 +557,14 @@ class ProjectivePlaneCurve:
     if self.is_smooth():
       return None
 
-    # X_red is a conic.
-    if self.degree() % 2 == 0:
-      G, m = self._decompose[0]
-      if m == self.degree() / 2 and G.degree() == 2:
-        return False
+    # X_red is smooth conic.
+    if self.degree() % 2 == 0 and self.number_of_irred_comp() == 1:
+      X_red = self.reduced_subscheme()
+      if X_red.is_conic(): # irreducible conic is smooth
+        P = X_red.rational_point()
+        if P is not None:
+          L = X_red.tangent_cone_at(P).embedded_lines()[0][0]
+          return ProjectiveFlag(self.base_ring(), P, L)
 
     # Search for a line of multiplicity d/3.
     if self.degree() % 3 == 0:
@@ -777,6 +798,22 @@ class ProjectivePlaneCurve:
             for factor, multiplicity in self._decompose]
 
 
+  def number_of_irred_comp(self):
+    r"""
+    Return the number of irreducible components of `self`.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (x + y) * y * (y + z)
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.number_of_irred_comp()
+      3
+      sage: len(X.irreducible_components())
+      3
+    """
+    return len(self._decompose)
+
+
   def line_components(self):
     r"""
     Return the line components of `self`.
@@ -829,6 +866,29 @@ class ProjectivePlaneCurve:
     return [(multiplicity, ProjectivePlaneCurve(factor))
             for factor, multiplicity in self._decompose
             if multiplicity > 1]
+
+
+  def rational_point(self):
+    r"""
+    Return a rational point if it exists and `None` otherwise.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: X = ProjectivePlaneCurve(x^2 + y^2 + z^2)
+      sage: X.rational_point()
+      None
+      sage: X = ProjectivePlaneCurve(x^2 + x*y + z^2)
+      sage: X.rational_point()
+      (0 : 1 : 0)
+    """
+    if not self.is_conic():
+      raise NotImplementedError("Only implemented for conics.")
+
+    C = Conic(self.base_ring(), self.defining_polynomial())
+    try:
+      return C.rational_point()
+    except ValueError:
+      return None
 
 
   def rational_points(self):
