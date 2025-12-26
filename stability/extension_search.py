@@ -43,6 +43,8 @@ def find_base_ring_extension(homogeneous_form, base_ring_valuation, ramification
     Number Field in piK with defining polynomial x^2 + 2
     sage:
     sage: F = 16*x^4 + y^4 + 8*y^3*z + 16*x*y*z^2 + 4*x*z^3
+    sage: find_base_ring_extension(F, QQ.valuation(2), 2)
+    None
     sage: find_base_ring_extension(F, QQ.valuation(2), 4)
     Number Field in piL with defining polynomial x^12 + 2*x^6 + 2
     sage:
@@ -104,14 +106,14 @@ def find_base_ring_extension(homogeneous_form, base_ring_valuation, ramification
         local_trafo_matrix[i][j] = s**w_difference
       else:
         local_trafo_matrix[j][i] = s**(-w_difference)
-      break        
+      break
   local_trafo_matrix = matrix(S, local_trafo_matrix)
   global_trafo_matrix = local_trafo_matrix * T
 
   return _search_tree(F_S, fixed_valuation, step, minimum, global_trafo_matrix, 0, depth_limit=+Infinity)
 
 
-def _search_tree(F, fixed_valuation, step, minimum, global_trafo_matrix, depth, depth_limit): # test with F = 16*x**4 + y**4 + 8*y**3*z + 16*x*y*z**2 + 4*x*z**3
+def _search_tree(F, fixed_valuation, step, minimum, global_trafo_matrix, depth, depth_limit):
   r"""
   Heuristic search.
   """
@@ -135,6 +137,9 @@ def _search_tree(F, fixed_valuation, step, minimum, global_trafo_matrix, depth, 
   center = F.base_ring()(center)
   j = 0
   new_radius = adjusted_radius - j * step
+  if new_radius <= fixed_valuation.value_group().gen():
+    return None
+
   while True:
     K = QQ.extension(center, 'piK')
     piK = K.gen()
