@@ -777,6 +777,22 @@ class ProjectivePlaneCurve:
             for factor, multiplicity in self._decompose]
 
 
+  def number_of_irred_comp(self):
+    r"""
+    Return the number of irreducible components of `self`.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: f = (x + y) * y * (y + z)
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.number_of_irred_comp()
+      3
+      sage: len(X.irreducible_components())
+      3
+    """
+    return len(self._decompose)
+
+
   def line_components(self):
     r"""
     Return the line components of `self`.
