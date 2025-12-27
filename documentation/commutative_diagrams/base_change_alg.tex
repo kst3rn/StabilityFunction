@@ -1,0 +1,15 @@
+\documentclass[tikz, border=2mm]{standalone}
+\usepackage{tikz-cd}
+\usepackage{amsmath, amssymb}
+
+\newcommand{\E}{\mathcal{E}}
+\newcommand{\Sym}{\mathop{\rm Sym}\nolimits}
+
+\begin{document}
+
+\begin{tikzcd}
+\Sym(V^{*}) \arrow[equals]{r} & \Sym(V^{*})  &  F(x_0, \dots, x_n) \arrow[equals]{r} & F((y_0, \dots, y_n) \cdot T) \\
+K[\textbf{e}_0, \dots, \textbf{e}_n] \arrow{u}{\ell_{\E}} \arrow{r} & K[\textbf{e}_0, \dots, \textbf{e}_n] \arrow{u}[swap]{\ell_{\E}'}  &  F(\textbf{e}_0, \dots, \textbf{e}_n) \arrow[mapsto]{u} \arrow[mapsto]{r} & F(T \textbf{e}_0, \dots, T \textbf{e}_n) \arrow[mapsto]{u}
+\end{tikzcd}
+
+\end{document}
