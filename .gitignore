@@ -28,3 +28,18 @@ dist/
 Thumbs.db
 .vscode/
 .idea/
+
+# --- LaTeX Documentation ---
+# Ignore build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Keep these (Implicitly tracked)
+# !*.tex
+# !*.pdf
+# !*.svg
