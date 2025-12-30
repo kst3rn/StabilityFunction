@@ -54,7 +54,7 @@ EXAMPLES::
 
 from sage.all import ZZ, QQ, matrix, vector, lcm, prod
 from sage.geometry.polyhedron.constructor import Polyhedron
-from stability import MinimumOfValuativeFunctions, valuative_function
+from semistable_model.stability import MinimumOfValuativeFunctions, valuative_function
 
 
 def minimum_as_valuative_function(F, v0):

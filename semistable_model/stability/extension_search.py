@@ -1,8 +1,8 @@
 from itertools import combinations
 from sage.all import gcd, PolynomialRing, GF, QQ, ZZ, ceil, matrix, GaussValuation, vector, Infinity
-from stability import StabilityFunction
-from curves import ProjectivePlaneCurve
-from stability import minimum_as_valuative_function
+from semistable_model.stability import StabilityFunction
+from semistable_model.curves import ProjectivePlaneCurve
+from semistable_model.stability import minimum_as_valuative_function
 
 
 def find_semistable_model(homogeneous_form, base_ring_valuation):
