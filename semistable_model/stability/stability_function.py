@@ -11,8 +11,8 @@
 
 
 from sage.all import *
-from valuations import LinearValuation
-from geometry_utils import _apply_matrix
+from semistable_model.valuations import LinearValuation
+from semistable_model.geometry_utils import _apply_matrix
 
 
 class StabilityFunction:
