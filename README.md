@@ -10,10 +10,10 @@
 
 ## Prerequisites
 
-This project depends on the **MCLF** (MacLane Valuations and Berkovich Spaces) library. You must install it before using this package.
+This project depends on the **MCLF** library. You must install it before using this package.
 
 ```bash
-sage -pip install git+[https://github.com/MCLF/mclf](https://github.com/MCLF/mclf)
+sage -pip install git+https://github.com/MCLF/mclf
 ```
 
 ## Installation
