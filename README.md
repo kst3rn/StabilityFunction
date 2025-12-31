@@ -6,7 +6,7 @@
 
 * **semistable_model/**: The main Python package containing the mathematical logic.
 * **notebooks/**: Interactive Jupyter notebooks demonstrating the usage of the project.
-* **documentation/**: Contains supplementary documentation and commutative diagrams.
+* **documentation/**: Contains supplementary documentation.
 
 ## Installation
 
@@ -37,6 +37,8 @@ cd StabilityFunction
 ```bash
 sage -n jupyter
 ```
+
+### 3. In the browser file tree click on the notebooks folder and open the desired notebook.
 
 ## For Contributors: Keeping Git Clean
 Jupyter notebooks often clutter git history with execution counts and output data. To keep the repository clean, we highly recommend using `nbstripout`. This tool automatically removes outputs before you commit.
