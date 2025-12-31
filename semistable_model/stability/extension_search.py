@@ -34,7 +34,7 @@ def find_semistable_model(homogeneous_form, base_ring_valuation):
 
 def semistable_reduction_field(homogeneous_form, base_ring_valuation):
   r"""
-  Try to find the minimal extension of the base field
+  Try to find a minimal extension of the base field
   of `homogeneous_form` such that the projective curve
   defined by `homogeneous_form` over this extension
   has a model with semistable reduction.
