@@ -18,7 +18,19 @@ This project depends on the **MCLF** library. You must install it before using t
 
 ## Installation
 
-This project is designed to be installed as a local Python package within SageMath.
+Choose the option that best fits your needs.
+
+### Option A: Install as a Library (Usage Only)
+**Best if:** You just want to use the `semistable_model` in your owm scripts and do not need to run the provided notebooks or edit the source code.
+
+You can install the package directly from GitHub without cloning the full repository:
+  ```bash
+  sage -pip intall git+https://github.com/kst3rn/StabilityFunction
+  ```
+(Note: You do not need to configure `nbstripout` for this method.)
+
+### Option B: Clone for Development & Notebooks
+**Best if:** You want to run the interactive notebooks or contribute to the code.
 
 ### 1. Clone the Repository
   ```bash
@@ -26,7 +38,21 @@ This project is designed to be installed as a local Python package within SageMa
   cd StabilityFunction
   ```
 
-### 2. Install the Package
+### 2. Configure Git Filters (Important!)
+This repository uses a `.gitattributes` file to automatically strip outputs from Jupyter Notebooks to keep the git history clean. **You must configure this locally, or Git may report errors.**
+
+First, install the `nbstripout` tool:
+  ```bash
+  pipx install nbstripout
+  ```
+
+To **activate the filter**, run the following command once inside the **repository root**:
+  ```bash
+  nbstripout --install
+  ```
+(This sets up the necessary filter definitions in your local `.git/config`)
+  
+### 3. Install the Package in Editable Mode
 
 Run the following command from the repository root to install the project in "editable" mode. This allows you to edit the source and see changes immediately without reinstalling.
   ```bash
@@ -34,36 +60,16 @@ Run the following command from the repository root to install the project in "ed
   ```
 
 ## Usage (Running the Notebooks)
-To run the notebooks, you must start the Jupyter server from the repository root directory.
+To run the notebooks, you must start the Jupyter server from the repository root directory to ensure file paths resolve correctly.
 
 ### 1. Navigate to the repository root:
   ```bash
   cd StabilityFunction
   ```
 
-### 2. Start Jupyter:
+### 2. Start Jupyter via Sage:
   ```bash
   sage -n jupyter
   ```
 
-### 3. In the browser file tree click on the notebooks folder and open the desired notebook.
-
-## Development Setup (Handling Notebooks)
-
-To keep the git history clean and the repository size small, this project uses **automated notebook stripping**. This removes output cells and execution counts from Jupyter Notebooks before they are committed.
-
-**Requirement:**
-Because the repository includes a `.gitattributes` file enforcing this filter, **you must configure `nbstripout` locally**, otherwise Git might report errors about a missing filter driver.
-
-### 1. Install nbstripout
-To install `nbstripout` run the following command:
-  ```bash
-  pipx install nbstripout
-  ```
-
-### 1. Activate the filter
-To activate the filter, run the following command once inside the repository root:
-  ```bash
-  nbstripout --install
-  ```
-(This sets up the necessary filter definitions in your local `.git/config`)
+### 3. **Open a Notebook:** In the browser file tree, click on the `notebooks` folder and open the desired `ipynb` file.
