@@ -62,7 +62,7 @@ Run the following command from the repository root to install the project in "ed
 ## Usage (Running the Notebooks)
 To run the notebooks, you must start the Jupyter server from the repository root directory to ensure file paths resolve correctly.
 
-* 1. **Navigate to the repository root:**
+1. **Navigate to the repository root:**
   ```bash
   cd StabilityFunction
   ```
