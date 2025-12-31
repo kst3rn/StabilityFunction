@@ -62,14 +62,14 @@ Run the following command from the repository root to install the project in "ed
 ## Usage (Running the Notebooks)
 To run the notebooks, you must start the Jupyter server from the repository root directory to ensure file paths resolve correctly.
 
-1. **Navigate to the repository root:**
+  1. **Navigate to the repository root:**
   ```bash
   cd StabilityFunction
   ```
 
-### 2. Start Jupyter via Sage:
+  2. **Start Jupyter via Sage:**
   ```bash
   sage -n jupyter
   ```
 
-### 3. **Open a Notebook:** In the browser file tree, click on the `notebooks` folder and open the desired `ipynb` file.
+  3. **Open a Notebook:** In the browser file tree, click on the `notebooks` folder and open the desired `ipynb` file.
