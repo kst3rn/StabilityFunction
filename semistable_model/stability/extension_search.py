@@ -32,9 +32,20 @@ def find_semistable_model(homogeneous_form, base_ring_valuation):
   return (b_origin, b_origin.hypersurface_model(F))
 
 
+def semistable_reduction_field(homogeneous_form, base_ring_valuation):
+  r"""
+  Try to find the minimal extension of the base field
+  of `homogeneous_form` such that the projective curve
+  defined by `homogeneous_form` over this extension
+  has a model with semistable reduction.
+  """
+  return extension_of_fixed_ramification(homogeneous_form,
+                                         base_ring_valuation, 4)
+
+
 def extension_of_fixed_ramification(homogeneous_form,
-                                      base_ring_valuation,
-                                      ramification_index):
+                                    base_ring_valuation,
+                                    ramification_index):
   r"""
   Try to find an extension of the base ring of `homogeneous_form`.
 
