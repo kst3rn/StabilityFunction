@@ -56,16 +56,13 @@ To keep the git history clean and the repository size small, this project uses *
 Because the repository includes a `.gitattributes` file enforcing this filter, **you must configure `nbstripout` locally**, otherwise Git might report errors about a missing filter driver.
 
 ### 1. Install nbstripout
-You can install it globally (recommended) or within your Sage/Python environment.
-
-**Option A: System-wide (Recommended)**
-Use `pipx` to install it isolated from your system packages:
+To install `nbstripout` run the following command:
   ```bash
   pipx install nbstripout
   ```
 
 ### 1. Activate the filter
-Even if installed, you need to tell Git how to use it for this repository. Run this once inside the repository root:
+To activate the filter, run the following command once inside the repository root:
   ```bash
   nbstripout --install
   ```
