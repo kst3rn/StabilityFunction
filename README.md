@@ -72,4 +72,4 @@ To run the notebooks, you must start the Jupyter server from the repository root
   sage -n jupyter
   ```
 
-  3. **Open a Notebook:** In the browser file tree, click on the `notebooks` folder and open the desired `ipynb` file.
+  3. **Open a Notebook:** In the browser file tree, click on the `notebooks` folder and open the desired `.ipynb` file.
