@@ -8,6 +8,14 @@
 * **notebooks/**: Interactive Jupyter notebooks demonstrating the usage of the project.
 * **documentation/**: Contains supplementary documentation.
 
+## Prerequisites
+
+This project depends on the **MCLF** (MacLane Valuations and Berkovich Spaces) library. You must install it before using this package.
+
+```bash
+sage -pip install git+[https://github.com/MCLF/mclf](https://github.com/MCLF/mclf)
+```
+
 ## Installation
 
 This project is designed to be installed as a local Python package within SageMath.
