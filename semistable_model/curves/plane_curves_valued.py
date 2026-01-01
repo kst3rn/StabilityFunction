@@ -132,8 +132,39 @@ class PlaneModel(ProjectivePlaneCurve):
     return self.as_point_on_BTB().base_change_matrix()
 
 
-  def apply_matrix(self):
-    raise NotImplementedError
+  def apply_matrix(self, T):
+    r"""
+    Return the plane model of the generic fiber of `self` with
+    base change matrix given by `T * self.base_change_matrix()`.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: F = 16*x^4 + y^4 + 8*y^3*z + 16*x*y*z^2 + 4*x*z^3
+      sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
+      sage: X = PlaneModel(Y, identity_matrix(QQ, 3))
+      sage: X.base_change_matrix()
+      [1 0 0]
+      [0 1 0]
+      [0 0 1]
+      sage: T = matrix(QQ, [[1,0,0],[1,1,0],[0,0,1]])
+      sage: T_X = X.apply_matrix(T)
+      sage: T_X.base_change_matrix()
+      [1 0 0]
+      [1 1 0]
+      [0 0 1]
+      sage: M = matrix(QQ, [[1,0,0],[0,1,0],[0,1,1]])
+      sage: MT_X = T_X.apply_matrix(M)
+      sage: MT_X.base_change_matrix()
+      [1 0 0]
+      [1 1 0]
+      [1 1 1]
+    This method defines a left action.
+      sage: MT_X.base_change_matrix() == M*T
+      True
+      sage: MT_X.base_change_matrix() == T*M
+      False
+    """
+    return PlaneModel(self.generic_fiber(), T * self.base_change_matrix())
 
 
   def special_fiber(self):
