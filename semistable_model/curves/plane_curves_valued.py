@@ -91,13 +91,29 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
 
 class PlaneModel(ProjectivePlaneCurve):
   r"""
-  Construct...
+  Construct a plane model of a projective plane curve
+  over a valued field to the following conditions.
+
+  INPUT:
+  - ``generic_fiber`` -- a curve over a valued field.
+  - ``base_change_matrix`` -- an invertible matrix.
   """
 
-  def __init__(self, polynomial, generic_fiber, btb_point):
-    super().__init__(polynomial)
+  def __init__(self, generic_fiber, base_change_matrix):
+    r"""
+    Construct a plane model of a projective plane curve
+    over a valued field.
+    """
+    if not base_change_matrix.is_invertible():
+      raise ValueError("The base change matrix must be invertible.")
+    from semistable_model.stability import BTB_Point
+    b = BTB_Point(generic_fiber.base_ring_valuation(),
+                  base_change_matrix,
+                  [0,0,0])
+    F = b.hypersurface_model(generic_fiber.defining_polynomial())
+    self._bruhat_tits_building_point = b
+    super().__init__(F)
     self._generic_fiber = generic_fiber
-    self._bruhat_tits_building_point = btb_point
 
 
   def __repr__(self):
@@ -108,8 +124,16 @@ class PlaneModel(ProjectivePlaneCurve):
     return self._generic_fiber
 
 
-  def point_on_BruhatTitsBuilding(self):
+  def as_point_on_BTB(self):
     return self._bruhat_tits_building_point
+
+
+  def base_change_matrix(self):
+    return self.as_point_on_BTB().base_change_matrix()
+
+
+  def apply_matrix(self):
+    raise NotImplementedError
 
 
   def special_fiber(self):
@@ -119,7 +143,7 @@ class PlaneModel(ProjectivePlaneCurve):
     F = self.defining_polynomial()
     R = F.parent()
     E = identity_matrix(R.base_ring(), R.ngens())
-    v_K = self.point_on_BruhatTitsBuilding().base_ring_valuation()
+    v_K = self.as_point_on_BTB().base_ring_valuation()
     v = LinearValuation(R, v_K, E, [0]*R.ngens())
     return ProjectivePlaneCurve(v.reduction(self.defining_polynomial()))
 
