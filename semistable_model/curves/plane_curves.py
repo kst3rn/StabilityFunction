@@ -1042,6 +1042,24 @@ class ProjectivePlaneCurve:
     return cusps
 
 
+  def cusps(self):
+    r"""
+    Return the list of all A2 singularities on `self`.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = GF(2)[]
+      sage: f = y^4 + x^2*y*z + x^2*z^2 + y^2*z^2 + z^4
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.cusps()
+      [Projective flag given by [0, z2, 1] and x + (z2 + 1)*y + z,
+      Projective flag given by [0, z2 + 1, 1] and x + z2*y + z]
+      sage: X.cusps()[0].base_ring()
+      Finite Field in z2 of size 2^2
+    """
+    return self.base_change(
+      self.splitting_field_of_singular_points()).rational_cusps()
+
+
   def multiplicity(self, P):
     r"""
     Return the multiplicity of `self` at the point `P`, i.e. the
