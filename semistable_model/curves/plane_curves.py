@@ -1016,20 +1016,20 @@ class ProjectivePlaneCurve:
     return C_tilde.is_smooth(Q)
 
 
-  def cusps(self):
+  def rational_cusps(self):
     r"""
-    Return the list of all A2 cusps singularities on `self`.
+    Return the list of all rational A2 singularities on `self`.
 
     EXAMPLES:
       sage: R.<x,y,z> = QQ[]
       sage: f = (z*y^2 - x^3) * (z*(y - z)^2 - (x - z)^3) * ((y - z)^2 - x^2)
       sage: X = ProjectivePlaneCurve(f)
-      sage: X.cusps()
+      sage: X.rational_cusps()
       [Projective flag given by [0, 0, 1] and y]
       sage: 
       sage: f = (z*y^2 - x^3) * (z*y^2 - (x - z)^3) * ((y - 2*z)^2 - x^2)
       sage: X = ProjectivePlaneCurve(f)
-      sage: X.cusps()
+      sage: X.rational_cusps()
       [Projective flag given by [0, 0, 1] and y,
       Projective flag given by [1, 0, 1] and y]
     """

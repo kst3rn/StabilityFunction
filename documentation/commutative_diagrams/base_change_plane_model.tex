@@ -1,0 +1,15 @@
+\documentclass[tikz, border=2mm]{standalone}
+\usepackage{tikz-cd}
+\usepackage{amsmath, amssymb}
+
+\newcommand{\E}{\mathcal{E}}
+\newcommand{\Sym}{\mathop{\rm Sym}\nolimits}
+
+\begin{document}
+
+\begin{tikzcd}
+F(x_0, x_1, x_2) \arrow[equals]{r} & F((y_0, y_1, y_2) \cdot T) \arrow[equals]{r} & F((z_0, z_1, z_2) \cdot M T) \\
+F(\textbf{e}_0, \textbf{e}_1, \textbf{e}_2) \arrow[mapsto]{u}[swap]{\ell_{\E}} \arrow[mapsto]{r} & F(T \textbf{e}_0, T \textbf{e}_1, T \textbf{e}_2) \arrow[mapsto]{u}[swap]{\ell_{\E'}} \arrow[mapsto]{r} & F(M T \textbf{e}_0, M T \textbf{e}_1, M T \textbf{e}_2) \arrow[mapsto]{u}[swap]{\ell_{\E''}}
+\end{tikzcd}
+
+\end{document}

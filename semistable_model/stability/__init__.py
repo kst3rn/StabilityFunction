@@ -8,7 +8,7 @@ from .admissible_functions import (
 )
 from .stability_function import StabilityFunction, BTB_Point
 from .parametric_optimization import minimum_as_valuative_function
-from .extension_search import find_semistable_model, find_base_ring_extension
+from .extension_search import find_semistable_model, semistable_reduction_field
 
 __all__ = [
   # Admissible Functions
@@ -24,5 +24,5 @@ __all__ = [
   # Optimization and Search
   'minimum_as_valuative_function',
   'find_semistable_model',
-  'find_base_ring_extension'
+  'semistable_reduction_field'
 ]
