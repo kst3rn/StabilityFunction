@@ -51,6 +51,19 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
     return self.base_ring_valuation().domain()
 
 
+  def base_change(self, valuation_extension):
+    r"""
+    Return the base change of `self`.
+    """
+    PolRin0 = self.defining_polynomial().parent()
+    PolRin1 = PolRin0.change_ring(valuation_extension.domain())
+    phi = PolRin1.coerce_map_from(PolRin0)
+    if phi is None:
+      raise NotImplementedError(f"No coercion from the polynomial ring over {self.base_ring()} to the polynomial ring over {R}")
+    new_poly = phi(self.defining_polynomial())
+    return PlaneCurveOverValuedField(new_poly, valuation_extension)
+
+
   def degree(self):
     return self.defining_polynomial().degree()
 
@@ -63,29 +76,40 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
       sage: R.<x,y,z> = QQ[]
       sage: F = 16*x^4 + y^4 + 8*y^3*z + 16*x*y*z^2 + 4*x*z^3
       sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
-      sage: X = Y.semistable_model(); X
-      Plane Model of Projective Plane Curve with defining polynomial 16*x^4 + y^4 + 8*y^3*z + 16*x*y*z^2 + 4*x*z^3 over Rational Field with 2-adic valuation
+      sage: X = Y.semistable_model()
       sage: X.base_ring()
       Number Field in piL with defining polynomial x^12 + 2*x^6 + 2
       sage: X.has_semistable_reduction()
       True
       sage: X.special_fiber()
       Projective Plane Curve with defining polynomial x^4 + x^2*y^2 + y*z^3 over Finite Field of size 2
+      sage: X.generic_fiber().base_ring()
+      Number Field in piL with defining polynomial x^12 + 2*x^6 + 2
       sage:
       sage: F = 4*x^4 + 4*x*y^3 + y^4 + 2*x*z^3 + 4*y*z^3 + z^4
       sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
-      sage: X = Y.semistable_model(); X
-      Plane Model of Projective Plane Curve with defining polynomial 4*x^4 + 4*x*y^3 + y^4 + 2*x*z^3 + 4*y*z^3 + z^4 over Rational Field with 2-adic valuation
+      sage: X = Y.semistable_model()
       sage: X.base_ring()
       Number Field in piK with defining polynomial x^4 + 2*x^3 + 2*x^2 + 2
       sage: X.has_semistable_reduction()
       True
       sage: X.special_fiber()
       Projective Plane Curve with defining polynomial x^4 + x^2*y^2 + x*y^3 + y^3*z + y^2*z^2 + y*z^3 over Finite Field of size 2
+      sage: X.generic_fiber().base_ring()
+      Number Field in piK with defining polynomial x^4 + 2*x^3 + 2*x^2 + 2
     """
-    from semistable_model.stability import find_semistable_model
-    btb_point, F = find_semistable_model(self.defining_polynomial(), self.base_ring_valuation())
-    return PlaneModel(F, self, btb_point)
+    from semistable_model.stability import semistable_reduction_field
+    from semistable_model.stability import StabilityFunction
+
+    F = self.defining_polynomial()
+    v_K = self.base_ring_valuation()
+    L = semistable_reduction_field(F, v_K)
+    v_L = v_K.extension(L)
+    X_L = self.base_change(v_L)
+    phiL = StabilityFunction(X_L.defining_polynomial(), v_L)
+    a, b = phiL.global_minimum()
+    T = b.move_to_origin().base_change_matrix()
+    return PlaneModel(X_L, T)
 
 
 
