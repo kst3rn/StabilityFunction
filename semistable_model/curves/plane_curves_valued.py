@@ -9,7 +9,7 @@
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
 
-from sage.all import identity_matrix
+from sage.all import identity_matrix, PolynomialRing, GF
 from semistable_model.curves import ProjectivePlaneCurve
 from semistable_model.valuations import LinearValuation
 
@@ -112,11 +112,28 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
     return PlaneModel(X_L, T)
 
 
-    def semistable_models_with_canonical_cusps(self):
-      r"""
-      Return a list with semistable models of `self` with cusps in canonical form.
-      """
-      raise NotImplementedError
+  def semistable_models_with_rational_cusps(self):
+    r"""
+    Return a list with semistable models of `self` with cusps in canonical form.
+    """
+    X = self.semistable_model()
+    Xs = X.special_fiber()
+    L_tr = X.base_ring()
+    d = Xs.splitting_field_of_singular_points().degree()
+    Rk = PolynomialRing(GF(2), 'x')
+    g_bar = Rk.irreducible_element(d)
+    g = g_bar.change_ring(L_tr)
+    L_mixed_relative = L_tr.extension(g, names='b')
+    L_mixed_absolute = L_mixed_relative.absolute_field(names='a')
+    L_mixed_absolute = L_mixed_absolute.optimized_representation()[0]
+    v_K = self.base_ring_valuation()
+    v_L_mixed = v_K.extension(L_mixed_absolute)
+    from semistable_model.stability import StabilityFunction
+    Y_L_mixed = self.base_change(v_L_mixed)
+    phi = StabilityFunction(Y_L_mixed.defining_polynomial(), v_L_mixed)
+    a, b = phi.global_minimum()
+    T = b.move_to_origin().base_change_matrix()
+    return PlaneModel(Y_L_mixed, T)
 
 
 
