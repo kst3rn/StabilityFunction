@@ -112,6 +112,13 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
     return PlaneModel(X_L, T)
 
 
+    def semistable_models_with_canonical_cusps(self):
+      r"""
+      Return a list with semistable models of `self` with cusps in canonical form.
+      """
+      raise NotImplementedError
+
+
 
 class PlaneModel(ProjectivePlaneCurve):
   r"""
