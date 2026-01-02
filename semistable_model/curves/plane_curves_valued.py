@@ -132,6 +132,10 @@ class PlaneModel(ProjectivePlaneCurve):
     return self.as_point_on_BTB().base_change_matrix()
 
 
+  def adapted_basis(self):
+    return self.as_point_on_BTB().linear_valuation().adapted_basis()
+
+
   def apply_matrix(self, T):
     r"""
     Return the plane model of the generic fiber of `self` with
