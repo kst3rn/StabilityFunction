@@ -172,6 +172,10 @@ class PlaneModel(ProjectivePlaneCurve):
     return self._generic_fiber
 
 
+  def base_ring_valuation(self):
+    return self.generic_fiber().base_ring_valuation()
+
+
   def as_point_on_BTB(self):
     return self._bruhat_tits_building_point
 
