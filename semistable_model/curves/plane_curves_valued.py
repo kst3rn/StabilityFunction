@@ -68,7 +68,7 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
     return self.defining_polynomial().degree()
 
 
-  def semistable_model(self):
+  def semistable_model(self, minimal_extension=False):
     r"""
     Return a semistable model of `self`.
 
@@ -103,7 +103,7 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
 
     F = self.defining_polynomial()
     v_K = self.base_ring_valuation()
-    L = semistable_reduction_field(F, v_K)
+    L = semistable_reduction_field(F, v_K, minimal_extension)
     v_L = v_K.extension(L)
     X_L = self.base_change(v_L)
     phiL = StabilityFunction(X_L.defining_polynomial(), v_L)
@@ -112,11 +112,11 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
     return PlaneModel(X_L, T)
 
 
-  def semistable_models_with_rational_cusps(self):
+  def semistable_models_with_rational_cusps(self, minimal_extension=False):
     r"""
     Return a list with semistable models of `self` with cusps in canonical form.
     """
-    X = self.semistable_model()
+    X = self.semistable_model(minimal_extension)
     Xs = X.special_fiber()
     L_tr = X.base_ring()
     d = Xs.splitting_field_of_singular_points().degree()
