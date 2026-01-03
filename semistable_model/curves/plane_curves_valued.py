@@ -74,6 +74,12 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
 
     EXAMPLES::
       sage: R.<x,y,z> = QQ[]
+      sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
+      sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
+      sage: X = Y.semistable_model(minimal_extension=True)
+      sage: X.base_ring()
+      Number Field in piK with defining polynomial x^2 + 2
+      sage:
       sage: F = 16*x^4 + y^4 + 8*y^3*z + 16*x*y*z^2 + 4*x*z^3
       sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
       sage: X = Y.semistable_model()
@@ -115,6 +121,18 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
   def semistable_models_with_rational_cusps(self, minimal_extension=False):
     r"""
     Return a list with semistable models of `self` with cusps in canonical form.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
+      sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
+      sage: X = Y.semistable_models_with_rational_cusps(minimal_extension=True)
+      sage: X.base_ring()
+      Number Field in a1 with defining polynomial x^4 - 2*x^3 + x^2 - 6*x + 9
+      sage: Xs = X.special_fiber()
+      sage: Xs.rational_cusps()
+      [Projective flag given by [u1, 1, 1] and u1*x + u1*y + z,
+      Projective flag given by [u1 + 1, u1, 1] and u1*x + z]
     """
     X = self.semistable_model(minimal_extension)
     Xs = X.special_fiber()
