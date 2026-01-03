@@ -120,7 +120,8 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
 
   def semistable_model_with_rational_cusps(self, minimal_extension=False):
     r"""
-    Return a list with semistable models of `self` with cusps in canonical form.
+    Return a semistable models of `self` such that all cusps of its
+    reduction are rational.
 
     EXAMPLES::
       sage: R.<x,y,z> = QQ[]
