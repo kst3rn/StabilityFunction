@@ -118,7 +118,7 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
     return PlaneModel(X_L, T)
 
 
-  def semistable_models_with_rational_cusps(self, minimal_extension=False):
+  def semistable_model_with_rational_cusps(self, minimal_extension=False):
     r"""
     Return a list with semistable models of `self` with cusps in canonical form.
 
@@ -126,7 +126,7 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
       sage: R.<x,y,z> = QQ[]
       sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
       sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
-      sage: X = Y.semistable_models_with_rational_cusps(minimal_extension=True)
+      sage: X = Y.semistable_model_with_rational_cusps(minimal_extension=True)
       sage: X.base_ring()
       Number Field in a1 with defining polynomial x^4 - 2*x^3 + x^2 - 6*x + 9
       sage: Xs = X.special_fiber()
