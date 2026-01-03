@@ -43,7 +43,7 @@ def semistable_reduction_field(homogeneous_form,
   """
   if not minimal_extension:
     return extension_search(homogeneous_form, base_ring_valuation, 4)
-  L = extension_search(homogeneous_form, base_ring_valuation, 4)
+  L = extension_search(homogeneous_form, base_ring_valuation, 2)
   if L is not None:
     return L
   return extension_search(homogeneous_form, base_ring_valuation, 4)
