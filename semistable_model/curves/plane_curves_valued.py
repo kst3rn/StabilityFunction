@@ -9,7 +9,7 @@
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
 
-from sage.all import identity_matrix, PolynomialRing, GF
+from sage.all import matrix, identity_matrix, PolynomialRing, GF
 from semistable_model.curves import ProjectivePlaneCurve
 from semistable_model.valuations import LinearValuation
 
@@ -153,6 +153,45 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
     a, b = phi.global_minimum()
     T = b.move_to_origin().base_change_matrix()
     return PlaneModel(Y_L_mixed, T)
+
+
+  def semistable_models_with_canonical_cusps(self, minimal_extension=False):
+    r"""
+    Return a list of semistable models such that all cusps of their
+    reductions are rational and at least one cusp is in canonical form.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
+      sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
+      sage: C1, C2 = Y.semistable_models_with_canonical_cusps(minimal_extension=True)
+      sage: 
+      sage: R.<x,y,z> = QQ[]
+      sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
+      sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
+      sage: X1, X2 = Y.semistable_models_with_canonical_cusps(minimal_extension=True)
+      sage: X1.special_fiber().rational_cusps()
+      [Projective flag given by [0, 0, 1] and x,
+      Projective flag given by [u1, u1, 1] and x + u1*y + z]
+      sage: X2.special_fiber().rational_cusps()
+      [Projective flag given by [0, 0, 1] and x,
+      Projective flag given by [1, u1, 1] and (u1 + 1)*x + y + z]
+    """
+    X = self.semistable_model_with_rational_cusps(minimal_extension)
+    L = X.base_ring()
+    Xs = X.special_fiber()
+    cusps = Xs.rational_cusps()
+    v = X.base_ring_valuation()
+    models = []
+    for C in cusps:
+      T = C.move_to_001_and_x0()
+      M = [[0,0,0],[0,0,0],[0,0,0]]
+      for i in range(3):
+        for j in range(3):
+          M[i][j] = v.lift(T[i][j])
+      M = matrix(L, M)
+      models.append(X.apply_matrix(M))
+    return models
 
 
 
