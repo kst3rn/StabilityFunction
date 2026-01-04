@@ -6,31 +6,6 @@ from semistable_model.curves import ProjectivePlaneCurve
 from semistable_model.stability import minimum_as_valuative_function
 
 
-def find_semistable_model(homogeneous_form, base_ring_valuation):
-  r"""
-  Try to find a semistable model.
-  """
-  if not homogeneous_form.is_homogeneous():
-    raise ValueError(f"{homogeneous_form} is not homogeneous")
-  if homogeneous_form.base_ring() != base_ring_valuation.domain():
-    raise ValueError(f"The base ring of {homogeneous_form} is not {base_ring_valuation.domain()}")
-  if homogeneous_form.base_ring() is not QQ:
-    raise ValueError(f"The base ring must be {QQ}")
-  if base_ring_valuation.residue_field() is not GF(2):
-    raise ValueError(f"The residue field of {base_ring_valuation} is not {GF(2)}")
-
-  F = homogeneous_form
-  R = F.parent()
-  K = extension_search(F, base_ring_valuation, 4)
-  v_K = K.valuation(2)
-  R_K = R.change_ring(K)
-  F_K = R_K(F)
-  phiK = StabilityFunction(F_K, v_K)
-  a, b = phiK.global_minimum()
-  b_origin = b.move_to_origin()
-  return (b_origin, b_origin.hypersurface_model(F))
-
-
 def semistable_reduction_field(homogeneous_form,
                                base_ring_valuation,
                                minimal_extension=False):
