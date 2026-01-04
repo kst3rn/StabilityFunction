@@ -1,35 +1,9 @@
+from warnings import warn
 from itertools import combinations
 from sage.all import gcd, PolynomialRing, GF, QQ, ZZ, ceil, matrix, GaussValuation, vector, Infinity
 from semistable_model.stability import StabilityFunction
 from semistable_model.curves import ProjectivePlaneCurve
 from semistable_model.stability import minimum_as_valuative_function
-
-
-def find_semistable_model(homogeneous_form, base_ring_valuation):
-  r"""
-  Try to find a semistable model.
-  """
-  if not homogeneous_form.is_homogeneous():
-    raise ValueError(f"{homogeneous_form} is not homogeneous")
-  if homogeneous_form.base_ring() != base_ring_valuation.domain():
-    raise ValueError(f"The base ring of {homogeneous_form} is not {base_ring_valuation.domain()}")
-  if homogeneous_form.base_ring() is not QQ:
-    raise ValueError(f"The base ring must be {QQ}")
-  if base_ring_valuation.residue_field() is not GF(2):
-    raise ValueError(f"The residue field of {base_ring_valuation} is not {GF(2)}")
-  if homogeneous_form.degree() != 4:
-    raise NotImplementedError()
-
-  F = homogeneous_form
-  R = F.parent()
-  K = extension_search(F, base_ring_valuation, 4)
-  v_K = K.valuation(2)
-  R_K = R.change_ring(K)
-  F_K = R_K(F)
-  phiK = StabilityFunction(F_K, v_K)
-  a, b = phiK.global_minimum()
-  b_origin = b.move_to_origin()
-  return (b_origin, b_origin.hypersurface_model(F))
 
 
 def semistable_reduction_field(homogeneous_form,
@@ -41,12 +15,30 @@ def semistable_reduction_field(homogeneous_form,
   defined by `homogeneous_form` over this extension
   has a model with semistable reduction.
   """
-  if not minimal_extension:
-    return extension_search(homogeneous_form, base_ring_valuation, 4)
-  L = extension_search(homogeneous_form, base_ring_valuation, 2)
-  if L is not None:
-    return L
-  return extension_search(homogeneous_form, base_ring_valuation, 4)
+  if not homogeneous_form.is_homogeneous():
+    raise ValueError(f"{homogeneous_form} is not homogeneous.")
+  if not base_ring_valuation.domain() == QQ:
+    raise NotImplementedError(f"The base ring must be {QQ}")
+  if not base_ring_valuation.residue_field() == GF(2):
+    raise NotImplementedError(f"The residue field is not {GF(2)}")
+  if homogeneous_form.degree() != 4:
+    warn(
+      f"Provided homogeneous form has degree {homogeneous_form.degree()}, but "
+      "currently this function is designed for quartics (degree 4). "
+      "For other degrees, the algorithm may enter an infinite loop "
+      "or take an excessive amount of time.",
+      UserWarning,
+      stacklevel=2
+      )
+
+  i = 2
+  if minimal_extension:
+    i = 1
+  while True:
+    L = extension_search(homogeneous_form, base_ring_valuation, 2*i)
+    if L is not None:
+      return L
+    i += 1
 
 
 def extension_search(homogeneous_form,
@@ -81,9 +73,9 @@ def extension_search(homogeneous_form,
   if homogeneous_form.base_ring() != base_ring_valuation.domain():
     raise ValueError(f"The base ring of {homogeneous_form} is not {base_ring_valuation.domain()}")
   if homogeneous_form.base_ring() is not QQ:
-    raise ValueError(f"The base ring must be {QQ}")
+    raise NotImplementedError(f"The base ring must be {QQ}")
   if base_ring_valuation.residue_field() is not GF(2):
-    raise ValueError(f"The residue field of {base_ring_valuation} is not {GF(2)}")
+    raise NotImplementedError(f"The residue field of {base_ring_valuation} is not {GF(2)}")
 
   K = homogeneous_form.base_ring()
   phi = StabilityFunction(homogeneous_form, base_ring_valuation)
