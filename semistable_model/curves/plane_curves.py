@@ -243,7 +243,7 @@ class ProjectivePlaneCurve:
     return GF(p**lcm(d1,d2))
 
 
-  def tangent_cone_at(self, P):
+  def tangent_cone(self, P):
     r"""
     Return the tangent cone of self at the point `P`.
 
@@ -256,7 +256,7 @@ class ProjectivePlaneCurve:
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial -x1^3 + x0^2*x2
       sage: P = [0,0,1]
-      sage: C = X.tangent_cone_at(P); C
+      sage: C = X.tangent_cone(P); C
       Tangent cone of Projective Plane Curve with defining polynomial -x1^3 + x0^2*x2 at [0, 0, 1]
       sage: C.defining_polynomial()
       x^2
@@ -266,7 +266,7 @@ class ProjectivePlaneCurve:
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial -x1^3 + x0^2*x2 - 15*x1^2*x2 - 6*x0*x2^2 - 75*x1*x2^2 - 116*x2^3
       sage: P = [3,-5,1]
-      sage: C = X.tangent_cone_at(P); C
+      sage: C = X.tangent_cone(P); C
       Tangent cone of Projective Plane Curve with defining polynomial -x1^3 + x0^2*x2 - 15*x1^2*x2 - 6*x0*x2^2 - 75*x1*x2^2 - 116*x2^3 at [3, -5, 1]
       sage: C.defining_polynomial()
       x^2
@@ -276,7 +276,7 @@ class ProjectivePlaneCurve:
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial -x0^3 - x0^2*x2 + x1^2*x2
       sage: P = [0,0,1]
-      sage: C = X.tangent_cone_at(P); C
+      sage: C = X.tangent_cone(P); C
       Tangent cone of Projective Plane Curve with defining polynomial -x0^3 - x0^2*x2 + x1^2*x2 at [0, 0, 1]
       sage: C.defining_polynomial()
       -x^2 + y^2
@@ -286,7 +286,7 @@ class ProjectivePlaneCurve:
       sage: X = ProjectivePlaneCurve(f); X
       Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
       sage: P = [1,2,4]
-      sage: C = X.tangent_cone_at(P); C
+      sage: C = X.tangent_cone(P); C
       Tangent cone of Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4 at [2, 4, 1]
       sage: C.defining_polynomial()
       -3*x - 3*y
@@ -566,7 +566,7 @@ class ProjectivePlaneCurve:
       if X_red.is_conic(): # irreducible conic is smooth
         P = X_red.rational_point()
         if P is not None:
-          L = X_red.tangent_cone_at(P).embedded_lines()[0][0]
+          L = X_red.tangent_cone(P).embedded_lines()[0][0]
           return ProjectiveFlag(self.base_ring(), P, L)
 
     # Search for a line of multiplicity d/3.
@@ -985,7 +985,7 @@ class ProjectivePlaneCurve:
     if self.multiplicity(P) != 2:
       return False
 
-    tangent_lines = self.tangent_cone_at(P).embedded_lines()
+    tangent_lines = self.tangent_cone(P).embedded_lines()
     if len(tangent_lines) > 1:
       return False
     P_tangent_line = tangent_lines[0][0]
@@ -1040,7 +1040,7 @@ class ProjectivePlaneCurve:
     cusp_points = [P for P in X_red_sing if self.is_A2_singularity(P)]
     cusps = []
     for P in cusp_points:
-      L = self.tangent_cone_at(P).embedded_lines()[0][0]
+      L = self.tangent_cone(P).embedded_lines()[0][0]
       cusps.append(ProjectiveFlag(self.base_ring(), P, L))
     return cusps
 
