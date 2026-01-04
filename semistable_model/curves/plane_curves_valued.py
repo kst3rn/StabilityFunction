@@ -9,7 +9,7 @@
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
 
-from sage.all import identity_matrix
+from sage.all import matrix, identity_matrix, PolynomialRing, GF
 from semistable_model.curves import ProjectivePlaneCurve
 from semistable_model.valuations import LinearValuation
 
@@ -68,12 +68,18 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
     return self.defining_polynomial().degree()
 
 
-  def semistable_model(self):
+  def semistable_model(self, min_ext=False):
     r"""
     Return a semistable model of `self`.
 
     EXAMPLES::
       sage: R.<x,y,z> = QQ[]
+      sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
+      sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
+      sage: X = Y.semistable_model(min_ext=True)
+      sage: X.base_ring()
+      Number Field in piK with defining polynomial x^2 + 2
+      sage:
       sage: F = 16*x^4 + y^4 + 8*y^3*z + 16*x*y*z^2 + 4*x*z^3
       sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
       sage: X = Y.semistable_model()
@@ -103,13 +109,89 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
 
     F = self.defining_polynomial()
     v_K = self.base_ring_valuation()
-    L = semistable_reduction_field(F, v_K)
+    L = semistable_reduction_field(F, v_K, min_ext)
     v_L = v_K.extension(L)
     X_L = self.base_change(v_L)
     phiL = StabilityFunction(X_L.defining_polynomial(), v_L)
     a, b = phiL.global_minimum()
     T = b.move_to_origin().base_change_matrix()
     return PlaneModel(X_L, T)
+
+
+  def semistable_model_with_rational_cusps(self, min_ext=False):
+    r"""
+    Return a semistable models of `self` such that all cusps of its
+    reduction are rational.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
+      sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
+      sage: X = Y.semistable_model_with_rational_cusps(min_ext=True)
+      sage: X.base_ring()
+      Number Field in a1 with defining polynomial x^4 - 2*x^3 + x^2 - 6*x + 9
+      sage: Xs = X.special_fiber()
+      sage: Xs.rational_cusps()
+      [Projective flag given by [u1, 1, 1] and u1*x + u1*y + z,
+      Projective flag given by [u1 + 1, u1, 1] and u1*x + z]
+    """
+    X = self.semistable_model(min_ext)
+    Xs = X.special_fiber()
+    L_tr = X.base_ring()
+    d = Xs.splitting_field_of_singular_points().degree()
+    Rk = PolynomialRing(GF(2), 'x')
+    g_bar = Rk.irreducible_element(d)
+    g = g_bar.change_ring(L_tr)
+    L_mixed_relative = L_tr.extension(g, names='b')
+    L_mixed_absolute = L_mixed_relative.absolute_field(names='a')
+    L_mixed_absolute = L_mixed_absolute.optimized_representation()[0]
+    v_K = self.base_ring_valuation()
+    v_L_mixed = v_K.extension(L_mixed_absolute)
+    from semistable_model.stability import StabilityFunction
+    Y_L_mixed = self.base_change(v_L_mixed)
+    phi = StabilityFunction(Y_L_mixed.defining_polynomial(), v_L_mixed)
+    a, b = phi.global_minimum()
+    T = b.move_to_origin().base_change_matrix()
+    return PlaneModel(Y_L_mixed, T)
+
+
+  def semistable_models_with_canonical_cusps(self, min_ext=False):
+    r"""
+    Return a list of semistable models such that all cusps of their
+    reductions are rational and at least one cusp is in canonical form.
+
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
+      sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
+      sage: C1, C2 = Y.semistable_models_with_canonical_cusps(min_ext=True)
+      sage: 
+      sage: R.<x,y,z> = QQ[]
+      sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
+      sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
+      sage: X1, X2 = Y.semistable_models_with_canonical_cusps(min_ext=True)
+      sage: X1.special_fiber().rational_cusps()
+      [Projective flag given by [0, 0, 1] and x,
+      Projective flag given by [u1, u1, 1] and x + u1*y + z]
+      sage: X2.special_fiber().rational_cusps()
+      [Projective flag given by [0, 0, 1] and x,
+      Projective flag given by [1, u1, 1] and (u1 + 1)*x + y + z]
+    """
+    X = self.semistable_model_with_rational_cusps(min_ext)
+    L = X.base_ring()
+    Xs = X.special_fiber()
+    cusps = Xs.rational_cusps()
+    v = X.base_ring_valuation()
+    models = []
+    for C in cusps:
+      T = C.move_to_001_and_x0()
+      M = [[0,0,0],[0,0,0],[0,0,0]]
+      for i in range(3):
+        for j in range(3):
+          M[i][j] = v.lift(T[i][j])
+      M = matrix(L, M)
+      models.append(X.apply_matrix(M))
+    return models
 
 
 
@@ -146,6 +228,10 @@ class PlaneModel(ProjectivePlaneCurve):
 
   def generic_fiber(self):
     return self._generic_fiber
+
+
+  def base_ring_valuation(self):
+    return self.generic_fiber().base_ring_valuation()
 
 
   def as_point_on_BTB(self):

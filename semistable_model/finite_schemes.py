@@ -23,7 +23,7 @@ class FiniteScheme:
       Finite Scheme V₊(x^3 + x*z^2 + z^3, x + y) over Rational Field
     """
     if defining_ideal.dimension() - 1 > 0:
-      raise ValueError(f"{defining_ideal} does not define a projective scheme of dimension 0.")
+      raise ValueError(f"{defining_ideal} does not define a finite projective scheme.")
     self._defining_ideal = defining_ideal
 
 
@@ -33,6 +33,14 @@ class FiniteScheme:
 
   def defining_ideal(self):
     return self._defining_ideal
+
+
+  def dimension(self):
+    return self.defining_ideal().dimension() - 1
+
+
+  def is_empty(self):
+    return self.dimension() == -1
 
 
   def base_ring(self):

@@ -165,7 +165,10 @@ class ProjectivePlaneCurve:
       [Projective Plane Curve with defining polynomial (z2 + 1)*x + z2*y + z over Finite Field in z2 of size 2^2,
       Projective Plane Curve with defining polynomial z2*x + (z2 + 1)*y + z over Finite Field in z2 of size 2^2]
     """
-    return self.fano_scheme().splitting_field()
+    F1X = self.fano_scheme()
+    if F1X.is_empty():
+      return self.base_ring()
+    return F1X.splitting_field()
 
 
   def splitting_field_of_singular_points(self):

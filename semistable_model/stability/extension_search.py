@@ -22,7 +22,7 @@ def find_semistable_model(homogeneous_form, base_ring_valuation):
 
   F = homogeneous_form
   R = F.parent()
-  K = extension_of_fixed_ramification(F, base_ring_valuation, 4)
+  K = extension_search(F, base_ring_valuation, 4)
   v_K = K.valuation(2)
   R_K = R.change_ring(K)
   F_K = R_K(F)
@@ -32,41 +32,47 @@ def find_semistable_model(homogeneous_form, base_ring_valuation):
   return (b_origin, b_origin.hypersurface_model(F))
 
 
-def semistable_reduction_field(homogeneous_form, base_ring_valuation):
+def semistable_reduction_field(homogeneous_form,
+                               base_ring_valuation,
+                               minimal_extension=False):
   r"""
   Try to find a minimal extension of the base field
   of `homogeneous_form` such that the projective curve
   defined by `homogeneous_form` over this extension
   has a model with semistable reduction.
   """
-  return extension_of_fixed_ramification(homogeneous_form,
-                                         base_ring_valuation, 4)
+  if not minimal_extension:
+    return extension_search(homogeneous_form, base_ring_valuation, 4)
+  L = extension_search(homogeneous_form, base_ring_valuation, 2)
+  if L is not None:
+    return L
+  return extension_search(homogeneous_form, base_ring_valuation, 4)
 
 
-def extension_of_fixed_ramification(homogeneous_form,
-                                    base_ring_valuation,
-                                    ramification_index):
+def extension_search(homogeneous_form,
+                     base_ring_valuation,
+                     ramification_index):
   r"""
   Try to find an extension of the base ring of `homogeneous_form`.
 
   EXAMPLES::
     sage: R.<x,y,z> = QQ[]
     sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
-    sage: extension_of_fixed_ramification(F, QQ.valuation(2), 2)
+    sage: extension_search(F, QQ.valuation(2), 2)
     Number Field in piK with defining polynomial x^2 + 2
     sage:
     sage: F = 16*x^4 + y^4 + 8*y^3*z + 16*x*y*z^2 + 4*x*z^3
-    sage: extension_of_fixed_ramification(F, QQ.valuation(2), 2)
+    sage: extension_search(F, QQ.valuation(2), 2)
     None
-    sage: extension_of_fixed_ramification(F, QQ.valuation(2), 4)
+    sage: extension_search(F, QQ.valuation(2), 4)
     Number Field in piL with defining polynomial x^12 + 2*x^6 + 2
     sage:
     sage: F = 4*x^4 + 4*x*y^3 + y^4 + 2*x*z^3 + 4*y*z^3 + z^4
-    sage: extension_of_fixed_ramification(F, QQ.valuation(2), 4)
+    sage: extension_search(F, QQ.valuation(2), 4)
     Number Field in piK with defining polynomial x^4 + 2*x^3 + 2*x^2 + 2
     sage:
     sage: F = -2*x^3*y - 12*y^4 - 4*x^3*z - 3*x^2*y*z - 12*y^3*z - 4*x^2*z^2 - 12*x*y*z^2 + 16*y^2*z^2 + 5*y*z^3
-    sage: extension_of_fixed_ramification(F, QQ.valuation(2), 4)
+    sage: extension_search(F, QQ.valuation(2), 4)
     Number Field in piL with defining polynomial x^16 + 2
   """
 
