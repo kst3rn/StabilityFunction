@@ -184,7 +184,7 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
     v = X.base_ring_valuation()
     models = []
     for C in cusps:
-      T = C.move_to_001_and_x0()
+      T = C.move_to_e2_x0()
       M = [[0,0,0],[0,0,0],[0,0,0]]
       for i in range(3):
         for j in range(3):
