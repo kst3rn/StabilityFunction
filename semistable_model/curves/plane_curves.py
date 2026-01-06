@@ -1988,6 +1988,18 @@ class ProjectiveFlag:
     return _move_point_and_line_to_001_and_x0(K, P, L)
 
 
+  def move_to_e0_x2(self):
+    r"""
+    Return an invertible matrix moving `self` to the
+    projective flag given by the point (1:0:0) and the
+    line V_+(x_2)
+    """
+    P = [[0,0,1],
+         [0,1,0],
+         [1,0,0]]
+    return matrix(self.base_ring(), P) * self.move_to_001_and_x0()
+
+
   def base_change_matrix(self, matrix_form = 'uut'):
     r"""
     Return a unipotent matrix transforming a flag given by some
