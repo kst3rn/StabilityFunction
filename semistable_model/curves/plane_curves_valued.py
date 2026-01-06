@@ -194,6 +194,39 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
     return models
 
 
+  def semistable_models_with_e0_x2_cusps(self, min_ext=False):
+    r"""
+    Return a list of semistable models such that all cusps of their
+    reductions are rational and at least one cusp is in canonical form.
+
+    EXAMPLES::
+      sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
+      sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
+      sage: X1, X2 = Y.semistable_models_with_e0_x2_cusps(min_ext=True)
+      sage: X1.special_fiber().rational_cusps()
+      [Projective flag given by [1, 0, 0] and z,
+      Projective flag given by [u1 + 1, 1, 1] and x + u1*y + z]
+      sage: X2.special_fiber().rational_cusps()
+      [Projective flag given by [1, 0, 0] and z,
+      Projective flag given by [1, u1, 1] and u1*x + u1*y + z]
+    """
+    X = self.semistable_model_with_rational_cusps(min_ext)
+    L = X.base_ring()
+    Xs = X.special_fiber()
+    cusps = Xs.rational_cusps()
+    v = X.base_ring_valuation()
+    models = []
+    for C in cusps:
+      T = C.move_to_e0_x2()
+      M = [[0,0,0],[0,0,0],[0,0,0]]
+      for i in range(3):
+        for j in range(3):
+          M[i][j] = v.lift(T[i][j])
+      M = matrix(L, M)
+      models.append(X.apply_matrix(M))
+    return models
+
+
 
 class PlaneModel(ProjectivePlaneCurve):
   r"""
