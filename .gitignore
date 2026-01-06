@@ -28,6 +28,8 @@ dist/
 Thumbs.db
 .vscode/
 .idea/
+*.swp
+*.kate-swp
 
 # --- LaTeX Documentation ---
 # Ignore build artifacts
