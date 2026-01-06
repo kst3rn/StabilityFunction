@@ -155,7 +155,7 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
     return PlaneModel(Y_L_mixed, T)
 
 
-  def semistable_models_with_canonical_cusps(self, min_ext=False):
+  def semistable_models_with_e2_x0_cusps(self, min_ext=False):
     r"""
     Return a list of semistable models such that all cusps of their
     reductions are rational and at least one cusp is in canonical form.
@@ -164,12 +164,12 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
       sage: R.<x,y,z> = QQ[]
       sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
       sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
-      sage: C1, C2 = Y.semistable_models_with_canonical_cusps(min_ext=True)
+      sage: C1, C2 = Y.semistable_models_with_e2_x0_cusps(min_ext=True)
       sage: 
       sage: R.<x,y,z> = QQ[]
       sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
       sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
-      sage: X1, X2 = Y.semistable_models_with_canonical_cusps(min_ext=True)
+      sage: X1, X2 = Y.semistable_models_with_e2_x0_cusps(min_ext=True)
       sage: X1.special_fiber().rational_cusps()
       [Projective flag given by [0, 0, 1] and x,
       Projective flag given by [u1, u1, 1] and x + u1*y + z]
