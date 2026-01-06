@@ -164,11 +164,6 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
       sage: R.<x,y,z> = QQ[]
       sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
       sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
-      sage: C1, C2 = Y.semistable_models_with_e2_x0_cusps(min_ext=True)
-      sage: 
-      sage: R.<x,y,z> = QQ[]
-      sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
-      sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
       sage: X1, X2 = Y.semistable_models_with_e2_x0_cusps(min_ext=True)
       sage: X1.special_fiber().rational_cusps()
       [Projective flag given by [0, 0, 1] and x,
