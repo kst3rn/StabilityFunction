@@ -327,3 +327,42 @@ class PlaneModel(ProjectivePlaneCurve):
     """
     return self.special_fiber().is_semistable()
 
+
+  def resolve_cusp(self):
+    r"""
+    If `self.special_fiber()` has no rational cusp given by
+    (1:0:0) and V_+(x_2) an error is raised.
+
+    EXAMPLES::
+    First, we compute two models with rational cusps in the right position.
+      sage: R.<x,y,z> = QQ[]
+      sage: F = y^4 + 2*x^3*z + x*y^2*z + 2*x*z^3
+      sage: Y = PlaneCurveOverValuedField(F, QQ.valuation(2))
+      sage: X1, X2 = Y.semistable_models_with_e0_x2_cusps()
+      sage: X1.base_ring()
+      Number Field in a1 with defining polynomial x^4 - 2*x^3 + x^2 - 6*x + 9
+
+    Now we can resolve the cusps of X1 and X2.
+      sage: v_L1, T1, F1b = X1.resolve_cusp()
+      sage: v_L1
+      2-adic valuation
+      sage: v_L1.domain()
+      Number Field in alpha with defining polynomial a^8 + (8*a1^3 + 8*a1)*a^7 + (8*a1^3 + 8*a1^2 + 8)*a^6 + (16*a1 + 16)*a^5 + (16*a1^3 - 8*a1^2 + 16*a1 - 12)*a^4 + (48*a1^3 + 16*a1)*a^3 + (16*a1^3 + 32*a1^2 + 40*a1 - 4)*a^2 + (8*a1^3 + 16*a1^2 + 8*a1 + 64)*a + 24*a1^3 + 32*a1^2 + 16*a1 - 4 over its base field
+      sage: F1b
+      y^3 + x^2*z + x*z^2
+      sage: F1b.base_ring()
+      Finite Field in u1 of size 2^2
+      sage:
+      sage: v_L2, T2, F2b = X2.resolve_cusp()
+      sage: v_L2.domain()
+      Number Field in alpha with defining polynomial a^8 + 8*a^7 + (8*a1 + 8)*a^6 + 16*a1*a^5 + (-8*a1^3 + 4*a1^2 - 8*a1 + 8)*a^4 + (32*a1^3 + 16*a1^2 + 32*a1)*a^3 + (16*a1^3 + 40*a1 + 12)*a^2 + (32*a1^3 + 48*a1 - 8)*a + 24*a1^3 - 12*a1^2 + 64*a1 + 52 over its base field
+      sage: F2b
+      (u1 + 1)*y^3 + u1*x^2*z + x*z^2
+      sage: F2b.base_ring()
+      Finite Field in u1 of size 2^2
+      sage: F1b.base_ring()
+      Finite Field in u1 of size 2^2
+    """
+    from semistable_model.curves import resolve_cusp
+    return resolve_cusp(self.defining_polynomial(), self.base_ring_valuation())
+
