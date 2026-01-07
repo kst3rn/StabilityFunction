@@ -32,7 +32,7 @@ corresponding to the cusp.
 
 
 from sage.all import QQ, NumberField, PolynomialRing, matrix, Infinity, randint, Curve, SR
-from approximate_factors import approximate_factorization
+from semistable_model.curves.approximate_factors import approximate_factorization
 
 
 def resolve_cusp(F, v_K):
