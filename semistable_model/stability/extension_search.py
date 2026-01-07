@@ -8,12 +8,14 @@ from semistable_model.stability import minimum_as_valuative_function
 
 def semistable_reduction_field(homogeneous_form,
                                base_ring_valuation,
-                               minimal_extension=False):
+                               ramification_index=None):
   r"""
   Try to find a minimal extension of the base field
   of `homogeneous_form` such that the projective curve
   defined by `homogeneous_form` over this extension
   has a model with semistable reduction.
+  If `ramification_index` is not `None` try to find
+  an extension of provided ramification index.
   """
   if not homogeneous_form.is_homogeneous():
     raise ValueError(f"{homogeneous_form} is not homogeneous.")
@@ -31,9 +33,11 @@ def semistable_reduction_field(homogeneous_form,
       stacklevel=2
       )
 
-  i = 2
-  if minimal_extension:
-    i = 1
+  if ramification_index is not None:
+    return extension_search(homogeneous_form,
+                            base_ring_valuation,
+                            ramification_index)
+  i = 1
   while True:
     L = extension_search(homogeneous_form, base_ring_valuation, 2*i)
     if L is not None:
