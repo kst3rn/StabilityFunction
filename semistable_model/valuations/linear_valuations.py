@@ -776,6 +776,10 @@ class GradedInstability:
     return matrix(base_ring, lifted_graded_trafo_matrix)
 
 
+  def lift_normalized_matrix(self):
+    raise NotImplementedError
+
+
   def print_matrix(self):
     r"""
     Just to see the matrix in case if not self.is_rational(). 
