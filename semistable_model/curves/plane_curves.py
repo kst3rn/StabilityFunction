@@ -2109,7 +2109,7 @@ class ProjectiveFlag:
       elif isinstance(matrix_form, list):
         return _integral_plane_transformation(self.line, matrix_form)
       else:
-        raise ValueError
+        raise ValueError(f"{matrix_form} is an invalid input.")
     elif self.line is None:
       base_ring = self.base_ring()
       if matrix_form == 'uut':
@@ -2119,7 +2119,7 @@ class ProjectiveFlag:
       elif isinstance(matrix_form, list):
         return _integral_line_transformation(base_ring, self.point, matrix_form)
       else:
-        raise ValueError
+        raise ValueError(f"{matrix_form} is an invalid input.")
     else:
       if matrix_form == 'uut':
         return _uut_flag_transformation(self.point, self.line)
@@ -2128,7 +2128,7 @@ class ProjectiveFlag:
       elif isinstance(matrix_form, list):
         return _integral_flag_transformation(self.point, self.line, matrix_form)
       else:
-        raise ValueError
+        raise ValueError(f"{matrix_form} is an invalid input.")
 
 
   def is_unstable(self, projective_plane_curve):
