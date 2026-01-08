@@ -4,7 +4,7 @@ from .transformations import (
   _apply_matrix,
   _ult_line_transformation,
   _uut_line_transformation,
-  _integral_line_transformation.
+  _integral_line_transformation,
   _ult_plane_transformation,
   _uut_plane_transformation,
   _integral_plane_transformation,

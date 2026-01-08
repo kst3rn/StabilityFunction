@@ -3,6 +3,7 @@ import itertools
 from sage.matrix.constructor import matrix, zero_matrix, identity_matrix
 from sage.modules.free_module_element import vector
 from sage.rings.ring import Ring
+from sage.rings.rational_field import QQ
 
 
 def _apply_matrix(T, F, i=None):
