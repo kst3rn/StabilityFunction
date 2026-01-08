@@ -92,14 +92,12 @@ def _ult_line_transformation(base_field, coordinates):
     [0 1 0]
     [0 0 1]
   """
-
   Vector = [base_field(x) for x in coordinates]
   T = identity_matrix(base_field, len(Vector))
   # Find the maximal index, i_max, with Vector[i_max] != 0
   # and normalize by Vector[i_max]
   i_max, normalized_Vector = _normalize_by_last_nonzero_entry(Vector)
   T[i_max] = normalized_Vector
-
   return matrix(base_field, T)
 
 
@@ -131,14 +129,12 @@ def _uut_line_transformation(base_field, coordinates):
     [0 1 0]
     [0 0 1]
   """
-
   Vector = [base_field(x) for x in coordinates]
   T = identity_matrix(base_field, len(Vector))
   # Find the minimal index, i_min, with Vector[i_min] != 0
   # and normalize by Vector[i_min]
   i_min, normalized_Vector = _normalize_by_first_nonzero_entry(Vector)
   T[i_min] = normalized_Vector
-
   return matrix(base_field, T)
 
 
@@ -250,7 +246,6 @@ def _integral_line_transformation(base_field, Vector, weight_vector):
 
   permutation_matrix = _sorting_permutation_matrix(weight_vector)
   T = _ult_line_transformation(base_field, vector(Vector) * permutation_matrix)
-
   return permutation_matrix * T * permutation_matrix.transpose()
 
 
@@ -423,12 +418,10 @@ def _integral_plane_transformation(linear_form, weight_vector):
   The matrix B is unipotent, since unipotent matrices form a
   normal subgroup and T is unipotent.
   """
-
   weight_vector_qq = [QQ(w) for w in weight_vector]
   P = _sorting_permutation_matrix(weight_vector_qq)
   pL = _apply_matrix(P.transpose(), linear_form)
   T = _ult_plane_transformation(pL)
-
   return P * T * P.transpose()
 
 
@@ -489,7 +482,6 @@ def _ult_flag_transformation(Vector, linear_form):
     sage: L(list(vector([x0,x1,x2]) * T))
     B*x1
   """
-
   Vector = list(Vector)
   if linear_form(Vector) != 0:
     raise ValueError(f"{linear_form} must be zero at {Vector}")
@@ -497,7 +489,6 @@ def _ult_flag_transformation(Vector, linear_form):
   base_ring = linear_form.base_ring()
   T1 = _ult_line_transformation(base_ring, Vector)
   T2 = _ult_plane_transformation(_apply_matrix(T1, linear_form))
-
   return T2 * T1
 
 
@@ -558,7 +549,6 @@ def _uut_flag_transformation(Vector, linear_form):
     sage: L(list(vector([x0,x1,x2]) * T))
     B*x1
   """
-
   Vector = list(Vector)
   if linear_form(Vector) != 0:
     raise ValueError
@@ -566,7 +556,6 @@ def _uut_flag_transformation(Vector, linear_form):
   base_field = linear_form.base_ring()
   T1 = _uut_line_transformation(base_field, Vector)
   T2 = _uut_plane_transformation(_apply_matrix(T1, linear_form))
-
   return T2 * T1
 
 
@@ -697,12 +686,65 @@ def _unipotent_lower_triangular_matrices(R, n):
 
   YIELDS:
   The next n by n unipotent lower triangular matrix.
+
+  EXAMPLES::
+  Initialize the generator.
+    sage: G = _unipotent_lower_triangular_matrices(GF(2), 3)
+
+  First, the unipotent lower triangular elementary matrices
+  are generated.
+    sage: next(G)
+    [1 0 0]
+    [1 1 0]
+    [0 0 1]
+    sage: next(G)
+    [1 0 0]
+    [0 1 0]
+    [1 0 1]
+    sage: next(G)
+    [1 0 0]
+    [0 1 0]
+    [0 1 1]
+
+  When the unipotent lower triangular elementary matrices
+  are exhausted, the remaining unipotent lower triangular
+  matrices are generated.
+    sage: next(G)
+    [1 0 0]
+    [0 1 0]
+    [1 1 1]
+    sage: next(G)
+    [1 0 0]
+    [1 1 0]
+    [0 1 1]
+    sage: next(G)
+    [1 0 0]
+    [1 1 0]
+    [1 0 1]
+    sage: next(G)
+    [1 0 0]
+    [1 1 0]
+    [1 1 1]
+    sage: next(G)
+    Traceback (most recent call last):
+    ...
+    StopIteration:
   """
   indices = [(r, c) for r in range(n) for c in range(r)]
   template = identity_matrix(R, n)
+
+  for (r, c) in indices:
+    for val in R:
+      if val.is_zero():
+        continue
+      M = copy(template)
+      M[r, c] = val
+      yield M
+
   iterator = itertools.product(R, repeat=len(indices))
   for values in iterator:
-    if not any(values):
+    non_zeros = sum(1 for v in values if not v.is_zero())
+    if non_zeros <= 1:
       continue
     M = copy(template)
     for (r, c), val in zip(indices, values):
@@ -716,6 +758,49 @@ def _unipotent_integral_matrices(R, n, weight_vector):
   over the finite ring `R` such that the implication
     (weight_vector[j] - weight_vector[i] < 0) => (T[i][j] = 0)
   holds.
+
+  EXAMPLES::
+  Initialize the generator.
+    sage: G = _unipotent_integral_matrices(GF(2), 3, [2,1,3])
+
+  First, elementary matrices with the required property
+  are generated.
+    sage: next(G)
+    [1 0 1]
+    [0 1 0]
+    [0 0 1]
+    sage: next(G)
+    [1 0 0]
+    [0 1 1]
+    [0 0 1]
+    sage: next(G)
+    [1 0 0]
+    [1 1 0]
+    [0 0 1]
+
+  When the elementary matrices with the required property
+  are exhausted, the remaining matrices with the required
+  property are generated.
+    sage: next(G)
+    [1 0 0]
+    [1 1 1]
+    [0 0 1]
+    sage: next(G)
+    [1 0 1]
+    [1 1 0]
+    [0 0 1]
+    sage: next(G)
+    [1 0 1]
+    [0 1 1]
+    [0 0 1]
+    sage: next(G)
+    [1 0 1]
+    [1 1 1]
+    [0 0 1]
+    sage: next(G)
+    Traceback (most recent call last):
+    ...
+    StopIteration: 
   """
   P = _sorting_permutation_matrix(weight_vector)
   P_inverse = P.transpose()
@@ -733,7 +818,6 @@ def _min_index_of_nonzero_entry(L):
   OUTPUT:
   i - minimal integer between 0 and len(L) with L[i] != 0
   """
-
   return next((i for i in range(len(L)) if L[i] != 0), None)
 
 
@@ -747,7 +831,6 @@ def _max_index_of_nonzero_entry(L):
   OUTPUT:
   i - maximal integer between 0 and len(L) with L[i] != 0
   """
-
   return next((i for i in reversed(range(len(L))) if L[i] != 0), None)
 
 
@@ -756,10 +839,8 @@ def _normalize_by_first_nonzero_entry(L):
   Return the pair (i, [L[0] / L[i], ..., L[n] / L[i]]),
   where n = len(L) and i = _min_index_of_nonzero_entry(L).
   """
-
   i_min = _min_index_of_nonzero_entry(L)
   first_nonzero_entry = L[i_min]
-
   return (i_min, [x / first_nonzero_entry for x in L])
 
 
@@ -768,8 +849,6 @@ def _normalize_by_last_nonzero_entry(L):
   Return the pair (i, [L[0] / L[i], ..., L[n] / L[i]]),
   where n = len(L) and i = _max_index_of_nonzero_entry(L).
   """
-
   i_max = _max_index_of_nonzero_entry(L)
   last_nonzero_entry = L[i_max]
-
   return (i_max, [x / last_nonzero_entry for x in L])
