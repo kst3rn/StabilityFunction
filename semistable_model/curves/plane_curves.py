@@ -2009,9 +2009,13 @@ class ProjectiveFlag:
     - ``matrix_form`` -- a list of rational numbers or one of the strings 'ult', 'uut'.
 
     OUTPUT:
-    A unipotent matrix.
+    A unipotent matrix `T`. If `matrix_form` is a list of rational numbers `w`, then
+    for all indices i,j the implication
+    (w[j] - w[i] < 0) \Rightarrow (T[i][j] = 0)
+    holds.
 
     EXAMPLES:
+    Unipotent lower triangular base change matrices.
       sage: K.<a,b,c,A,B,C> = QQ[]
       sage: K = K.fraction_field()
       sage: R.<x0,x1,x2> = K[]
@@ -2062,6 +2066,8 @@ class ProjectiveFlag:
       sage: L = -(b*B/a + c*C/a)*x0 + B*x1 + C*x2
       sage: L(P)
       0
+
+    Unipotent upper triangular base change matrices.
       sage: F = ProjectiveFlag(K, P, L)
       sage: T = F.base_change_matrix('uut'); T
       [     1    b/a    c/a]
