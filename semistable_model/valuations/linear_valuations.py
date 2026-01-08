@@ -214,7 +214,7 @@ class LinearValuation:
     self._domain = polynomial_ring
     self._base_valuation = base_valuation
     self._base_change_matrix = base_change_matrix
-    self._weight_vector = vector(QQ, weight_vector)
+    self._weight_vector = [QQ(x) for x in weight_vector]
 
 
   def __repr__(self):
@@ -324,7 +324,8 @@ class LinearValuation:
     values = set()
     for multi_index, G_coefficient in G.dict().items():
       value = self.base_valuation()(G_coefficient)
-      value += vector(QQ, multi_index) * self.weight_vector()
+      value += sum(multi_index[j] * self.weight_vector()[j]
+                   for j in range(N))
       values.add(value)
     return min(values)
 
@@ -516,7 +517,8 @@ class GradedReduction:
     pi_K = v_K.uniformizer()
     for mult_index, G_coeff in G.dict().items():
       coeff_value = v_K(G_coeff)
-      term_value = coeff_value + vector(QQ, mult_index) * self._weight_vector
+      term_value = coeff_value + sum(mult_index[j] * self._weight_vector[j]
+                                     for j in range(N))
       if term_value == polynom_value:
         coeff_nr_value = coeff_value / self._base_ring_grading
         pi_K_power = pi_K**coeff_nr_value
@@ -681,7 +683,10 @@ class GradedReduction:
       instability = reduced_curve.instability()
       if instability is None:
         return None
-      T = instability.base_change_matrix(matrix_form)
+      elif matrix_form == 'integral':
+        T = instability.base_change_matrix(self.weight_vector())
+      else:
+        T = instability.base_change_matrix(matrix_form)
       return GradedInstability(self, T)
 
     for i, j in [(1,0), (2,0), (2,1)]:
@@ -729,7 +734,6 @@ class GradedInstability:
     Return `True` if the instability matrix is defined over
     the graded reduction ring and `False` otherwise.
     """
-
     for i, row in enumerate(self.instability_matrix):
       for j, entry in enumerate(row):
         if entry != 0:
