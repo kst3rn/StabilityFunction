@@ -667,7 +667,7 @@ class GradedReduction:
     if len(self.normalized_weight_vector()) != 3:
       raise NotImplementedError
     if matrix_form not in {'ult', 'uut', 'integral'}:
-      raise ValueError
+      raise ValueError(f"{matrix_form} is an invalid input.")
 
     w = self.normalized_weight_vector()
     differences = [w[2] - w[0], w[1] - w[0], w[2] - w[1]]
