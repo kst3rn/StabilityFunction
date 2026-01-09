@@ -656,7 +656,10 @@ class GradedReduction:
     instability = reduced_curve.instability()
     if instability is None:
       return None
-    T = instability.base_change_matrix(matrix_form)
+    elif matrix_form == 'integral':
+      T = instability.base_change_matrix(self.weight_vector())
+    else:
+      T = instability.base_change_matrix(matrix_form)
     return GradedInstability(self, T)
 
 
