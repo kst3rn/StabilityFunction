@@ -781,7 +781,15 @@ class GradedInstability:
 
 
   def lift_normalized_matrix(self):
-    raise NotImplementedError
+    v_K = self.graded_reduction.valuation().base_valuation()
+    N = len(self.grading)
+    lifted_graded_trafo_matrix = [[0 for i in range(N)] for j in range(N)]
+
+    for i, row in enumerate(self.instability_matrix):
+      for j, entry in enumerate(row):
+        lifted_graded_trafo_matrix[i][j] = v_K.lift(entry)
+    return matrix(self.graded_reduction.lift().base_ring(),
+                  lifted_graded_trafo_matrix)
 
 
   def print_matrix(self):
