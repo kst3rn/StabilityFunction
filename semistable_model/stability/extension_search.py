@@ -1,5 +1,5 @@
 from warnings import warn
-from itertools import combinations
+from itertools import combinations, product
 from sage.all import gcd, PolynomialRing, GF, QQ, ZZ, ceil, matrix, GaussValuation, vector, Infinity
 from semistable_model.stability import StabilityFunction
 from semistable_model.curves import ProjectivePlaneCurve
@@ -85,46 +85,39 @@ def extension_search(homogeneous_form,
   phi = StabilityFunction(homogeneous_form, base_ring_valuation)
   minimum, btb_point = phi.global_minimum('uut')
   if phi.has_semistable_reduction_at(btb_point):
-    if btb_point.minimal_simplex_dimension() != 0:
-      piK = base_ring_valuation.uniformizer()
-      r_K = base_ring_valuation(piK).denominator()
-      r_L = btb_point.ramification_index()
-      r = r_L / gcd(r_K, r_L)
-      S = PolynomialRing(K, 'x')
-      s = S.gen()
-      L = K.extension(s**r - piK, 'piL')
-      return L.absolute_field('piL')
-    return K
+    if btb_point.is_vertex():
+      return K
+    piK = base_ring_valuation.uniformizer()
+    r_K = base_ring_valuation(piK).denominator()
+    r_L = btb_point.ramification_index()
+    r = r_L / gcd(r_K, r_L)
+    S = PolynomialRing(K, 'x')
+    s = S.gen()
+    L = K.extension(s**r - piK, 'piL')
+    return L.absolute_field('piL')
 
   R = homogeneous_form.parent()
   S = PolynomialRing(K, 'x')
-  s = S.gen()
+  v0 = GaussValuation(S, base_ring_valuation)
   R_S = R.change_ring(S)
   F_S = R_S(homogeneous_form)
-  T = btb_point.base_change_matrix()
-
-  v0 = GaussValuation(S, base_ring_valuation)
+  s = S.gen()
   step = ZZ(1)/ZZ(ramification_index)
   fixed_valuation = v0.augmentation(s, step)
 
-  # create here initialization matrix:
-  w_normalized = [QQ(x / step) for x in btb_point.weight_vector()]
-  F_b = phi.graded_reduction(btb_point)
-  f = F_b.normalized_reduction_polynomial()
-  X_b = ProjectivePlaneCurve(f)
-  local_trafo_matrix = [[1,0,0],[0,1,0],[0,0,1]]
-  # combinations(range(3), 2) yields (0,1), (0,2), (1,2)
-  for i, j in combinations(range(3), 2):
-    w_difference = w_normalized[j] - w_normalized[i]
-    if w_difference in ZZ and X_b.elementary_instability_direction((i,j)) is not None:
-      if w_difference >= 0:
-        local_trafo_matrix[i][j] = s**w_difference
-      else:
-        local_trafo_matrix[j][i] = s**(-w_difference)
-      break
+  w = btb_point.weight_vector()
+  w = [QQ(w[i] / step) for i in range(len(w))]
+  M = phi.normalized_descent_direction(btb_point, 'integral')
+  local_trafo_matrix = [[0,0,0],[0,0,0],[0,0,0]]
+  for i, j in product(range(3), range(3)):
+    if not M[i][j].is_zero():
+      if w[j] - w[i] < 0:
+        return None
+      local_trafo_matrix[i][j] = M[i][j] * s**(w[j] - w[i])
   local_trafo_matrix = matrix(S, local_trafo_matrix)
-  global_trafo_matrix = local_trafo_matrix * T
 
+  T = btb_point.base_change_matrix()
+  global_trafo_matrix = local_trafo_matrix * T
   return _search_tree(F_S, fixed_valuation, step, minimum, global_trafo_matrix, 0, depth_limit=+Infinity)
 
 
