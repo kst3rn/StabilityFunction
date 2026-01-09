@@ -130,7 +130,28 @@ class StabilityFunction:
 
 
   def normalized_descent_direction(self, point_on_BTB, matrix_form='ult'):
-    raise NotImplementedError
+    r"""
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: F = y^2*z - x^3 - x*z^2
+      sage: phi = StabilityFunction(F, QQ.valuation(2))
+      sage: a, b = phi.global_minimum()
+      sage: phi.descent_direction(b)
+      sage: phi.normalized_descent_direction(b)
+      [1 0 0]
+      [0 1 0]
+      [1 0 1]
+    """
+    if self.dimension() != 2:
+      raise NotImplementedError
+    if self.base_ring() != point_on_BTB.base_ring():
+      raise ValueError
+
+    graded_reduction = self.graded_reduction(point_on_BTB)
+    graded_instability = graded_reduction.graded_instability(matrix_form)
+    if graded_instability is None:
+      return None
+    return graded_instability.lift_normalized_matrix()
 
 
   def local_minimum(self, base_change_matrix):
