@@ -64,11 +64,11 @@ def extension_search(homogeneous_form,
     Number Field in piL with defining polynomial x^12 + 2*x^6 + 2
     sage:
     sage: F = 4*x^4 + 4*x*y^3 + y^4 + 2*x*z^3 + 4*y*z^3 + z^4
-    sage: extension_search(F, QQ.valuation(2), 4)
-    Number Field in piK with defining polynomial x^4 + 2*x^3 + 2*x^2 + 2
+    sage: extension_search(F, QQ.valuation(2), 2)
+    Number Field in piK with defining polynomial x^4 + 8*x + 4
     sage:
     sage: F = -2*x^3*y - 12*y^4 - 4*x^3*z - 3*x^2*y*z - 12*y^3*z - 4*x^2*z^2 - 12*x*y*z^2 + 16*y^2*z^2 + 5*y*z^3
-    sage: extension_search(F, QQ.valuation(2), 4)
+    sage: extension_search(F, QQ.valuation(2), 2)
     Number Field in piL with defining polynomial x^16 + 2
   """
 
@@ -110,9 +110,10 @@ def extension_search(homogeneous_form,
   local_trafo_matrix = [[0,0,0],[0,0,0],[0,0,0]]
   for i, j in product(range(3), range(3)):
     if not M[i][j].is_zero():
-      if not w[j] - w[i] in ZZ:
+      wj_wi_difference = w[j] - w[i]
+      if not wj_wi_difference.is_integer():
         return None
-      local_trafo_matrix[i][j] = M[i][j] * s**(w[j] - w[i])
+      local_trafo_matrix[i][j] = M[i][j] * s**wj_wi_difference
   local_trafo_matrix = matrix(S, local_trafo_matrix)
 
   T = btb_point.base_change_matrix()
