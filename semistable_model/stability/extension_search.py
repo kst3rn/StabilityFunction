@@ -105,13 +105,12 @@ def extension_search(homogeneous_form,
   step = ZZ(1)/ZZ(ramification_index)
   fixed_valuation = v0.augmentation(s, step)
 
-  w = btb_point.weight_vector()
-  w = [QQ(w[i] / step) for i in range(len(w))]
+  w = [QQ(x / step) for x in btb_point.weight_vector()]
   M = phi.normalized_descent_direction(btb_point, 'integral')
   local_trafo_matrix = [[0,0,0],[0,0,0],[0,0,0]]
   for i, j in product(range(3), range(3)):
     if not M[i][j].is_zero():
-      if w[j] - w[i] < 0:
+      if not w[j] - w[i] in ZZ:
         return None
       local_trafo_matrix[i][j] = M[i][j] * s**(w[j] - w[i])
   local_trafo_matrix = matrix(S, local_trafo_matrix)
@@ -173,7 +172,7 @@ def _search_tree(F, fixed_valuation, step, minimum, global_trafo_matrix, depth, 
     new_minimum, new_btb_point = phi_typeII.local_minimum(global_trafo_matrix)
     if new_minimum >= minimum:
       break
-    elif new_btb_point.minimal_simplex_dimension(ZZ(1) / step) == 2:
+    elif new_btb_point.minimal_simplex_dimension(step.denominator()) == 2:
       continue
 
     j = j + 1
