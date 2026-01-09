@@ -781,6 +781,17 @@ class GradedInstability:
 
 
   def lift_normalized_matrix(self):
+    r"""
+    Return the matrix
+    [a00,a01,a02]
+    [a10,a11,a12]
+    [a20,a21,a22]
+    if the method `self.lift_matrix()` returns the matrix
+    [a00*pi_K^{w0-w0}, a01*pi_K^{w1-w0}, a02*pi_K^{w2-w0}]
+    [a10*pi_K^{w0-w1}, a11*pi_K^{w1-w1}, a12*pi_K^{w2-w1}]
+    [a20*pi_K^{w0-w2}, a21*pi_K^{w1-w2}, a22*pi_K^{w2-w2}]
+    where `pi_K` is a prime element.
+    """
     v_K = self.graded_reduction.valuation().base_valuation()
     N = len(self.grading)
     lifted_graded_trafo_matrix = [[0 for i in range(N)] for j in range(N)]
