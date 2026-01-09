@@ -86,7 +86,7 @@ class StabilityFunction:
     return RestrictedStabilityFunction(self, base_change_matrix).active_functions(weight_vector)
 
 
-  def descent_direction(self, point_on_BTB, matrix_form = 'ult'):
+  def descent_direction(self, point_on_BTB, matrix_form='ult'):
     r"""
     Return a matrices which describes a base change,
     fixing `point_on_BTB`, to an apartment, where `self`
@@ -117,7 +117,6 @@ class StabilityFunction:
     Note that if n = 2, we can compute E_2 by computing a graded instability (E_2, w) of the graded
     reduction of 'self.homogeneous_form()' with respect to a valuation representing 'point_on_BTB'.
     """
-
     if self.dimension() != 2:
       raise NotImplementedError
     if self.base_ring() != point_on_BTB.base_ring():
@@ -128,6 +127,10 @@ class StabilityFunction:
     if rational_graded_instability is None:
       return None
     return rational_graded_instability.lift_matrix()
+
+
+  def normalized_descent_direction(self, point_on_BTB, matrix_form='ult'):
+    raise NotImplementedError
 
 
   def local_minimum(self, base_change_matrix):
