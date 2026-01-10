@@ -1,5 +1,5 @@
 from warnings import warn
-from itertools import combinations, product, count
+from itertools import product, count
 from sage.all import gcd, PolynomialRing, GF, QQ, ZZ, ceil, matrix, GaussValuation, vector, Infinity
 from semistable_model.stability import StabilityFunction, minimum_as_valuative_function
 from semistable_model.curves import ProjectivePlaneCurve
@@ -125,7 +125,6 @@ def _search_tree(F, fixed_valuation, step, minimum, trafo_matrix, depth, depth_l
   r"""
   Heuristic search.
   """
-
   depth = depth + 1
   if depth > depth_limit:
     return None
@@ -168,7 +167,10 @@ def _search_tree(F, fixed_valuation, step, minimum, trafo_matrix, depth, depth_l
     if new_radius <= fixed_valuation.value_group().gen():
       return None
 
-    typeII_valuation = fixed_valuation.augmentation(center, new_radius)
+    try:
+      typeII_valuation = fixed_valuation.augmentation(center, new_radius)
+    except ValueError:
+      continue
     phi_typeII = StabilityFunction(F, typeII_valuation)
     new_minimum, new_btb_point = phi_typeII.local_minimum(trafo_matrix)
 
@@ -180,8 +182,9 @@ def _search_tree(F, fixed_valuation, step, minimum, trafo_matrix, depth, depth_l
     v_K_residue_ring = fixed_valuation.residue_ring().base_ring()
 
     if new_btb_point.minimal_simplex_dimension(step.denominator()) == 0:
-      w = [QQ(x / step) for x in btb_point.weight_vector()]
-      for M in _unipotent_integral_matrices(v_K_residue_ring, 3):
+      w = [QQ(x / step) for x in new_btb_point.weight_vector()]
+      for M in _unipotent_integral_matrices(v_K_residue_ring, 3,
+                                            new_btb_point.weight_vector()):
         local_trafo_matrix = [[0,0,0],[0,0,0],[0,0,0]]
         for i, j in product(range(3), range(3)):
           if not M[i][j].is_zero():
@@ -194,7 +197,7 @@ def _search_tree(F, fixed_valuation, step, minimum, trafo_matrix, depth, depth_l
         if result is not None:
           return result
     elif new_btb_point.minimal_simplex_dimension(step.denominator()) == 1:
-      (i, j), c = new_btb_point.walls()
+      (i, j), c = new_btb_point.walls(step.denominator())[0]
       s = fixed_valuation.domain().gen()
       for a in v_K_residue_ring:
         if a.is_zero():
