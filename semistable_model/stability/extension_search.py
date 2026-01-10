@@ -1,9 +1,9 @@
 from warnings import warn
 from itertools import combinations, product, count
 from sage.all import gcd, PolynomialRing, GF, QQ, ZZ, ceil, matrix, GaussValuation, vector, Infinity
-from semistable_model.stability import StabilityFunction
+from semistable_model.stability import StabilityFunction, minimum_as_valuative_function
 from semistable_model.curves import ProjectivePlaneCurve
-from semistable_model.stability import minimum_as_valuative_function
+from semistable_model.geometry_utils import _unipotent_integral_matrices
 
 
 def semistable_reduction_field(homogeneous_form,
@@ -174,23 +174,40 @@ def _search_tree(F, fixed_valuation, step, minimum, trafo_matrix, depth, depth_l
 
     if new_minimum >= minimum:
       break
-    elif new_btb_point.minimal_simplex_dimension(step.denominator()) == 2:
-      continue
 
-    w_normalized = [QQ(x / step) for x in new_btb_point.weight_vector()]
-    for i, j in combinations(range(3), 2):
-      w_difference = w_normalized[j] - w_normalized[i]
-      if w_difference.is_integer():
-        local_trafo_matrix = [[1,0,0],[0,1,0],[0,0,1]]
-        if w_difference >= 0:
-          local_trafo_matrix[i][j] = F.base_ring().gen()**w_difference
-        else:
-          local_trafo_matrix[j][i] = F.base_ring().gen()**(-w_difference)
-        local_trafo_matrix = matrix(F.base_ring(), local_trafo_matrix)
+    S = fixed_valuation.domain()
+    s = S.gen()
+    v_K_residue_ring = fixed_valuation.residue_ring().base_ring()
+
+    if new_btb_point.minimal_simplex_dimension(step.denominator()) == 0:
+      w = [QQ(x / step) for x in btb_point.weight_vector()]
+      for M in _unipotent_integral_matrices(v_K_residue_ring, 3):
+        local_trafo_matrix = [[0,0,0],[0,0,0],[0,0,0]]
+        for i, j in product(range(3), range(3)):
+          if not M[i][j].is_zero():
+            local_trafo_matrix[i][j] = fixed_valuation.lift(
+              M[i][j] * s**(w[j] - w[i])
+              )
+        local_trafo_matrix = matrix(S, local_trafo_matrix)
         new_trafo_matrix = local_trafo_matrix * trafo_matrix
         result = _search_tree(F, fixed_valuation, step, new_minimum, new_trafo_matrix, depth, depth_limit)
         if result is not None:
           return result
+    elif new_btb_point.minimal_simplex_dimension(step.denominator()) == 1:
+      (i, j), c = new_btb_point.walls()
+      s = fixed_valuation.domain().gen()
+      for a in v_K_residue_ring:
+        if a.is_zero():
+          continue
+        local_trafo_matrix = [[1,0,0],[0,1,0],[0,0,1]]
+        local_trafo_matrix[i][j] = fixed_valuation.lift(a) * s**c
+        local_trafo_matrix = matrix(S, local_trafo_matrix)
+        new_trafo_matrix = local_trafo_matrix * trafo_matrix
+        result = _search_tree(F, fixed_valuation, step, new_minimum, new_trafo_matrix, depth, depth_limit)
+        if result is not None:
+          return result
+    else: # new_btb_point.minimal_simplex_dimension(step.denominator()) == 2
+      continue
 
 
 def _ceil_step(x, r):

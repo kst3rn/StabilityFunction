@@ -740,26 +740,25 @@ class BTB_Point:
 
     EXAMPLES::
       sage: w = [1/2, 1/3, 5/3]
-      sage: E = identity_matrix(QQ, 3)
-      sage: P = BTB_Point(QQ.valuation(2), E, w); P
-      Point on the Bruhat-Tits Building of SL(3) over Rational Field with 2-adic valuation
-      sage: P.minimal_simplex_dimension()
+      sage: T = identity_matrix(QQ, 3)
+      sage: b = BTB_Point(QQ.valuation(2), T, w)
+      sage: b.minimal_simplex_dimension()
       2
-      sage: P.minimal_simplex_dimension(ramification_index=2)
+      sage: b.minimal_simplex_dimension(ramification_index=2)
       2
-      sage: P.minimal_simplex_dimension(ramification_index=3)
+      sage: b.minimal_simplex_dimension(ramification_index=3)
       1
-      sage: P.minimal_simplex_dimension(ramification_index=6)
+      sage: b.minimal_simplex_dimension(ramification_index=6)
       0
       sage: w = [0, 1/2, 3/2]
-      sage: P = BTB_Point(QQ.valuation(2), E, w)
-      sage: P.minimal_simplex_dimension()
+      sage: b = BTB_Point(QQ.valuation(2), T, w)
+      sage: b.minimal_simplex_dimension()
       1
-      sage: P.minimal_simplex_dimension(ramification_index=2)
+      sage: b.minimal_simplex_dimension(ramification_index=2)
       0
       sage: w = [0, 1, 3]
-      sage: P = BTB_Point(QQ.valuation(2), E, w)
-      sage: P.minimal_simplex_dimension()
+      sage: b = BTB_Point(QQ.valuation(2), T, w)
+      sage: b.minimal_simplex_dimension()
       0
 
     MATHEMATICAL INTERPRETATION (ToDo. But at this point we just give an example.): 
@@ -787,16 +786,11 @@ class BTB_Point:
       val_gr_gen = self.base_ring_valuation().value_group().gen()
     else:
       val_gr_gen = ZZ(1) / ramification_index
-    norm_weight_vector = []
-    for c in self.val_gr_gen:
-      norm_weight_vector.append(c / val_gr_gen)
 
-    # translate inside the unit cube
-    trans_norm_weight_vector = []
-    for c in norm_weight_vector:
-      trans_norm_weight_vector.append(c - floor(c))
-
-    return len(set(trans_norm_weight_vector)) - 1
+    # Normalize and translate the weight vector.
+    w_normed = [QQ(c / val_gr_gen) for c in self.weight_vector()]
+    w_normed_transed = [c - floor(c) for c in w_normed]
+    return len(set(w_normed_transed)) - 1
 
 
   def is_vertex(self):
