@@ -103,7 +103,7 @@ def extension_search(homogeneous_form,
   F_S = R_S(homogeneous_form)
   s = S.gen()
   step = ZZ(1)/ZZ(ramification_index)
-  fixed_valuation = v0.augmentation(s, step)
+  valuation1 = v0.augmentation(s, step)
 
   w = [QQ(x / step) for x in btb_point.weight_vector()]
   M = phi.normalized_descent_direction(btb_point, 'integral')
@@ -118,10 +118,10 @@ def extension_search(homogeneous_form,
 
   T = btb_point.base_change_matrix()
   global_trafo_matrix = local_trafo_matrix * T
-  return _search_tree(F_S, fixed_valuation, step, minimum, global_trafo_matrix, 0, depth_limit=+Infinity)
+  return _search_tree(F_S, valuation1, step, minimum, global_trafo_matrix, 0, depth_limit=+Infinity)
 
 
-def _search_tree(F, fixed_valuation, step, minimum, trafo_matrix, depth, depth_limit):
+def _search_tree(F, valuation1, step, minimum, trafo_matrix, depth, depth_limit):
   r"""
   Heuristic search.
   """
@@ -132,7 +132,7 @@ def _search_tree(F, fixed_valuation, step, minimum, trafo_matrix, depth, depth_l
   x0, x1, x2 = F.parent().gens()
   h, e = minimum_as_valuative_function(
     F(list(vector([x0, x1, x2]) * trafo_matrix)),
-    fixed_valuation)
+    valuation1)
 
   local_max_val = h.local_maxima()
   max_local_max = max(a for a, b in local_max_val)
@@ -164,11 +164,11 @@ def _search_tree(F, fixed_valuation, step, minimum, trafo_matrix, depth, depth_l
 
   for k in count():
     new_radius = adjusted_radius - k * step
-    if new_radius <= fixed_valuation.value_group().gen():
+    if new_radius <= valuation1.value_group().gen():
       return None
 
     try:
-      typeII_valuation = fixed_valuation.augmentation(center, new_radius)
+      typeII_valuation = valuation1.augmentation(center, new_radius)
     except ValueError:
       continue
     phi_typeII = StabilityFunction(F, typeII_valuation)
@@ -177,39 +177,38 @@ def _search_tree(F, fixed_valuation, step, minimum, trafo_matrix, depth, depth_l
     if new_minimum >= minimum:
       break
 
-    S = fixed_valuation.domain()
+    S = valuation1.domain()
     s = S.gen()
-    v_K_residue_ring = fixed_valuation.residue_ring().base_ring()
+    v_K_residue_ring = valuation1.residue_ring().base_ring()
 
     if new_btb_point.minimal_simplex_dimension(step.denominator()) == 0:
       w = [QQ(x / step) for x in new_btb_point.weight_vector()]
       for M in _unipotent_integral_matrices(v_K_residue_ring, 3,
                                             new_btb_point.weight_vector()):
-        local_trafo_matrix = [[0,0,0],[0,0,0],[0,0,0]]
+        local_trafo = [[0,0,0],[0,0,0],[0,0,0]]
         for i, j in product(range(3), range(3)):
           if not M[i][j].is_zero():
-            local_trafo_matrix[i][j] = fixed_valuation.lift(
-              M[i][j] * s**(w[j] - w[i])
-              )
-        local_trafo_matrix = matrix(S, local_trafo_matrix)
-        new_trafo_matrix = local_trafo_matrix * trafo_matrix
-        result = _search_tree(F, fixed_valuation, step, new_minimum, new_trafo_matrix, depth, depth_limit)
+            local_trafo[i][j] = valuation1.lift(M[i][j]) * s**(w[j] - w[i])
+        local_trafo = matrix(S, local_trafo)
+        new_trafo_matrix = local_trafo * trafo_matrix
+        result = _search_tree(F, valuation1, step, new_minimum, new_trafo_matrix, depth, depth_limit)
         if result is not None:
           return result
     elif new_btb_point.minimal_simplex_dimension(step.denominator()) == 1:
       (i, j), c = new_btb_point.walls(step.denominator())[0]
-      s = fixed_valuation.domain().gen()
+      s = valuation1.domain().gen()
       for a in v_K_residue_ring:
         if a.is_zero():
           continue
-        local_trafo_matrix = [[1,0,0],[0,1,0],[0,0,1]]
-        local_trafo_matrix[i][j] = fixed_valuation.lift(a) * s**c
-        local_trafo_matrix = matrix(S, local_trafo_matrix)
-        new_trafo_matrix = local_trafo_matrix * trafo_matrix
-        result = _search_tree(F, fixed_valuation, step, new_minimum, new_trafo_matrix, depth, depth_limit)
+        local_trafo = [[1,0,0],[0,1,0],[0,0,1]]
+        local_trafo[i][j] = valuation1.lift(a) * s**c
+        local_trafo = matrix(S, local_trafo)
+        new_trafo_matrix = local_trafo * trafo_matrix
+        result = _search_tree(F, valuation1, step, new_minimum, new_trafo_matrix, depth, depth_limit)
         if result is not None:
           return result
     else: # new_btb_point.minimal_simplex_dimension(step.denominator()) == 2
+      print("continue, since dim==2")
       continue
 
 
