@@ -208,7 +208,6 @@ def _search_tree(F, valuation1, step, minimum, trafo_matrix, depth, depth_limit)
         if result is not None:
           return result
     else: # new_btb_point.minimal_simplex_dimension(step.denominator()) == 2
-      print("continue, since dim==2")
       continue
 
 
