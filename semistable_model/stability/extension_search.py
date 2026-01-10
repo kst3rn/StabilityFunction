@@ -1,5 +1,5 @@
 from warnings import warn
-from itertools import combinations, product
+from itertools import combinations, product, count
 from sage.all import gcd, PolynomialRing, GF, QQ, ZZ, ceil, matrix, GaussValuation, vector, Infinity
 from semistable_model.stability import StabilityFunction
 from semistable_model.curves import ProjectivePlaneCurve
@@ -163,9 +163,9 @@ def _search_tree(F, fixed_valuation, step, minimum, trafo_matrix, depth, depth_l
     L = K.extension(s**r - piK, 'piL')
     return L.absolute_field('piL')
 
-  j = 0
-  while True:
-    new_radius = adjusted_radius - j * step
+  k = 0
+  for k in count():
+    new_radius = adjusted_radius - k * step
     if new_radius <= fixed_valuation.value_group().gen():
       return None
 
@@ -176,24 +176,22 @@ def _search_tree(F, fixed_valuation, step, minimum, trafo_matrix, depth, depth_l
     if new_minimum >= minimum:
       break
     elif new_btb_point.minimal_simplex_dimension(step.denominator()) == 2:
-      j += 1
       continue
 
     w_normalized = [QQ(x / step) for x in new_btb_point.weight_vector()]
-    for i, k in combinations(range(3), 2):
-      w_difference = w_normalized[k] - w_normalized[i]
+    for i, j in combinations(range(3), 2):
+      w_difference = w_normalized[j] - w_normalized[i]
       if w_difference.is_integer():
         local_trafo_matrix = [[1,0,0],[0,1,0],[0,0,1]]
         if w_difference >= 0:
-          local_trafo_matrix[i][k] = F.base_ring().gen()**w_difference
+          local_trafo_matrix[i][j] = F.base_ring().gen()**w_difference
         else:
-          local_trafo_matrix[k][i] = F.base_ring().gen()**(-w_difference)
+          local_trafo_matrix[j][i] = F.base_ring().gen()**(-w_difference)
         local_trafo_matrix = matrix(F.base_ring(), local_trafo_matrix)
         new_trafo_matrix = local_trafo_matrix * trafo_matrix
         result = _search_tree(F, fixed_valuation, step, new_minimum, new_trafo_matrix, depth, depth_limit)
         if result is not None:
           return result
-    j += 1
 
 
 def _ceil_step(x, r):
