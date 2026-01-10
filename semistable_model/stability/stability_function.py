@@ -10,6 +10,7 @@
 # ****************************************************************************
 
 
+from itertools import combinations
 from sage.all import *
 from semistable_model.valuations import LinearValuation
 from semistable_model.geometry_utils import _apply_matrix
@@ -716,7 +717,7 @@ class BTB_Point:
 
 
   def affine_patch(self):
-    return self._weight_vector.index(0)
+    return self.weight_vector().index(0)
 
 
   def base_ring(self):
@@ -783,12 +784,12 @@ class BTB_Point:
 
     # normalize the value group to be ZZ
     if ramification_index is None:
-      value_groug_generator = self.base_ring_valuation().value_group().gen()
+      val_gr_gen = self.base_ring_valuation().value_group().gen()
     else:
-      value_groug_generator = ZZ(1) / ramification_index
+      val_gr_gen = ZZ(1) / ramification_index
     norm_weight_vector = []
-    for c in self._weight_vector:
-      norm_weight_vector.append(c / value_groug_generator)
+    for c in self.val_gr_gen:
+      norm_weight_vector.append(c / val_gr_gen)
 
     # translate inside the unit cube
     trans_norm_weight_vector = []
@@ -800,6 +801,61 @@ class BTB_Point:
 
   def is_vertex(self):
     return self.minimal_simplex_dimension() == 0
+
+
+  def walls(self, ramification_index=None):
+    r"""
+    Return the list of all `((i, j), c)` such that
+    for w = self.weight_vector() the difference
+    w[j] - w[i] is positive and is contained in the
+    value group of the base ring valuation of `self`.
+
+    EXAMPLES::
+      sage: v_2 = QQ.valuation(2)
+      sage: T = identity_matrix(QQ, 3)
+
+    There are three walls passing through a simplex of dimension 0.
+      sage: w = [7, 1, 2]
+      sage: b = BTB_Point(v_2, T, w)
+      sage: b.walls()
+      [((1, 0), 6), ((2, 0), 5), ((1, 2), 1)]
+
+    There are no wall passing through a simplex of dimension 2.
+      sage: w = [0, 1/2, 1/3]
+      sage: b = BTB_Point(v_2, T, w)
+      sage: b.walls()
+      []
+
+    There is one wall passing through a simplex of dimension 1.
+      sage: w = [1/2, 3/2, 5]
+      sage: b = BTB_Point(v_2, T, w)
+      sage: b.walls()
+      [((0, 1), 1)]
+      sage: w = [1/2, 7/2, 5]
+      sage: b = BTB_Point(v_2, T, w)
+      sage: b.walls()
+      [((0, 1), 3)]
+      sage: w = [7/2, 1/2, 5]
+      sage: b = BTB_Point(v_2, T, w)
+      sage: b.walls()
+      [((1, 0), 3)]
+    """
+    # normalize the value group to be ZZ
+    if ramification_index is None:
+      val_gr_gen = self.base_ring_valuation().value_group().gen()
+    else:
+      val_gr_gen = ZZ(1) / ramification_index
+    w = [QQ(c / val_gr_gen) for c in self.weight_vector()]
+
+    walls = []
+    for i, j in combinations(range(3), 2):
+      w_diff = w[j] - w[i]
+      if w_diff.is_integer():
+        if w_diff < 0:
+          walls.append( ((j, i), -w_diff) )
+        else:
+          walls.append( ((i, j), w_diff) )
+    return walls
 
 
   def ramification_index(self):

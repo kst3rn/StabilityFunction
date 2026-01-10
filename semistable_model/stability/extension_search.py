@@ -163,7 +163,6 @@ def _search_tree(F, fixed_valuation, step, minimum, trafo_matrix, depth, depth_l
     L = K.extension(s**r - piK, 'piL')
     return L.absolute_field('piL')
 
-  k = 0
   for k in count():
     new_radius = adjusted_radius - k * step
     if new_radius <= fixed_valuation.value_group().gen():
