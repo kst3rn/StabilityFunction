@@ -1,6 +1,6 @@
 from warnings import warn
 from itertools import product, count
-from sage.all import gcd, PolynomialRing, GF, QQ, ZZ, ceil, matrix, GaussValuation, vector, Infinity
+from sage.all import gcd, PolynomialRing, QQ, ZZ, ceil, matrix, GaussValuation, vector, Infinity
 from semistable_model.stability import StabilityFunction, minimum_as_valuative_function
 from semistable_model.curves import ProjectivePlaneCurve
 from semistable_model.geometry_utils import _unipotent_integral_matrices
@@ -21,8 +21,6 @@ def semistable_reduction_field(homogeneous_form,
     raise ValueError(f"{homogeneous_form} is not homogeneous.")
   if not base_ring_valuation.domain() == QQ:
     raise NotImplementedError(f"The base ring must be {QQ}")
-  if not base_ring_valuation.residue_field() == GF(2):
-    raise NotImplementedError(f"The residue field is not {GF(2)}")
   if homogeneous_form.degree() != 4:
     warn(
       f"Provided homogeneous form has degree {homogeneous_form.degree()}, but "
@@ -37,12 +35,10 @@ def semistable_reduction_field(homogeneous_form,
     return extension_search(homogeneous_form,
                             base_ring_valuation,
                             ramification_index)
-  i = 1
-  while True:
-    L = extension_search(homogeneous_form, base_ring_valuation, 2*i)
+  for i in count(start=1):
+    L = extension_search(homogeneous_form, base_ring_valuation, i)
     if L is not None:
       return L
-    i += 1
 
 
 def extension_search(homogeneous_form,
@@ -78,8 +74,6 @@ def extension_search(homogeneous_form,
     raise ValueError(f"The base ring of {homogeneous_form} is not {base_ring_valuation.domain()}")
   if homogeneous_form.base_ring() is not QQ:
     raise NotImplementedError(f"The base ring must be {QQ}")
-  if base_ring_valuation.residue_field() is not GF(2):
-    raise NotImplementedError(f"The residue field of {base_ring_valuation} is not {GF(2)}")
 
   K = homogeneous_form.base_ring()
   phi = StabilityFunction(homogeneous_form, base_ring_valuation)
@@ -147,7 +141,9 @@ def _search_tree(F, valuation1, step, minimum, trafo_matrix, depth, depth_limit)
   piK = K.gen()
   R_K = F.parent().change_ring(K)
   F_K = R_K(F)
-  phi_typeI = StabilityFunction(F_K, K.valuation(2))
+  v_K_residue_field = valuation1.residue_ring().base_ring()
+  char_p = v_K_residue_field.characteristic()
+  phi_typeI = StabilityFunction(F_K, K.valuation(char_p))
   aI, bI = phi_typeI.local_minimum(_evaluate_matrix(trafo_matrix, piK))
   if phi_typeI.has_semistable_reduction_at(bI):
     if bI.minimal_simplex_dimension(step.denominator()) == 0:
@@ -179,11 +175,10 @@ def _search_tree(F, valuation1, step, minimum, trafo_matrix, depth, depth_limit)
 
     S = valuation1.domain()
     s = S.gen()
-    v_K_residue_ring = valuation1.residue_ring().base_ring()
 
     if new_btb_point.minimal_simplex_dimension(step.denominator()) == 0:
       w = [QQ(x / step) for x in new_btb_point.weight_vector()]
-      for M in _unipotent_integral_matrices(v_K_residue_ring, 3,
+      for M in _unipotent_integral_matrices(v_K_residue_field, 3,
                                             new_btb_point.weight_vector()):
         local_trafo = [[0,0,0],[0,0,0],[0,0,0]]
         for i, j in product(range(3), range(3)):
@@ -197,7 +192,7 @@ def _search_tree(F, valuation1, step, minimum, trafo_matrix, depth, depth_limit)
     elif new_btb_point.minimal_simplex_dimension(step.denominator()) == 1:
       (i, j), c = new_btb_point.walls(step.denominator())[0]
       s = valuation1.domain().gen()
-      for a in v_K_residue_ring:
+      for a in v_K_residue_field:
         if a.is_zero():
           continue
         local_trafo = [[1,0,0],[0,1,0],[0,0,1]]
