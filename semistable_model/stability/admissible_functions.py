@@ -515,12 +515,12 @@ class ValuativeFunction(AdmissibleFunction):
         for coeff, f in zip(self._coefficients, self._functions):
             b += coeff*p.derivative(f)
         a = self.value_at_root() - b*s0
-        # test the result
-        s = s0
-        while s <= s1 and s < 10:
-            xi = p.point(s)
-            assert self(xi) == a + b*s, f"Error at s={s}: f = {self}, p = {p}, xi = {xi}"
-            s += 1
+        # test the result (this test seems to slow down computations a lot)
+        # s = s0
+        # while s <= s1 and s < 10:
+        #     xi = p.point(s)
+        #     assert self(xi) == a + b*s, f"Error at s={s}: f = {self}, p = {p}, xi = {xi}"
+        #     s += 1
         return a, b
 
 
