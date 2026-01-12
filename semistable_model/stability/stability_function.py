@@ -10,6 +10,7 @@
 # ****************************************************************************
 
 
+from itertools import combinations
 from sage.all import *
 from semistable_model.valuations import LinearValuation
 from semistable_model.geometry_utils import _apply_matrix
@@ -86,7 +87,7 @@ class StabilityFunction:
     return RestrictedStabilityFunction(self, base_change_matrix).active_functions(weight_vector)
 
 
-  def descent_direction(self, point_on_BTB, matrix_form = 'ult'):
+  def descent_direction(self, point_on_BTB, matrix_form='ult'):
     r"""
     Return a matrices which describes a base change,
     fixing `point_on_BTB`, to an apartment, where `self`
@@ -117,7 +118,6 @@ class StabilityFunction:
     Note that if n = 2, we can compute E_2 by computing a graded instability (E_2, w) of the graded
     reduction of 'self.homogeneous_form()' with respect to a valuation representing 'point_on_BTB'.
     """
-
     if self.dimension() != 2:
       raise NotImplementedError
     if self.base_ring() != point_on_BTB.base_ring():
@@ -128,6 +128,31 @@ class StabilityFunction:
     if rational_graded_instability is None:
       return None
     return rational_graded_instability.lift_matrix()
+
+
+  def normalized_descent_direction(self, point_on_BTB, matrix_form='ult'):
+    r"""
+    EXAMPLES::
+      sage: R.<x,y,z> = QQ[]
+      sage: F = y^2*z - x^3 - x*z^2
+      sage: phi = StabilityFunction(F, QQ.valuation(2))
+      sage: a, b = phi.global_minimum()
+      sage: phi.descent_direction(b)
+      sage: phi.normalized_descent_direction(b)
+      [1 0 0]
+      [0 1 0]
+      [1 0 1]
+    """
+    if self.dimension() != 2:
+      raise NotImplementedError
+    if self.base_ring() != point_on_BTB.base_ring():
+      raise ValueError
+
+    graded_reduction = self.graded_reduction(point_on_BTB)
+    graded_instability = graded_reduction.graded_instability(matrix_form)
+    if graded_instability is None:
+      return None
+    return graded_instability.lift_normalized_matrix()
 
 
   def local_minimum(self, base_change_matrix):
@@ -692,7 +717,7 @@ class BTB_Point:
 
 
   def affine_patch(self):
-    return self._weight_vector.index(0)
+    return self.weight_vector().index(0)
 
 
   def base_ring(self):
@@ -715,26 +740,25 @@ class BTB_Point:
 
     EXAMPLES::
       sage: w = [1/2, 1/3, 5/3]
-      sage: E = identity_matrix(QQ, 3)
-      sage: P = BTB_Point(QQ.valuation(2), E, w); P
-      Point on the Bruhat-Tits Building of SL(3) over Rational Field with 2-adic valuation
-      sage: P.minimal_simplex_dimension()
+      sage: T = identity_matrix(QQ, 3)
+      sage: b = BTB_Point(QQ.valuation(2), T, w)
+      sage: b.minimal_simplex_dimension()
       2
-      sage: P.minimal_simplex_dimension(ramification_index=2)
+      sage: b.minimal_simplex_dimension(ramification_index=2)
       2
-      sage: P.minimal_simplex_dimension(ramification_index=3)
+      sage: b.minimal_simplex_dimension(ramification_index=3)
       1
-      sage: P.minimal_simplex_dimension(ramification_index=6)
+      sage: b.minimal_simplex_dimension(ramification_index=6)
       0
       sage: w = [0, 1/2, 3/2]
-      sage: P = BTB_Point(QQ.valuation(2), E, w)
-      sage: P.minimal_simplex_dimension()
+      sage: b = BTB_Point(QQ.valuation(2), T, w)
+      sage: b.minimal_simplex_dimension()
       1
-      sage: P.minimal_simplex_dimension(ramification_index=2)
+      sage: b.minimal_simplex_dimension(ramification_index=2)
       0
       sage: w = [0, 1, 3]
-      sage: P = BTB_Point(QQ.valuation(2), E, w)
-      sage: P.minimal_simplex_dimension()
+      sage: b = BTB_Point(QQ.valuation(2), T, w)
+      sage: b.minimal_simplex_dimension()
       0
 
     MATHEMATICAL INTERPRETATION (ToDo. But at this point we just give an example.): 
@@ -759,23 +783,73 @@ class BTB_Point:
 
     # normalize the value group to be ZZ
     if ramification_index is None:
-      value_groug_generator = self.base_ring_valuation().value_group().gen()
+      val_gr_gen = self.base_ring_valuation().value_group().gen()
     else:
-      value_groug_generator = ZZ(1) / ramification_index
-    norm_weight_vector = []
-    for c in self._weight_vector:
-      norm_weight_vector.append(c / value_groug_generator)
+      val_gr_gen = ZZ(1) / ramification_index
 
-    # translate inside the unit cube
-    trans_norm_weight_vector = []
-    for c in norm_weight_vector:
-      trans_norm_weight_vector.append(c - floor(c))
-
-    return len(set(trans_norm_weight_vector)) - 1
+    # Normalize and translate the weight vector.
+    w_normed = [QQ(c / val_gr_gen) for c in self.weight_vector()]
+    w_normed_transed = [c - floor(c) for c in w_normed]
+    return len(set(w_normed_transed)) - 1
 
 
   def is_vertex(self):
     return self.minimal_simplex_dimension() == 0
+
+
+  def walls(self, ramification_index=None):
+    r"""
+    Return the list of all `((i, j), c)` such that
+    for w = self.weight_vector() the difference
+    w[j] - w[i] is positive and is contained in the
+    value group of the base ring valuation of `self`.
+
+    EXAMPLES::
+      sage: v_2 = QQ.valuation(2)
+      sage: T = identity_matrix(QQ, 3)
+
+    There are three walls passing through a simplex of dimension 0.
+      sage: w = [7, 1, 2]
+      sage: b = BTB_Point(v_2, T, w)
+      sage: b.walls()
+      [((1, 0), 6), ((2, 0), 5), ((1, 2), 1)]
+
+    There are no wall passing through a simplex of dimension 2.
+      sage: w = [0, 1/2, 1/3]
+      sage: b = BTB_Point(v_2, T, w)
+      sage: b.walls()
+      []
+
+    There is one wall passing through a simplex of dimension 1.
+      sage: w = [1/2, 3/2, 5]
+      sage: b = BTB_Point(v_2, T, w)
+      sage: b.walls()
+      [((0, 1), 1)]
+      sage: w = [1/2, 7/2, 5]
+      sage: b = BTB_Point(v_2, T, w)
+      sage: b.walls()
+      [((0, 1), 3)]
+      sage: w = [7/2, 1/2, 5]
+      sage: b = BTB_Point(v_2, T, w)
+      sage: b.walls()
+      [((1, 0), 3)]
+    """
+    # normalize the value group to be ZZ
+    if ramification_index is None:
+      val_gr_gen = self.base_ring_valuation().value_group().gen()
+    else:
+      val_gr_gen = ZZ(1) / ramification_index
+    w = [QQ(c / val_gr_gen) for c in self.weight_vector()]
+
+    walls = []
+    for i, j in combinations(range(3), 2):
+      w_diff = w[j] - w[i]
+      if w_diff.is_integer():
+        if w_diff < 0:
+          walls.append( ((j, i), -w_diff) )
+        else:
+          walls.append( ((i, j), w_diff) )
+    return walls
 
 
   def ramification_index(self):

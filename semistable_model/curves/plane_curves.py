@@ -13,7 +13,7 @@
 from functools import cached_property
 from sage.all import *
 from semistable_model.finite_schemes import FiniteScheme
-from semistable_model.geometry_utils import _apply_matrix, _ult_line_transformation, _uut_line_transformation, _ult_plane_transformation, _uut_plane_transformation, _ult_flag_transformation, _uut_flag_transformation, _move_point_and_line_to_001_and_x0, _normalize_by_last_nonzero_entry
+from semistable_model.geometry_utils import _apply_matrix, _ult_line_transformation, _uut_line_transformation, _integral_line_transformation, _ult_plane_transformation, _uut_plane_transformation, _integral_plane_transformation, _ult_flag_transformation, _uut_flag_transformation, _integral_flag_transformation, _move_point_and_line_to_001_and_x0, _normalize_by_last_nonzero_entry
 
 
 class ProjectivePlaneCurve:
@@ -2000,7 +2000,7 @@ class ProjectiveFlag:
     return matrix(self.base_ring(), P) * self.move_to_e2_x0()
 
 
-  def base_change_matrix(self, matrix_form = 'uut'):
+  def base_change_matrix(self, matrix_form = 'ult'):
     r"""
     Return a unipotent matrix transforming a flag given by some
     standard basis vector e_j and some line x_i = 0 to `self`.
@@ -2009,12 +2009,18 @@ class ProjectiveFlag:
     - ``matrix_form`` -- a list of rational numbers or one of the strings 'ult', 'uut'.
 
     OUTPUT:
-    A unipotent matrix.
+    A unipotent matrix `T`. If `matrix_form` is a list of rational numbers `w`, then
+    for all indices i,j the implication
+    (w[j] - w[i] < 0) \Rightarrow (T[i][j] = 0)
+    holds.
 
     EXAMPLES:
+    Define the rings.
       sage: K.<a,b,c,A,B,C> = QQ[]
       sage: K = K.fraction_field()
       sage: R.<x0,x1,x2> = K[]
+
+    Unipotent lower triangular base change matrices.
       sage: P = [a,b,c]
       sage: L = A*x0 + B*x1 - (a*A/c + b*B/c)*x2
       sage: L(P)
@@ -2062,6 +2068,8 @@ class ProjectiveFlag:
       sage: L = -(b*B/a + c*C/a)*x0 + B*x1 + C*x2
       sage: L(P)
       0
+
+    Unipotent upper triangular base change matrices.
       sage: F = ProjectiveFlag(K, P, L)
       sage: T = F.base_change_matrix('uut'); T
       [     1    b/a    c/a]
@@ -2099,36 +2107,55 @@ class ProjectiveFlag:
       (0, 0, c)
       sage: L(list(vector([x0,x1,x2]) * T))
       B*x1
-    """
 
+    Integral base change matrices.
+      sage: P = [a,b,c]
+      sage: L = A*x0 + B*x1 - (a*A/c + b*B/c)*x2
+      sage: F = ProjectiveFlag(K, P, L)
+      sage: F.base_change_matrix([3,1,2])
+      [                1                 0                 0]
+      [              a/b                 1               c/b]
+      [(a*A + b*B)/(c*A)                 0                 1]
+      sage: F.base_change_matrix([2,3,1])
+      [     1 (-A)/B      0]
+      [     0      1      0]
+      [   a/c    b/c      1]
+      sage: F.base_change_matrix([1,3,2])
+      [                1               b/a               c/a]
+      [                0                 1                 0]
+      [                0 (a*A + b*B)/(c*B)                 1]
+    """
     if self.point is None:
       if matrix_form == 'uut':
         return _uut_plane_transformation(self.line)
       elif matrix_form == 'ult':
         return _ult_plane_transformation(self.line)
-      elif isinstance(matrix_form, list):
+      elif isinstance(matrix_form, (list, tuple)):
         return _integral_plane_transformation(self.line, matrix_form)
       else:
-        raise ValueError
+        raise ValueError(f"{matrix_form} is an invalid input.")
     elif self.line is None:
-      base_ring = self.base_ring()
       if matrix_form == 'uut':
-        return _uut_line_transformation(base_ring, self.point)
+        return _uut_line_transformation(self.base_ring(), self.point)
       elif matrix_form == 'ult':
-        return _ult_line_transformation(base_ring, self.point)
-      elif isinstance(matrix_form, list):
-        return _integral_line_transformation(base_ring, self.point, matrix_form)
+        return _ult_line_transformation(self.base_ring(), self.point)
+      elif isinstance(matrix_form, (list, tuple)):
+        return _integral_line_transformation(self.base_ring(),
+                                             self.point,
+                                             matrix_form)
       else:
-        raise ValueError
+        raise ValueError(f"{matrix_form} is an invalid input.")
     else:
       if matrix_form == 'uut':
         return _uut_flag_transformation(self.point, self.line)
       elif matrix_form == 'ult':
         return _ult_flag_transformation(self.point, self.line)
-      elif isinstance(matrix_form, list):
-        return _integral_flag_transformation(self.point, self.line, matrix_form)
+      elif isinstance(matrix_form, (list, tuple)):
+        return _integral_flag_transformation(self.point,
+                                             self.line,
+                                             matrix_form)
       else:
-        raise ValueError
+        raise ValueError(f"{matrix_form} is an invalid input.")
 
 
   def is_unstable(self, projective_plane_curve):
