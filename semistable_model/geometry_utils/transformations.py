@@ -3,6 +3,7 @@ import itertools
 from sage.matrix.constructor import matrix, zero_matrix, identity_matrix
 from sage.modules.free_module_element import vector
 from sage.rings.ring import Ring
+from sage.rings.rational_field import QQ
 
 
 def _apply_matrix(T, F, i=None):
@@ -91,14 +92,12 @@ def _ult_line_transformation(base_field, coordinates):
     [0 1 0]
     [0 0 1]
   """
-
   Vector = [base_field(x) for x in coordinates]
   T = identity_matrix(base_field, len(Vector))
   # Find the maximal index, i_max, with Vector[i_max] != 0
   # and normalize by Vector[i_max]
   i_max, normalized_Vector = _normalize_by_last_nonzero_entry(Vector)
   T[i_max] = normalized_Vector
-
   return matrix(base_field, T)
 
 
@@ -130,14 +129,12 @@ def _uut_line_transformation(base_field, coordinates):
     [0 1 0]
     [0 0 1]
   """
-
   Vector = [base_field(x) for x in coordinates]
   T = identity_matrix(base_field, len(Vector))
   # Find the minimal index, i_min, with Vector[i_min] != 0
   # and normalize by Vector[i_min]
   i_min, normalized_Vector = _normalize_by_first_nonzero_entry(Vector)
   T[i_min] = normalized_Vector
-
   return matrix(base_field, T)
 
 
@@ -174,75 +171,6 @@ def _sorting_permutation_matrix(w):
     permutation_matrix[i, j] = 1
 
   return permutation_matrix
-
-
-# def _ult_matrix_integralizator(ult_matrix, weight_vector):
-#     """
-#     Return unipotent matrix, T, which is the conjugation of ult_matrix
-#     by a permutation matrix such that for all indices i,j the implication
-#         (weight_vector[j] - weight_vector[i] < 0) => (T[i][j] = 0)
-#     holds
-# 
-#     INPUT:
-#         ult_matrix      - unipotent lower triangular matrix
-#         weight_vector   - tuple of rational numbers
-# 
-#     OUTPUT:
-#         T   - unipotent matrix such that there exists a permutation P
-#               with T = P*ult_matrix*P.inverse() and weight_vector*P is
-#               sorted in decreasing order, i.e.
-#                 (weight_vector[j] - weight_vector[i] < 0) => (T[i][j] = 0)
-# 
-#     MATHEMATICAL INTERPRETATION:
-#         First, let
-#             A = ult_matrix,
-#             w = [w_0,...,w_n] := weight_vector.
-#         Let sigma be the permutation with
-#             w_{sigma(0)} >= ... >= w_{sigma(n)}.
-#         Let P be the matrix with columns given by
-#             e_{sigma(0)},...,e_{sigma(n)},
-#         where e_i is the i-th standard basis vector. Then we have
-#             w * P = [w_{sigma(0)},...,w_{sigma(n)}],
-#         i.e.
-#             P = _sorting_permutation_matrix(w).
-#         Let
-#             v := w * P, i.e. v_j = w_{sigma(j)}.
-#         Since v is sorted in decreasing order and T is a lower
-#         triangular matrix, we have the implications
-#             (v_j - v_i < 0) => (j > i) => (A[i][j] = 0).
-#         Moreover, the matrix
-#             P^{-1} = P.transpose()
-#         corresponds to the permutation sigma^{-1}, i.e. the columns
-#         of P^{-1} are given by
-#             e_{sigma^{-1}(0)},...,e_{sigma^{-1}(n)}
-#         and therefore the (i,j)-th entry of
-#             A * P^{-1}
-#         is equal to
-#             A[i][sigma^{-1}(j)].
-#         Further, since
-#             P = (P^{-1})^{-1} = (P^{-1}).transpose(),
-#         the rows of P are given by
-#             e_{sigma^{-1}(0)},...,e_{sigma^{-1}(n)}.
-#         Thus, the (i,j) entry of
-#             T = P * T * P^{-1}
-#         is given by
-#             T[i][j] = A[sigma^{-1}(i)][sigma^{-1}(j)].
-#         Finally, since
-#             v_{sigma^{-1}(j)} = w_j
-#         we obtain the desired implication
-#             (w_j - w_i < 0) => (T[i][j] = 0).
-#         The matrix T is unipotent, since unipotent matrices form a
-#         normal subgroup of the general linear group and A is unipotent.
-#     """
-# 
-#     # convert all entries to Rationals
-#     for i, w in enumerate(weight_vector):
-#         weight_vector[i] = QQ(w)
-# 
-#     permutation_matrix = _sorting_permutation_matrix(weight_vector)
-#     T = permutation_matrix * A * permutation_matrix.transpose()
-# 
-#     return matrix(A.base_ring(), T)
 
 
 def _integral_line_transformation(base_field, Vector, weight_vector):
@@ -318,7 +246,6 @@ def _integral_line_transformation(base_field, Vector, weight_vector):
 
   permutation_matrix = _sorting_permutation_matrix(weight_vector)
   T = _ult_line_transformation(base_field, vector(Vector) * permutation_matrix)
-
   return permutation_matrix * T * permutation_matrix.transpose()
 
 
@@ -491,12 +418,10 @@ def _integral_plane_transformation(linear_form, weight_vector):
   The matrix B is unipotent, since unipotent matrices form a
   normal subgroup and T is unipotent.
   """
-
   weight_vector_qq = [QQ(w) for w in weight_vector]
   P = _sorting_permutation_matrix(weight_vector_qq)
   pL = _apply_matrix(P.transpose(), linear_form)
   T = _ult_plane_transformation(pL)
-
   return P * T * P.transpose()
 
 
@@ -557,7 +482,6 @@ def _ult_flag_transformation(Vector, linear_form):
     sage: L(list(vector([x0,x1,x2]) * T))
     B*x1
   """
-
   Vector = list(Vector)
   if linear_form(Vector) != 0:
     raise ValueError(f"{linear_form} must be zero at {Vector}")
@@ -565,7 +489,6 @@ def _ult_flag_transformation(Vector, linear_form):
   base_ring = linear_form.base_ring()
   T1 = _ult_line_transformation(base_ring, Vector)
   T2 = _ult_plane_transformation(_apply_matrix(T1, linear_form))
-
   return T2 * T1
 
 
@@ -626,7 +549,6 @@ def _uut_flag_transformation(Vector, linear_form):
     sage: L(list(vector([x0,x1,x2]) * T))
     B*x1
   """
-
   Vector = list(Vector)
   if linear_form(Vector) != 0:
     raise ValueError
@@ -634,7 +556,6 @@ def _uut_flag_transformation(Vector, linear_form):
   base_field = linear_form.base_ring()
   T1 = _uut_line_transformation(base_field, Vector)
   T2 = _uut_plane_transformation(_apply_matrix(T1, linear_form))
-
   return T2 * T1
 
 
@@ -659,15 +580,13 @@ def _integral_flag_transformation(Vector, linear_form, weight_vector):
   MATHEMATICAL INTERPRETATION:
   ...
   """
-
   Vector = list(Vector)
   if linear_form(Vector) != 0:
     raise ValueError
 
   base_field = linear_form.base_ring()
   T1 = _integral_line_transformation(base_field, Vector, weight_vector)
-  T2 = _integral_plane_transformation(_apply_matrix(T1, linear_form), weight_vector)[0]
-
+  T2 = _integral_plane_transformation(_apply_matrix(T1, linear_form), weight_vector)
   return T2 * T1
 
 
@@ -767,12 +686,65 @@ def _unipotent_lower_triangular_matrices(R, n):
 
   YIELDS:
   The next n by n unipotent lower triangular matrix.
+
+  EXAMPLES::
+  Initialize the generator.
+    sage: G = _unipotent_lower_triangular_matrices(GF(2), 3)
+
+  First, the unipotent lower triangular elementary matrices
+  are generated.
+    sage: next(G)
+    [1 0 0]
+    [1 1 0]
+    [0 0 1]
+    sage: next(G)
+    [1 0 0]
+    [0 1 0]
+    [1 0 1]
+    sage: next(G)
+    [1 0 0]
+    [0 1 0]
+    [0 1 1]
+
+  When the unipotent lower triangular elementary matrices
+  are exhausted, the remaining unipotent lower triangular
+  matrices are generated.
+    sage: next(G)
+    [1 0 0]
+    [0 1 0]
+    [1 1 1]
+    sage: next(G)
+    [1 0 0]
+    [1 1 0]
+    [0 1 1]
+    sage: next(G)
+    [1 0 0]
+    [1 1 0]
+    [1 0 1]
+    sage: next(G)
+    [1 0 0]
+    [1 1 0]
+    [1 1 1]
+    sage: next(G)
+    Traceback (most recent call last):
+    ...
+    StopIteration:
   """
   indices = [(r, c) for r in range(n) for c in range(r)]
   template = identity_matrix(R, n)
+
+  for (r, c) in indices:
+    for val in R:
+      if val.is_zero():
+        continue
+      M = copy(template)
+      M[r, c] = val
+      yield M
+
   iterator = itertools.product(R, repeat=len(indices))
   for values in iterator:
-    if not any(values):
+    non_zeros = sum(1 for v in values if not v.is_zero())
+    if non_zeros <= 1:
       continue
     M = copy(template)
     for (r, c), val in zip(indices, values):
@@ -786,6 +758,49 @@ def _unipotent_integral_matrices(R, n, weight_vector):
   over the finite ring `R` such that the implication
     (weight_vector[j] - weight_vector[i] < 0) => (T[i][j] = 0)
   holds.
+
+  EXAMPLES::
+  Initialize the generator.
+    sage: G = _unipotent_integral_matrices(GF(2), 3, [2,1,3])
+
+  First, elementary matrices with the required property
+  are generated.
+    sage: next(G)
+    [1 0 1]
+    [0 1 0]
+    [0 0 1]
+    sage: next(G)
+    [1 0 0]
+    [0 1 1]
+    [0 0 1]
+    sage: next(G)
+    [1 0 0]
+    [1 1 0]
+    [0 0 1]
+
+  When the elementary matrices with the required property
+  are exhausted, the remaining matrices with the required
+  property are generated.
+    sage: next(G)
+    [1 0 0]
+    [1 1 1]
+    [0 0 1]
+    sage: next(G)
+    [1 0 1]
+    [1 1 0]
+    [0 0 1]
+    sage: next(G)
+    [1 0 1]
+    [0 1 1]
+    [0 0 1]
+    sage: next(G)
+    [1 0 1]
+    [1 1 1]
+    [0 0 1]
+    sage: next(G)
+    Traceback (most recent call last):
+    ...
+    StopIteration: 
   """
   P = _sorting_permutation_matrix(weight_vector)
   P_inverse = P.transpose()
@@ -803,7 +818,6 @@ def _min_index_of_nonzero_entry(L):
   OUTPUT:
   i - minimal integer between 0 and len(L) with L[i] != 0
   """
-
   return next((i for i in range(len(L)) if L[i] != 0), None)
 
 
@@ -817,7 +831,6 @@ def _max_index_of_nonzero_entry(L):
   OUTPUT:
   i - maximal integer between 0 and len(L) with L[i] != 0
   """
-
   return next((i for i in reversed(range(len(L))) if L[i] != 0), None)
 
 
@@ -826,10 +839,8 @@ def _normalize_by_first_nonzero_entry(L):
   Return the pair (i, [L[0] / L[i], ..., L[n] / L[i]]),
   where n = len(L) and i = _min_index_of_nonzero_entry(L).
   """
-
   i_min = _min_index_of_nonzero_entry(L)
   first_nonzero_entry = L[i_min]
-
   return (i_min, [x / first_nonzero_entry for x in L])
 
 
@@ -838,8 +849,6 @@ def _normalize_by_last_nonzero_entry(L):
   Return the pair (i, [L[0] / L[i], ..., L[n] / L[i]]),
   where n = len(L) and i = _max_index_of_nonzero_entry(L).
   """
-
   i_max = _max_index_of_nonzero_entry(L)
   last_nonzero_entry = L[i_max]
-
   return (i_max, [x / last_nonzero_entry for x in L])

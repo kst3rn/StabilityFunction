@@ -1,9 +1,9 @@
 from warnings import warn
-from itertools import combinations
-from sage.all import gcd, PolynomialRing, GF, QQ, ZZ, ceil, matrix, GaussValuation, vector, Infinity
-from semistable_model.stability import StabilityFunction
+from itertools import product, count
+from sage.all import gcd, PolynomialRing, QQ, ZZ, ceil, matrix, GaussValuation, vector, Infinity
+from semistable_model.stability import StabilityFunction, minimum_as_valuative_function
 from semistable_model.curves import ProjectivePlaneCurve
-from semistable_model.stability import minimum_as_valuative_function
+from semistable_model.geometry_utils import _unipotent_integral_matrices
 
 
 def semistable_reduction_field(homogeneous_form,
@@ -21,8 +21,6 @@ def semistable_reduction_field(homogeneous_form,
     raise ValueError(f"{homogeneous_form} is not homogeneous.")
   if not base_ring_valuation.domain() == QQ:
     raise NotImplementedError(f"The base ring must be {QQ}")
-  if not base_ring_valuation.residue_field() == GF(2):
-    raise NotImplementedError(f"The residue field is not {GF(2)}")
   if homogeneous_form.degree() != 4:
     warn(
       f"Provided homogeneous form has degree {homogeneous_form.degree()}, but "
@@ -37,12 +35,10 @@ def semistable_reduction_field(homogeneous_form,
     return extension_search(homogeneous_form,
                             base_ring_valuation,
                             ramification_index)
-  i = 1
-  while True:
-    L = extension_search(homogeneous_form, base_ring_valuation, 2*i)
+  for i in count(start=1):
+    L = extension_search(homogeneous_form, base_ring_valuation, i)
     if L is not None:
       return L
-    i += 1
 
 
 def extension_search(homogeneous_form,
@@ -64,11 +60,11 @@ def extension_search(homogeneous_form,
     Number Field in piL with defining polynomial x^12 + 2*x^6 + 2
     sage:
     sage: F = 4*x^4 + 4*x*y^3 + y^4 + 2*x*z^3 + 4*y*z^3 + z^4
-    sage: extension_search(F, QQ.valuation(2), 4)
-    Number Field in piK with defining polynomial x^4 + 2*x^3 + 2*x^2 + 2
+    sage: extension_search(F, QQ.valuation(2), 2)
+    Number Field in piK with defining polynomial x^4 + 8*x + 4
     sage:
     sage: F = -2*x^3*y - 12*y^4 - 4*x^3*z - 3*x^2*y*z - 12*y^3*z - 4*x^2*z^2 - 12*x*y*z^2 + 16*y^2*z^2 + 5*y*z^3
-    sage: extension_search(F, QQ.valuation(2), 4)
+    sage: extension_search(F, QQ.valuation(2), 2)
     Number Field in piL with defining polynomial x^16 + 2
   """
 
@@ -78,69 +74,59 @@ def extension_search(homogeneous_form,
     raise ValueError(f"The base ring of {homogeneous_form} is not {base_ring_valuation.domain()}")
   if homogeneous_form.base_ring() is not QQ:
     raise NotImplementedError(f"The base ring must be {QQ}")
-  if base_ring_valuation.residue_field() is not GF(2):
-    raise NotImplementedError(f"The residue field of {base_ring_valuation} is not {GF(2)}")
 
   K = homogeneous_form.base_ring()
   phi = StabilityFunction(homogeneous_form, base_ring_valuation)
   minimum, btb_point = phi.global_minimum('uut')
   if phi.has_semistable_reduction_at(btb_point):
-    if btb_point.minimal_simplex_dimension() != 0:
-      piK = base_ring_valuation.uniformizer()
-      r_K = base_ring_valuation(piK).denominator()
-      r_L = btb_point.ramification_index()
-      r = r_L / gcd(r_K, r_L)
-      S = PolynomialRing(K, 'x')
-      s = S.gen()
-      L = K.extension(s**r - piK, 'piL')
-      return L.absolute_field('piL')
-    return K
+    if btb_point.is_vertex():
+      return K
+    piK = base_ring_valuation.uniformizer()
+    r_K = base_ring_valuation(piK).denominator()
+    r_L = btb_point.ramification_index()
+    r = r_L / gcd(r_K, r_L)
+    S = PolynomialRing(K, 'x')
+    s = S.gen()
+    L = K.extension(s**r - piK, 'piL')
+    return L.absolute_field('piL')
 
   R = homogeneous_form.parent()
   S = PolynomialRing(K, 'x')
-  s = S.gen()
+  v0 = GaussValuation(S, base_ring_valuation)
   R_S = R.change_ring(S)
   F_S = R_S(homogeneous_form)
-  T = btb_point.base_change_matrix()
-
-  v0 = GaussValuation(S, base_ring_valuation)
+  s = S.gen()
   step = ZZ(1)/ZZ(ramification_index)
-  fixed_valuation = v0.augmentation(s, step)
+  valuation1 = v0.augmentation(s, step)
 
-  # create here initialization matrix:
-  w_normalized = [QQ(x / step) for x in btb_point.weight_vector()]
-  F_b = phi.graded_reduction(btb_point)
-  f = F_b.normalized_reduction_polynomial()
-  X_b = ProjectivePlaneCurve(f)
-  local_trafo_matrix = [[1,0,0],[0,1,0],[0,0,1]]
-  # combinations(range(3), 2) yields (0,1), (0,2), (1,2)
-  for i, j in combinations(range(3), 2):
-    w_difference = w_normalized[j] - w_normalized[i]
-    if w_difference in ZZ and X_b.elementary_instability_direction((i,j)) is not None:
-      if w_difference >= 0:
-        local_trafo_matrix[i][j] = s**w_difference
-      else:
-        local_trafo_matrix[j][i] = s**(-w_difference)
-      break
+  w = [QQ(x / step) for x in btb_point.weight_vector()]
+  M = phi.normalized_descent_direction(btb_point, 'integral')
+  local_trafo_matrix = [[0,0,0],[0,0,0],[0,0,0]]
+  for i, j in product(range(3), range(3)):
+    if not M[i][j].is_zero():
+      wj_wi_difference = w[j] - w[i]
+      if not wj_wi_difference.is_integer():
+        return None
+      local_trafo_matrix[i][j] = M[i][j] * s**wj_wi_difference
   local_trafo_matrix = matrix(S, local_trafo_matrix)
+
+  T = btb_point.base_change_matrix()
   global_trafo_matrix = local_trafo_matrix * T
+  return _search_tree(F_S, valuation1, step, minimum, global_trafo_matrix, 0, depth_limit=+Infinity)
 
-  return _search_tree(F_S, fixed_valuation, step, minimum, global_trafo_matrix, 0, depth_limit=+Infinity)
 
-
-def _search_tree(F, fixed_valuation, step, minimum, global_trafo_matrix, depth, depth_limit):
+def _search_tree(F, valuation1, step, minimum, trafo_matrix, depth, depth_limit):
   r"""
   Heuristic search.
   """
-
   depth = depth + 1
   if depth > depth_limit:
     return None
 
   x0, x1, x2 = F.parent().gens()
   h, e = minimum_as_valuative_function(
-    F(list(vector([x0, x1, x2]) * global_trafo_matrix)),
-    fixed_valuation)
+    F(list(vector([x0, x1, x2]) * trafo_matrix)),
+    valuation1)
 
   local_max_val = h.local_maxima()
   max_local_max = max(a for a, b in local_max_val)
@@ -150,61 +136,74 @@ def _search_tree(F, fixed_valuation, step, minimum, global_trafo_matrix, depth, 
   center, radius = min_degree_discoid
   adjusted_radius = _ceil_step(radius, step)
   center = F.base_ring()(center)
-  j = 0
-  new_radius = adjusted_radius - j * step
-  if new_radius <= fixed_valuation.value_group().gen():
-    return None
 
-  while True:
-    K = QQ.extension(center, 'piK')
-    piK = K.gen()
-    R_K = F.parent().change_ring(K)
-    F_K = R_K(F)
-    phi_typeI = StabilityFunction(F_K, K.valuation(2))
-    aI, bI = phi_typeI.local_minimum(_evaluate_matrix(global_trafo_matrix, piK))
-    if phi_typeI.has_semistable_reduction_at(bI):
-      if bI.minimal_simplex_dimension(ZZ(1) / step) != 0:
-        v_K = phi_typeI.base_ring_valuation()
-        piK = v_K.uniformizer()
-        r_K = v_K(piK).denominator()
-        r_L = bI.ramification_index()
-        r = r_L / gcd(r_K, r_L)
-        S = PolynomialRing(K, 'x')
-        s = S.gen()
-        L = K.extension(s**r - piK, 'piL')
-        return L.absolute_field('piL')
+  K = QQ.extension(center, 'piK')
+  piK = K.gen()
+  R_K = F.parent().change_ring(K)
+  F_K = R_K(F)
+  v_K_residue_field = valuation1.residue_ring().base_ring()
+  char_p = v_K_residue_field.characteristic()
+  phi_typeI = StabilityFunction(F_K, K.valuation(char_p))
+  aI, bI = phi_typeI.local_minimum(_evaluate_matrix(trafo_matrix, piK))
+  if phi_typeI.has_semistable_reduction_at(bI):
+    if bI.minimal_simplex_dimension(step.denominator()) == 0:
       return K
+    v_K = phi_typeI.base_ring_valuation()
+    piK = v_K.uniformizer()
+    r_K = v_K(piK).denominator()
+    r_L = bI.ramification_index()
+    r = r_L / gcd(r_K, r_L)
+    S = PolynomialRing(K, 'x')
+    s = S.gen()
+    L = K.extension(s**r - piK, 'piL')
+    return L.absolute_field('piL')
 
-    new_typeII_valuation = fixed_valuation.augmentation(center, new_radius)
-    phi_typeII = StabilityFunction(F, new_typeII_valuation)
-    new_minimum, new_btb_point = phi_typeII.local_minimum(global_trafo_matrix)
+  for k in count():
+    new_radius = adjusted_radius - k * step
+    if new_radius <= valuation1.value_group().gen():
+      return None
+
+    try:
+      typeII_valuation = valuation1.augmentation(center, new_radius)
+    except ValueError:
+      continue
+    phi_typeII = StabilityFunction(F, typeII_valuation)
+    new_minimum, new_btb_point = phi_typeII.local_minimum(trafo_matrix)
+
     if new_minimum >= minimum:
       break
-    elif new_btb_point.minimal_simplex_dimension(ZZ(1) / step) == 2:
-      continue
 
-    j = j + 1
-    new_radius = radius - j * step
+    S = valuation1.domain()
+    s = S.gen()
 
-    w_normalized = [QQ(x / step) for x in new_btb_point.weight_vector()]
-    for i, j in combinations(range(3), 2):
-      w_difference = w_normalized[j] - w_normalized[i]
-      if w_difference in ZZ:
-        local_trafo_matrix = [[1,0,0],[0,1,0],[0,0,1]]
-        if w_difference >= 0:
-          local_trafo_matrix[i][j] = F.base_ring().gen()**w_difference
-        else:
-          local_trafo_matrix[j][i] = F.base_ring().gen()**(-w_difference)
-        local_trafo_matrix = matrix(F.base_ring(), local_trafo_matrix)
-        new_global_trafo_matrix = local_trafo_matrix * global_trafo_matrix
-        result = _search_tree(F, fixed_valuation, step, new_minimum, new_global_trafo_matrix, depth, depth_limit)
+    if new_btb_point.minimal_simplex_dimension(step.denominator()) == 0:
+      w = [QQ(x / step) for x in new_btb_point.weight_vector()]
+      for M in _unipotent_integral_matrices(v_K_residue_field, 3,
+                                            new_btb_point.weight_vector()):
+        local_trafo = [[0,0,0],[0,0,0],[0,0,0]]
+        for i, j in product(range(3), range(3)):
+          if not M[i][j].is_zero():
+            local_trafo[i][j] = valuation1.lift(M[i][j]) * s**(w[j] - w[i])
+        local_trafo = matrix(S, local_trafo)
+        new_trafo_matrix = local_trafo * trafo_matrix
+        result = _search_tree(F, valuation1, step, new_minimum, new_trafo_matrix, depth, depth_limit)
         if result is not None:
           return result
-
-#    result = _search_tree(F, fixed_valuation, step, new_minimum, global_trafo_matrix, depth, depth_limit)
-#    if result is not None:
-#      return result
-
+    elif new_btb_point.minimal_simplex_dimension(step.denominator()) == 1:
+      (i, j), c = new_btb_point.walls(step.denominator())[0]
+      s = valuation1.domain().gen()
+      for a in v_K_residue_field:
+        if a.is_zero():
+          continue
+        local_trafo = [[1,0,0],[0,1,0],[0,0,1]]
+        local_trafo[i][j] = valuation1.lift(a) * s**c
+        local_trafo = matrix(S, local_trafo)
+        new_trafo_matrix = local_trafo * trafo_matrix
+        result = _search_tree(F, valuation1, step, new_minimum, new_trafo_matrix, depth, depth_limit)
+        if result is not None:
+          return result
+    else: # new_btb_point.minimal_simplex_dimension(step.denominator()) == 2
+      continue
 
 
 def _ceil_step(x, r):
