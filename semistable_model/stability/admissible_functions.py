@@ -48,7 +48,7 @@ computes the subset of `X` where a given admissible function achieves its maximu
 
 """
 
-from sage.all import SageObject, QQ, Infinity, FunctionField
+from sage.all import SageObject, QQ, Infinity, FunctionField, Polynomial, Factorization
 from mclf import BerkovichLine, BerkovichTree
 
 
@@ -1230,7 +1230,7 @@ def valuative_function(f, root):
 
     INPUT:
 
-    - ``f`` -- a polynomial in K[t],
+    - ``f`` -- a polynomial in K[t], or the factorization of such a polynomial,
     - ``root`` -- a point of type II on the Berkovich unit disk,
                   or a MacLane valuation on K[t]
 
@@ -1270,8 +1270,15 @@ def valuative_function(f, root):
         v_K = v0.restriction(K)
         X = BerkovichLine(F, v_K)
         xi0 = X.point_from_pseudovaluation_on_polynomial_ring(v0, F.gen())
-    f = F(f)
-    factorization = f.factor()
+    if isinstance(f, Polynomial):
+        f = F(f)
+        factorization = f.factor()
+    elif f in F:
+        factorization = f.factor()
+    elif isinstance(f, Factorization):
+        factorization = Factorization([(F(g), e) for g, e in f], unit=f.unit())
+    else:
+        raise ValueError(f"f= {f} is neither a polynomial nor a factorization")
     constant = xi0.v(factorization.unit())
     coefficients = []
     functions = []

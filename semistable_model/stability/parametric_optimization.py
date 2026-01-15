@@ -52,7 +52,7 @@ EXAMPLES::
 
 """
 
-from sage.all import ZZ, QQ, matrix, vector, lcm, prod
+from sage.all import ZZ, QQ, matrix, vector, lcm, prod, Factorization
 from sage.geometry.polyhedron.constructor import Polyhedron
 from semistable_model.stability import MinimumOfValuativeFunctions, valuative_function
 
@@ -128,7 +128,7 @@ def minimum_as_valuative_function(F, v0):
     e = sum(E[0])
     h = []
     for k in range(E.nrows()):
-        f_k = prod(a_i**E[k, i] for i, a_i in enumerate(a))
+        f_k = prod(a_i.factor()**E[k, i] for i, a_i in enumerate(a))
         h_k = valuative_function(f_k, v0)
         h.append(h_k)
     return MinimumOfValuativeFunctions(h), e
