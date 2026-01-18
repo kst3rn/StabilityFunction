@@ -12,8 +12,14 @@ singular points are *split* ordinary double points (this can be achieved with
 a finite extension of the base field `k`). Then the vertices of `G` correspond to
 irreducible components of `X` and the edges correspond to the nodes. 
 
+We also consider the following generalization, which is relevant for our paper
+`Semistable reduction of plane quartics`. Assume that `X` is a projective plane
+curve over a field `k` which is reduced and has at most *nodes* and *cusps*
+as singularities. Then we can attach to `X` a component graph as before, where
+we attach for each cusp formally a *one-tail* as a leaf of the component graph.  
+
 In this module we realize the computation of the component graph of a semistable
-curve `X`.
+curve `X` (possibly with cusps).
 
 
 EXAMPLES:
@@ -40,6 +46,26 @@ We compute the component graph of a triangle:
     v1: v0, v2
     v2: v0, v1
 
+The example from § 5.1 of our paper. This is a reduced and integral quartic over `\mathbb{F}_2`
+with one loop and two cusps (defined over `\mathbb{F}_4$).
+
+    sage: X = Curve(x^4 + x*y^2*z + x^2*z^2 + z^4)
+    sage: G = component_graph(X)
+    sage: G.genus()
+    3
+
+    sage: print(G.as_text())
+    Component graph over Finite Field in z2 of size 2^2
+    Vertices: 3, Edges: 3
+    v0: g=0, component: Projective Plane Curve over Finite Field in z2 of size 2^2 defined by x^4 + x*y^2*z + x^2*z^2 + z^4
+    v1: g=1, component: symbolic tail
+    v2: g=1, component: symbolic tail
+    Adjacency:
+    v0: v0, v1, v2
+    v1: v0
+    v2: v0
+
+
 """
 
 from semistable_model.curves.plane_curves import ProjectivePlaneCurve
@@ -47,12 +73,13 @@ from sage.all import SageObject, Graph, Curve, Set, lcm, GF
 from itertools import product
 
 
-def component_graph(X):
+def component_graph(X, allow_cusps=True):
     r""" Return the component graph of a projective plane curve.
     
     INPUT:
 
     - `X` -- a projective plane curve over a field
+    - ``allow_cusps`` -- a boolean
 
     OUTPUT:
 
@@ -60,8 +87,9 @@ def component_graph(X):
 
     The curve `X` 
     - must be defined over a finite field, 
-    - must be reduced, and
-    - its geometric points have at most two branches.
+    - must be reduced, 
+    - if ``allow_cusps`` is False, `X` must be semistable, and
+    - if it is ``True``, nodes and cusps are also allowed as singularities
 
     
     EXAMPLES:
@@ -87,6 +115,8 @@ def component_graph(X):
         sage: G = component_graph(X); G
         component graph of a projective curve over Finite Field in z2 of size 3^2
 
+    Note that the base field was extended to have a split node at (0:0:1).
+
         sage: G.vertices()
         {0: Projective Plane Curve over Finite Field in z2 of size 3^2 defined by x^3 + x^2*z + y^2*z}
     
@@ -106,14 +136,21 @@ def component_graph(X):
         sage: G.genus()
         3
 
-    If the curve is not semistable, an error is raised:
+    If the curve is not semistable, but has cusps, then each cusp is represented by
+    a one-tail:
 
         sage: X = Curve(x^3 - y^2*z)
-        sage: component_graph(X)
-        ---------------------------------------------------------------------------
-        ValueError                                Traceback (most recent call last)
-        ...
-        ValueError: X is not semistable
+        sage: G = component_graph(X); G
+        component graph of a projective curve over Finite Field of size 3
+
+        sage: print(G.as_text())
+        Component graph over Finite Field of size 3
+        Vertices: 2, Edges: 1
+          v0: g=0, component: Projective Plane Curve over Finite Field of size 3 defined by x^3 - y^2*z
+          v1: g=1, component: symbolic tail
+        Adjacency:
+          v0: v1
+          v1: v0
 
     """
     # we want X to be an object of the native Curve class
@@ -131,22 +168,29 @@ def component_graph(X):
     branches = singular_branches(X, components)
     singular_points = Set(b.rational_point() for b in branches)
     nodes = []
-    # cusps = []
+    cusps = []
     for P in singular_points:
         # test whether P is a node; there is a problem here to be solved!
         if is_node(X, P):
             nodes.append(P)
-        # elif is_cusp(X, P):
-        #     cusps.append(P)
+        elif allow_cusps and is_cusp(X, P):
+            cusps.append(P)
         else:
             raise ValueError("X is not semistable")
 
-    G = ComponentGraph(X.ambient_space())
+    G = ComponentGraph(X.base_ring())
     for Y in components:
-        G.add_vertex(Y)
+        G.add_vertex(CurveComponent(Y))
     for P in nodes:
+        # there must be exactly two branches passing through P 
         e = [b for b in branches if b.rational_point() == P]
-        G.add_edge(e)
+        assert len(e) == 2
+        G.add_node(e)
+    if allow_cusps:
+        for P in cusps:
+            b1 = [b for b in branches if b.rational_point() == P][0]
+            tail_component = TailComponent()
+            G.add_tail(b1, tail_component)
     return G
 
 
@@ -226,9 +270,8 @@ def singular_branches(X, components=None):
         for f, x in product(I.gens(), coordinates):
             g = Y.function(f/x**f.degree())
             if not g.is_zero():
-                # print(f"zeros of g: {g.zeros()}")
                 places = places.union(Set(g.zeros()))
-        ret += [Branch(Y, v) for v in places 
+        ret += [CurveBranch(Y, v) for v in places 
                 if all(f in Y.place_to_closed_point(v).prime_ideal() for f in I.gens())] 
     return ret
 
@@ -289,12 +332,57 @@ def is_node(X, P):
     return not 1 in F.keys() and 2 in F.keys() and F[2].is_squarefree()
 
 
-class Branch(SageObject):
-    r""" Return a branch of a component graph.
+def is_cusp(X, P):
+    r""" Return whether `P` is a cusp of `X`.
+    
+    INPUT:
+
+    - ``X`` -- a projective plane curve over a field
+    - ``P`` -- a rational point on `X`
+
+    OUTPUT:
+
+    whether `P` is a cusp, i.e. a singularity of type `A_2`.
+
+
+    EXAMPLES:
+
+        sage: k = GF(2)
+        sage: R.<x,y,z> = k[]
+        sage: X = Curve(y^2*z + x^3)
+        sage: P = X.point([0,0,1])
+        sage: is_cusp(X, P)
+        True
+
+    """ 
+    assert P in X, "P must be a point on X"
+    x, y, z = X.ambient_space().coordinate_ring().gens()
+    F = X.defining_polynomial()(x-P[0], y-P[1], z-P[2]).homogeneous_components()
+    if 1 in F.keys() or not 2 in F.keys():
+        # P is not a double point:
+        return False
+    F2 = F[2]
+    if F2.is_squarefree():
+        # P is an ordinary double point
+        return False
+    # we must test whether P is really a cusp:
+    if not 3 in F.keys():
+        return False
+    L = F2.factor()[0][0]
+    return not F[3] in L.parent().ideal(L)
+
+
+# -----------------------------------------------------------------------------
+
+#                      classes
+
+
+class CurveBranch(SageObject):
+    r""" Return a curve branch.
 
     INPUT:
 
-    - ``Y`` -- an irreducible plane curve
+    - ``Y`` -- an integral curve over a field
     - ``v`` -- a place of the function of `Y`
     
     OUTPUT:
@@ -306,7 +394,6 @@ class Branch(SageObject):
         self._curve = Y
         self._place = v
         self._point = Y.place_to_closed_point(v)
-
 
     def __repr__(self):
         return f"{self.place()} on {self.curve()}"
@@ -328,7 +415,7 @@ class Branch(SageObject):
     def rational_point(self):
         r""" Return the corresponding rational point of the projective plane.
         
-        If the point is not rational, ann error is raised.
+        If the point is not rational, an error is raised.
         """
         assert self.point().degree() == 1, "the center of this point is not rational"
         return self.curve().ambient_space().point(self.point().rational_point())
@@ -337,25 +424,112 @@ class Branch(SageObject):
         return self.place().residue_field()[0]
 
 
+# -----------------------------------------------------------------------------
+
+
+class Component(SageObject):
+    r""" Return a component object which can be used as vertex of a component graph.
+    
+    This is an abstract base class. Subclasses must, on initilization, define at
+    least the following secret attributes:
+
+    - self._curve : an integral curve, or ``None``
+    - self._genus : the (geometric) genus of the component
+    - self._label : a string giving a short description of the component
+    - self._kind  : a string revealing the subclass (e.g. "curve" or "tail")
+    
+    """
+    def curve(self):
+        return self._curve
+
+    def genus(self):
+        r""" Return the genus of this component.
+        
+        """
+        return self._genus
+
+    def label(self):
+        r""" Return the label of this component.
+        
+        This is a string which gives a short description of the component.
+
+        """
+        return self._label
+
+    def kind(self):
+        r""" Return the kind of this ccomponent.
+        
+        The *kind* must be a short string reavealing the subclass this object
+        belongs to, e.g. "curve" or "tail"
+
+        """
+        return self._kind
+
+
+class CurveComponent(Component):
+    r""" Return the component corresponding to to an integral projective curve over a field.
+    
+    INPUT:
+
+    - ``curve`` -- an integral projective curve over a field
+
+    At the moment, only plane curves are allowed.
+    
+    """
+    def __init__(self, curve):
+        # we have to make sure that ``curve`` lives in the right class
+        curve = Curve(curve)
+        assert curve.is_irreducible(), "the curve must be irreducible"
+        self._curve = curve
+        self._genus = curve.geometric_genus()
+        # this only works for plane curves:
+        self._label = str(curve.defining_polynomial())
+        self._kind = "curve"
+
+    def __repr__(self):
+        return str(self.curve())
+
+    def curve(self):
+        return self._curve
+
+    def coordinate_ring(self):
+        return self.curve().coordinate_ring()
+
+
+class TailComponent(Component):
+    def __init__(self, tail_kind="symbolic"):
+        self._curve = None
+        self._tail_kind = tail_kind   # "elliptic","pig","symbolic"
+        self._genus = 1
+        self._label = f"{tail_kind} tail"
+        self._kind = "tail"
+
+    def __repr__(self):
+        return self.label()
+
+
+# -----------------------------------------------------------------------------
+
+
 class ComponentGraph(SageObject):
     r""" The component graph of a semistable curve over a field.
 
     INPUT:
 
-    - ``base_field`` -- a field
+    - ``base_field`` -- a finite field
 
     OUTPUT:
 
-    An empty component graph over the given field.
+    An empty component graph over `k`.
 
     To this component graph one can add new vertices and edges. 
     
     
     """
 
-    def __init__(self, projective_plane):
-        self._projective_plane = projective_plane
-        self._base_field = projective_plane.base_ring()
+    def __init__(self, base_field):
+        assert base_field.is_field() and base_field.is_finite(), "the base field must be a finite field"
+        self._base_field = base_field
         # upon creation, the component graph is empty 
         self._vertices = {}
         self._edges = []
@@ -364,9 +538,6 @@ class ComponentGraph(SageObject):
     def __repr__(self):
         return f"component graph of a projective curve over {self.base_field()}"
     
-    def projective_plane(self):
-        return self._projective_plane
-
     def base_field(self):
         r""" Return the base field of this component graph.
         
@@ -378,7 +549,7 @@ class ComponentGraph(SageObject):
         
         """
         if self.is_connected():
-            return (sum(Y.geometric_genus() for Y in self.components()) 
+            return (sum(Y.genus() for Y in self.components()) 
                 + self.number_of_edges() - self.number_of_vertices() + 1)
         else:
             raise NotImplementedError("the curve must be connected")
@@ -404,13 +575,7 @@ class ComponentGraph(SageObject):
         
         """
         return list(self.vertices().values())
-    
-    def branches(self):
-        r""" Return the list of branches of this component graph.
         
-        """
-        return self._branches
-    
     def edges(self):
         r""" Return the list of edges.
         
@@ -443,39 +608,66 @@ class ComponentGraph(SageObject):
 
         INPUT:
 
-        - ``Y`` -- an integral curve on the ambient projective plane
+        - ``Y`` -- a component object
 
+
+        OUTPUT:
 
         The method adds a new vertex to the underlying graph,
-        corresponding to the component `Y`
+        corresponding to the component `Y`. The newly created index
+        for this vertex is returned.
         
         """
-        assert Y.ambient_space() == self.projective_plane()
-        assert Y.is_irreducible()
-        G = self._graph
-        index = G.add_vertex()
+        index = self.graph().add_vertex()
         self._vertices[index] = Y
+        return index
     
-    def add_edge(self, e):
-        r""" Add an edge to this component graph.
+    def add_node(self, node_branches):
+        r""" Add an edge to this component graph corresponding to a node of the curve.
 
         INPUT:
 
-        ``e`` -- a pair of distinct branches with the same center 
+        ``node_branches`` -- a pair of distinct branches with the same center, corresponding
+                             to a node of a plane curve
+
+        OUTPUT:
+
+        This function adds an edge to this component graph which corresponds to
+        the node represented by ``node_branches``. Nothing is returned. 
+
+        Note that both branches need to be defined on the same ambient space
+        (for the moment: a projective plane over a field) to make sense of the
+        condition that both have the same center. 
+
+        """
+        b1 = node_branches[0]
+        b2 = node_branches[1]
+        assert b1.rational_point() == b2.rational_point()
+        a1 = [a for a, Y in self.vertices().items() if Y.curve() == b1.curve()][0]
+        a2 = [a for a, Y in self.vertices().items() if Y.curve() == b2.curve()][0]
+        self._edges.append([(a1, b1), (a2, b2)])
+        self.graph().add_edge(a1, a2)
+
+    def add_tail(self, cusp_branch, tail_component):
+        r""" Add a tail to this component graph corresponding to a cusp of the curve.
+        
+        INPUT:
+
+        - ``cusp_branch`` -- a curve branch
+        - ``tail_component`` -- a tail component
 
         
-        """
-        G = self.graph()
-        b1 = e[0]
-        b2 = e[1]
-        assert b1.rational_point() == b2.rational_point()
-        a1 = [a for a, Y in self.vertices().items() if Y == b1.curve()][0]
-        a2 = [a for a, Y in self.vertices().items() if Y == b2.curve()][0]
-        self._edges.append([(a1, b1), (a2, b2)])
-        # print(f"vertices = {G.vertices()}")
-        # print(f"a1 = {a1}, a2 = {a2}")
-        G.add_edge(a1, a2)
+        OUTPUT:
 
+        This function adds a tail to the component graph, i.e. a leaf of the
+        underlying graph, 
+
+        """
+        a1 = [a for a, Y in self.vertices().items() if Y.curve() == cusp_branch.curve()][0]
+        a2 = self.add_vertex(tail_component)
+        self._edges.append([(a1, cusp_branch), (a2, tail_component)])
+        self.graph().add_edge(a1, a2)
+        
     def as_text(self, show_edges=False, show_adjacency=True):
         r"""Return a text-only representation of the component graph.
 
@@ -488,7 +680,7 @@ class ComponentGraph(SageObject):
 
         OUTPUT:
 
-        A string.
+        A string describing this component graph.
 
         """
         lines = []
@@ -498,10 +690,7 @@ class ComponentGraph(SageObject):
         # vertices (deterministic order)
         for v in sorted(self.vertices().keys()):
             Y = self.vertices()[v]
-            try:
-                g = Y.geometric_genus()
-            except Exception:
-                g = "?"
+            g = Y.genus()
             # short component descriptor
             try:
                 comp = Y.defining_polynomial()
@@ -533,65 +722,5 @@ class ComponentGraph(SageObject):
 
         return "\n".join(lines)
 
-    
-
-class Component(SageObject):
-    r""" Return a vertex of a component graph.
-
-    INPUT:
-
-    - ``curve`` -- an absolutely reduced and irreducible projective curve over a field
-    
-    Here ``curve`` has to be (for the moment) an instance of 
-    `class`:semistable_model.curves.plane_curves.ProjectivePlaneCurves, and satisfy 
-    the following additional conditions:
-    
-    - its base field must be a finite field
-    - it has to be absolutely reduced and irreducible
-
-    OUTPUT:
-
-    An object representing the smooth projective model of ``curve``, as a component
-    of a semistable curve. 
-
-    To register this component as a vertex of a component graph, it has to be
-    explicitly added to the graph, via `meth`:ComponentGraph.add_component.
-
-    We do not check or even demand that the curve is itself semistable, as we only
-    consider its smooth projective model.  
-
-    """
-    def __init__(self, curve):
-        assert isinstance(curve, ProjectivePlaneCurve), \
-            "the curve must be an instance of *ProjectivePlaneCurve*"
-        assert curve.is_reduced(), "the curve must be reduced"
-        assert curve.is_irreducible(), "the curve must be irreducible"
-        self._curve = curve
-        self._base_field = curve.base_field()
-        self._genus = curve.geometric_genus()
-
-    def __repr__(self):
-        if self.curve().is_smooth():
-            return self.curve()
-        else:
-            return f"smooth projective model of {self.curve()}"
-        
-    def base_field(self):
-        return self._base_field
-    
-    def curve(self):
-        return self._curve
-    
-    def genus(self):
-        return self._genus
-        
 
 
-class Node(SageObject):
-    r""" Return a node of a component graph. 
-    
-    INPUT:
-
-    - ``branches`` -- a pair of branches
-
-    """
