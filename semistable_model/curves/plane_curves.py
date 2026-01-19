@@ -1262,57 +1262,6 @@ class ProjectivePlaneCurve:
     return L
 
 
-  def lines_with_high_multiplicity(self):
-    r"""
-    Return a list of lines contained in `self`.
-
-    OUTPUT:
-    A list of triples `(L, m, G)` where `L` is a line contained
-    in `self` with multiplicity `m` such that either
-    0 < m <= self.degree() / 3 and self.defining_polynomial() = L^m * G
-    or
-    G = None.
-
-    EXAMPLES:
-      sage: R.<x0,x1,x2> = QQ[]
-      sage: f = x0 * (x1 + x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0*x1^2 + 2*x0*x1*x2 + x0*x2^2
-      sage: X.lines_with_high_multiplicity()
-      [(x0, 1, x1^2 + 2*x1*x2 + x2^2), (x1 + x2, 2, None)]
-
-      sage: R.<x0,x1,x2> = GF(2)[]
-      sage: f = x0^2 * x1^3 * x2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^2*x1^3*x2
-      sage: X.lines_with_high_multiplicity()
-      [(x2, 1, x0^2*x1^3), (x0, 2, x1^3*x2), (x1, 3, None)]
-      sage:
-      sage: f = x0
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0
-      sage: X.lines_with_high_multiplicity()
-      [(x0, 1, None)]
-    """
-
-    L = []
-    polynomial_factors = list(self.defining_polynomial().factor())
-    for i, (factor, factor_multiplicity) in enumerate(polynomial_factors):
-      if factor.degree() > 1:
-        continue
-
-      if factor_multiplicity > self.degree() / Integer(3):
-        L.append((factor, factor_multiplicity, None))
-      else:
-        G = Integer(1)
-        for j, (Gfactor, Gfactor_multiplicity) in enumerate(polynomial_factors):
-          if j != i:
-            G = G * Gfactor**Gfactor_multiplicity
-        L.append((factor, factor_multiplicity, G))
-
-    return L
-
-
   def flags(self):
     r"""
     Return a generator object of flags attached to `self`.
