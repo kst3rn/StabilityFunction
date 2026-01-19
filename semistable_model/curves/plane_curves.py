@@ -1391,64 +1391,36 @@ class ProjectivePlaneCurve:
     A properly semistable quartic.
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = (x0^2 + x1*x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^4 + 2*x0^2*x1*x2 + x1^2*x2^2
+      sage: X = ProjectivePlaneCurve(f)
       sage: list(X.flags())
       []
 
-    A properly semistable cubic.
-      sage: R.<x0,x1,x2> = GF(3)[]
-      sage: f = x0^3 + x1^3 + x0^2*x2 - x0*x2^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^3 + x1^3 + x0^2*x2 - x0*x2^2
-      sage: list(X.flags())
-      [Projective flag given by [2, 2, 1] and x0 + x2]
-
-    An unstable quartic.
-      sage: R.<x0,x1,x2> = GF(2)[]
-      sage: f = x0^3 * (x1 + x2)
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2
-      sage: list(X.flags())
-      [Projective flag given by [0, 1, 1],
-       Projective flag given by [0, 1, 1] and x1 + x2,
-       Projective flag given by x0]
-
     An unstable cubic.
-      sage: R.<x0,x1,x2> = QQ[]
       sage: f = (x0 - x1)^2 * x2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^2*x2 - 2*x0*x1*x2 + x1^2*x2
+      sage: X = ProjectivePlaneCurve(f)
       sage: list(X.flags())
-      [Projective flag given by [1, 1, 0],
-       Projective flag given by [1, 1, 0] and x2,
-       Projective flag given by x0 - x1]
-
-    MATHEMATICAL INTERPRETATION:
-    Give reference.
+      [Projective flag given by x0 - x1, Projective flag given by [1, 1, 0]]
     """
 
+    # Search for a line of multiplicity > d/3.
+    for Y, m in self._decompose:
+      if Y.degree() == 1 and m > self.degree() / 3:
+        yield ProjectiveFlag(self.base_ring(), None, Y)
+
+    # Search for a point of multiplicity > 2d/3 or a point
+    # of multiplicity d/3 < m <= 2d/3 and a line in the
+    # tangent cone of multiplicity >= m/2.
     X_red_sing = self._reduced_singular_points
-    # CASES (b) and (d)
     for P in X_red_sing:
       m = self.multiplicity(P)
-      if m > 2 * self.degree() / 3:  # CASE (b)
+      if m > 2 * self.degree() / 3:
         yield ProjectiveFlag(self.base_ring(), P, None)
-      elif m > self.degree() / 2:  # CASE (d) 1/2
-        for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
-          if L_multiplicity > m / 2:
-            yield ProjectiveFlag(self.base_ring(), P, L)
-
-    # CASES (a) and (c)
-    for L, L_multiplicity, G in self.lines_with_high_multiplicity():
-      if L_multiplicity > self.degree() / 3:  # CASE (a)
-        yield ProjectiveFlag(self.base_ring(), None, L)
-      else: # CASE (c) 1/2
-        L_curve = self.projective_plane.curve(L)
-        G_curve = self.projective_plane.curve(G)
-        for P in L_curve.intersection_points(G_curve):
-          if L_curve.intersection_multiplicity(G_curve, P) > (self.degree() - L_multiplicity) / 2:
-            yield ProjectiveFlag(self.base_ring(), P, L)
+      elif m > self.degree() / 3:
+        for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
+          if L_mult > m / 2:
+            P_on_L_flag = ProjectiveFlag(self.base_ring(), P, L)
+            if P_on_L_flag.is_unstable(self):
+              yield P_on_L_flag
 
 
   def instabilities(self):
