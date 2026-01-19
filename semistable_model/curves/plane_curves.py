@@ -1259,6 +1259,22 @@ class ProjectivePlaneCurve:
             yield ProjectiveFlag(self.base_ring(), P, L)
 
 
+  def full_flags(self):
+    r"""
+    Return a generator object of full flags attached to `self`.
+    """
+
+    # Search of multiplicity d/3 < m <= 2d/3 and a line
+    # in the tangent cone of multiplicity >= m/2.
+    X_red_sing = self._reduced_singular_points
+    for P in X_red_sing:
+      m = self.multiplicity(P)
+      if m > self.degree() / 3:
+        for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
+          if L_mult > m / 2:
+            yield ProjectiveFlag(self.base_ring(), P, L)
+
+
   def instabilities(self):
     r"""
     Return a list of pseudo-instabilities of `self` which are
