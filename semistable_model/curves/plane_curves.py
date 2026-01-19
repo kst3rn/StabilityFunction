@@ -1221,47 +1221,6 @@ class ProjectivePlaneCurve:
     return points_with_max_multiplicity
 
 
-  def points_with_high_multiplicity(self): # upgrade to infinite fields: add nonreduced components to the list
-    r"""
-    Return a list of points on `self` with multiplicity strictly
-    greater than self.degree() / 2.
-
-    OUTPUT:
-    A list of tuples `(P, m)` where `P` is a point contained in `self` with
-    multiplicity `m` such that
-    m > self.degree() / 2.
-
-    EXAMPLES:
-      sage: R.<x0,x1,x2> = GF(2)[]
-      sage: f = x0^2 * (x1 + x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^2*x1^2 + x0^2*x2^2
-      sage: X.points_with_high_multiplicity()
-      [((0 : 1 : 1), 4)]
-      sage: 
-      sage: f = (x0^2 + x1*x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^4 + x1^2*x2^2
-      sage: X.points_with_high_multiplicity()
-      []
-      sage:
-      sage: R.<x0,x1,x2> = GF(2)[]
-      sage: f = x0 * (x1 + x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0*x1^2 + x0*x2^2
-      sage: X.points_with_high_multiplicity()
-      [((0 : 1 : 1), 3), ((1 : 0 : 0), 2), ((1 : 1 : 1), 2)]
-    """
-
-    L = []
-    for P in self.plane_curve.singular_points():
-      m = self.plane_curve.multiplicity(P)
-      if m > self.degree() / Integer(2):
-        L.append((P, m))
-
-    return L
-
-
   def flags(self):
     r"""
     Return a generator object of flags attached to `self`.
