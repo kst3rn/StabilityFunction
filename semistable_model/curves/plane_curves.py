@@ -1237,7 +1237,7 @@ class ProjectivePlaneCurve:
       sage: f = (x0 - x1)^2 * x2
       sage: X = ProjectivePlaneCurve(f)
       sage: list(X.flags())
-      [Projective flag given by x0 - x1, Projective flag given by [1, 1, 0]]
+      [Projective flag given by [1, 1, 0] and x0 - x1]
     """
 
     # Search for a line of multiplicity > d/3.
@@ -1256,9 +1256,7 @@ class ProjectivePlaneCurve:
       elif m > self.degree() / 3:
         for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
           if L_mult > m / 2:
-            P_on_L_flag = ProjectiveFlag(self.base_ring(), P, L)
-            if P_on_L_flag.is_unstable(self):
-              yield P_on_L_flag
+            yield ProjectiveFlag(self.base_ring(), P, L)
 
 
   def instabilities(self):
