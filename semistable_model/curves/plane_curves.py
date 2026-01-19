@@ -1221,168 +1221,6 @@ class ProjectivePlaneCurve:
     return points_with_max_multiplicity
 
 
-  def points_with_high_multiplicity(self): # upgrade to infinite fields: add nonreduced components to the list
-    r"""
-    Return a list of points on `self` with multiplicity strictly
-    greater than self.degree() / 2.
-
-    OUTPUT:
-    A list of tuples `(P, m)` where `P` is a point contained in `self` with
-    multiplicity `m` such that
-    m > self.degree() / 2.
-
-    EXAMPLES:
-      sage: R.<x0,x1,x2> = GF(2)[]
-      sage: f = x0^2 * (x1 + x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^2*x1^2 + x0^2*x2^2
-      sage: X.points_with_high_multiplicity()
-      [((0 : 1 : 1), 4)]
-      sage: 
-      sage: f = (x0^2 + x1*x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^4 + x1^2*x2^2
-      sage: X.points_with_high_multiplicity()
-      []
-      sage:
-      sage: R.<x0,x1,x2> = GF(2)[]
-      sage: f = x0 * (x1 + x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0*x1^2 + x0*x2^2
-      sage: X.points_with_high_multiplicity()
-      [((0 : 1 : 1), 3), ((1 : 0 : 0), 2), ((1 : 1 : 1), 2)]
-    """
-
-    L = []
-    for P in self.plane_curve.singular_points():
-      m = self.plane_curve.multiplicity(P)
-      if m > self.degree() / Integer(2):
-        L.append((P, m))
-
-    return L
-
-
-  def lines_with_high_multiplicity(self):
-    r"""
-    Return a list of lines contained in `self`.
-
-    OUTPUT:
-    A list of triples `(L, m, G)` where `L` is a line contained
-    in `self` with multiplicity `m` such that either
-    0 < m <= self.degree() / 3 and self.defining_polynomial() = L^m * G
-    or
-    G = None.
-
-    EXAMPLES:
-      sage: R.<x0,x1,x2> = QQ[]
-      sage: f = x0 * (x1 + x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0*x1^2 + 2*x0*x1*x2 + x0*x2^2
-      sage: X.lines_with_high_multiplicity()
-      [(x0, 1, x1^2 + 2*x1*x2 + x2^2), (x1 + x2, 2, None)]
-
-      sage: R.<x0,x1,x2> = GF(2)[]
-      sage: f = x0^2 * x1^3 * x2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^2*x1^3*x2
-      sage: X.lines_with_high_multiplicity()
-      [(x2, 1, x0^2*x1^3), (x0, 2, x1^3*x2), (x1, 3, None)]
-      sage:
-      sage: f = x0
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0
-      sage: X.lines_with_high_multiplicity()
-      [(x0, 1, None)]
-    """
-
-    L = []
-    polynomial_factors = list(self.defining_polynomial().factor())
-    for i, (factor, factor_multiplicity) in enumerate(polynomial_factors):
-      if factor.degree() > 1:
-        continue
-
-      if factor_multiplicity > self.degree() / Integer(3):
-        L.append((factor, factor_multiplicity, None))
-      else:
-        G = Integer(1)
-        for j, (Gfactor, Gfactor_multiplicity) in enumerate(polynomial_factors):
-          if j != i:
-            G = G * Gfactor**Gfactor_multiplicity
-        L.append((factor, factor_multiplicity, G))
-
-    return L
-
-
-  def _pseudo_instabilities(self): # Adjust nonreduced line
-    r"""
-    Return a list of pseudo-instabilities of `self`.
-
-    EXAMPLES:
-      sage: R.<x0,x1,x2> = GF(2)[]
-      sage: f = (x0^2 + x1*x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^4 + x1^2*x2^2
-      sage: X.pseudo_instabilities()
-      []
-
-      sage: R.<x0,x1,x2> = GF(3)[]
-      sage: f = x0^3 + x1^3 + x0^2*x2 - x0*x2^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^3 + x1^3 + x0^2*x2 - x0*x2^2
-      sage: X.pseudo_instabilities()
-      [Pseudo-instability of Projective Plane Curve with defining polynomial x0^3 + x1^3 + x0^2*x2 - x0*x2^2 given by [2, 2, 1] and x0 + x2]
-
-      sage: R.<x0,x1,x2> = GF(2)[]
-      sage: f = x0^3 * (x1 + x2)
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2
-      sage: X.pseudo_instabilities()
-      [Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 0, 1],
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 0],
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 1],
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by [0, 1, 1] and x1 + x2,
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2 given by x0]
-
-      sage: R.<x0,x1,x2> = GF(3)[]
-      sage: f = (x0 - x1)^2 * x2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2
-      sage: X.pseudo_instabilities()
-      [Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [0, 0, 1] and x0 - x1,
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [1, 1, 0],
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [1, 1, 1] and x0 - x1,
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [2, 2, 1] and x0 - x1,
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [1, 1, 0] and x2,
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by x0 - x1]
-
-    MATHEMATICAL INTERPRETATION:
-    Give reference.
-    """
-
-    list_of_pseu_inst = []
-    # CASES (b) and (d)
-    for P, m in self.points_with_high_multiplicity():
-      if m > 2 * self.degree() / 3:  # CASE (b)
-        list_of_pseu_inst.append(ProjectiveFlag(self.base_ring(), P, None))
-      elif m > self.degree() / 2:  # CASE (d) 1/2
-        for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
-          if L_multiplicity > m / 2:
-            list_of_pseu_inst.append(ProjectiveFlag(self.base_ring(), P, L))
-
-    # CASES (a) and (c)
-    for L, L_multiplicity, G in self.lines_with_high_multiplicity():
-      if L_multiplicity > self.degree() / Integer(3):  # CASE (a)
-        list_of_pseu_inst.append(ProjectiveFlag(self.base_ring(), None, L))
-      else: # CASE (c) 1/2
-        L_curve = self.projective_plane.curve(L)
-        G_curve = self.projective_plane.curve(G)
-        for P in L_curve.intersection_points(G_curve):
-          if L_curve.intersection_multiplicity(G_curve, P) > (self.degree() - L_multiplicity) / Integer(2):
-            list_of_pseu_inst.append(ProjectiveFlag(self.base_ring(), P, L))
-
-    return list_of_pseu_inst
-
-
   def flags(self):
     r"""
     Return a generator object of flags attached to `self`.
@@ -1391,63 +1229,49 @@ class ProjectivePlaneCurve:
     A properly semistable quartic.
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = (x0^2 + x1*x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^4 + 2*x0^2*x1*x2 + x1^2*x2^2
+      sage: X = ProjectivePlaneCurve(f)
       sage: list(X.flags())
       []
 
-    A properly semistable cubic.
-      sage: R.<x0,x1,x2> = GF(3)[]
-      sage: f = x0^3 + x1^3 + x0^2*x2 - x0*x2^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^3 + x1^3 + x0^2*x2 - x0*x2^2
-      sage: list(X.flags())
-      [Projective flag given by [2, 2, 1] and x0 + x2]
-
-    An unstable quartic.
-      sage: R.<x0,x1,x2> = GF(2)[]
-      sage: f = x0^3 * (x1 + x2)
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2
-      sage: list(X.flags())
-      [Projective flag given by [0, 1, 1],
-       Projective flag given by [0, 1, 1] and x1 + x2,
-       Projective flag given by x0]
-
     An unstable cubic.
-      sage: R.<x0,x1,x2> = QQ[]
       sage: f = (x0 - x1)^2 * x2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^2*x2 - 2*x0*x1*x2 + x1^2*x2
+      sage: X = ProjectivePlaneCurve(f)
       sage: list(X.flags())
-      [Projective flag given by [1, 1, 0],
-       Projective flag given by [1, 1, 0] and x2,
-       Projective flag given by x0 - x1]
-
-    MATHEMATICAL INTERPRETATION:
-    Give reference.
+      [Projective flag given by [1, 1, 0] and x0 - x1]
     """
 
+    # Search for a line of multiplicity > d/3.
+    for Y, m in self._decompose:
+      if Y.degree() == 1 and m > self.degree() / 3:
+        yield ProjectiveFlag(self.base_ring(), None, Y)
+
+    # Search for a point of multiplicity > 2d/3 or a point
+    # of multiplicity d/3 < m <= 2d/3 and a line in the
+    # tangent cone of multiplicity >= m/2.
     X_red_sing = self._reduced_singular_points
-    # CASES (b) and (d)
     for P in X_red_sing:
       m = self.multiplicity(P)
-      if m > 2 * self.degree() / 3:  # CASE (b)
+      if m > 2 * self.degree() / 3:
         yield ProjectiveFlag(self.base_ring(), P, None)
-      elif m > self.degree() / 2:  # CASE (d) 1/2
-        for L, L_multiplicity in PPC_TangentCone(self, P).embedded_lines():
-          if L_multiplicity > m / 2:
+      elif m > self.degree() / 3:
+        for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
+          if L_mult > m / 2:
             yield ProjectiveFlag(self.base_ring(), P, L)
 
-    # CASES (a) and (c)
-    for L, L_multiplicity, G in self.lines_with_high_multiplicity():
-      if L_multiplicity > self.degree() / 3:  # CASE (a)
-        yield ProjectiveFlag(self.base_ring(), None, L)
-      else: # CASE (c) 1/2
-        L_curve = self.projective_plane.curve(L)
-        G_curve = self.projective_plane.curve(G)
-        for P in L_curve.intersection_points(G_curve):
-          if L_curve.intersection_multiplicity(G_curve, P) > (self.degree() - L_multiplicity) / 2:
+
+  def full_flags(self):
+    r"""
+    Return a generator object of full flags attached to `self`.
+    """
+
+    # Search of multiplicity d/3 < m <= 2d/3 and a line
+    # in the tangent cone of multiplicity >= m/2.
+    X_red_sing = self._reduced_singular_points
+    for P in X_red_sing:
+      m = self.multiplicity(P)
+      if m > self.degree() / 3:
+        for L, L_mult in PPC_TangentCone(self, P).embedded_lines():
+          if L_mult > m / 2:
             yield ProjectiveFlag(self.base_ring(), P, L)
 
 
@@ -1455,51 +1279,8 @@ class ProjectivePlaneCurve:
     r"""
     Return a list of pseudo-instabilities of `self` which are
     instabilities.
-
-    EXAMPLES:
-      sage: R.<x0,x1,x2> = GF(2)[]
-      sage: f = x0^3 + x1^2 * x2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^3 + x1^2*x2
-      sage: X.instabilities()
-      [Pseudo-instability of Projective Plane Curve with defining polynomial x0^3 + x1^2*x2 given by [0, 0, 1] and x1]
-      sage: len(X.pseudo_instabilities())
-      1
-
-    There can be less instabilities than pseudo-instabilities as the following example shows.
-      sage: R.<x0,x1,x2> = GF(3)[]
-      sage: f = (x0 - x1)^2 * x2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2
-      sage: X.instabilities()
-      [Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [0, 0, 1] and x0 - x1,
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [1, 1, 0],
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by [1, 1, 0] and x2,
-       Pseudo-instability of Projective Plane Curve with defining polynomial x0^2*x2 + x0*x1*x2 + x1^2*x2 given by x0 - x1]
-      sage: len(X.pseudo_instabilities())
-      6
-
-    It can happen that none of the pseudo-instabilities is an instability.
-      sage: R.<x0,x1,x2> = GF(2^8)[]
-      sage: f = x0 * (x0^3 + x1^2*x2 + x0*x2^2)
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^4 + x0*x1^2*x2 + x0^2*x2^2
-      sage: X.instabilities()
-      []
-      sage: len(X.pseudo_instabilities())
-      1
-      sage:
-      sage: R.<x0,x1,x2> = QQ[]
-      sage: f = x0 * x2 * (x1^2 + x0*x2)
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0*x1^2*x2 + x0^2*x2^2
-      sage: X.instabilities()
-      []
-      sage: len(X.pseudo_instabilities())
-      2
     """
-
-    return [I for I in self.flags() if I.is_unstable(self)]
+    return [F for F in self.flags() if F.is_unstable(self)]
 
 
   @cached_property
