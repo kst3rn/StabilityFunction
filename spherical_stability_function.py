@@ -1,4 +1,3 @@
-
 from sage.all import * 
 import math
 import numpy as np
@@ -29,9 +28,9 @@ class SphericalStabilityFunction:
 
   def __call__(self, transformation_matrix, position=None):
     r"""
-    Return self.evaluate(transformation_matrix, position) if
+    Return `self.evaluate(transformation_matrix, position)` if
     position is not None. Otherwise return the symbolic presentation
-    of self on the apartment given by transformation_matrix.
+    of `self` on the apartment given by transformation_matrix.
 
     EXAMPLES:
     sage: R.<x0,x1,x2> = GF(3)[]
@@ -70,16 +69,14 @@ class SphericalStabilityFunction:
 
   def evaluate(self, transformation_matrix, position):
     r"""
-    Evaluate self on the apartment given by transformation_matrix
+    Evaluate `self` on the apartment given by transformation_matrix
     at the point given by position.
 
     INPUT:
-    transformation_matrix - invertible matrix over the base ring of
-                            self._homogeneous_form
-    position              - either a list of rational numbers or an
-                            angle in radians
+    - ``transformation_matrix`` -- invertible matrix
+    - ``position`` -- either a list of rational numbers or an angle in radians
 
-    EXAMPLES:
+    EXAMPLES::
     sage: R.<x0,x1,x2> = GF(3)[]
     sage: f = x0^2 + x1^2 + x2^2
     sage: mu = SphericalStabilityFunction(f)
@@ -103,10 +100,10 @@ class SphericalStabilityFunction:
   def active_functions(self, transformation_matrix, position):
     r"""
     Return the set of multi indices corresponding to active functions
-    of self on the apartment given by transformation_matrix at the
-    point given by position.
+    of `self` on the apartment given by `transformation_matrix` at the
+    point given by `position`.
 
-    EXAMPLES:
+    EXAMPLES::
     sage: R.<x0,x1,x2> = GF(3)[]
     sage: F = x0^2 + x1^2 + x2^2
     sage: T = matrix(GF(3), [[1,2,0], [1,1,1], [0,1,1]]); T
@@ -150,7 +147,7 @@ class SphericalStabilityFunction:
   def stability_status(self):
     r"""
     Return 'unstable', 'strictly semistable' or 'stable', depending on
-    whether the projective hypersurface defined by self.homogeneous_form()
+    whether the projective hypersurface defined by `self.homogeneous_form()`
     is unstable, strictly semistable or stable, respectively.
 
     EXAMPLES:
