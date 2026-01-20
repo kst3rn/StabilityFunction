@@ -255,42 +255,37 @@ class ApartmentSphericalStabilityFunction:
   Construct a concave piecewise affine function to the following conditions
 
   INPUT:
-  homogeneous_form      - homogeneous polynomial in K[x_0,...,x_n]
-  transformation_matrix - invertible matrix over K
+    - ``homogeneous_form`` -- homogeneous polynomial in K[x_0,...,x_n]
+    - ``transformation_matrix`` -- invertible matrix over K
 
   OUTPUT:
-  The function
-  H ---> \RR, w \mapsto min_{i \in J}(i_0*w_0 + ... + i_n*w_n) / ||w||
-  where H = {w \in \RR^{n+1} : w_0 + ... + w_n = 0}, ||w|| is the euclidean
-  norn of w and J is the set of multi indices corresponding to nonzero
-  coefficients of the homogeneous polynomial
-  G = _apply_matrix(transformation_matrix, homogeneous_form).
+    The function
+    H ---> \RR, w \mapsto max_{i \in J}(-i_0*w_0 - ... - i_n*w_n) / ||w||
+    where H = {w \in \RR^{n+1} : w_0 + ... + w_n = 0}, ||w|| is the euclidean
+    norn of w and J is the set of multi indices corresponding to nonzero
+    coefficients of the homogeneous polynomial
+    G = _apply_matrix(transformation_matrix, homogeneous_form).
 
-  EXAMPLES:
-  sage: R.<x0,x1,x2> = GF(3)[]
-  sage: F = x0^2 + x1^2 + x2^2
-  sage: mu = SphericalStabilityFunction(F)
-  sage: T = matrix(GF(3), [[1,0,2],[1,1,0],[0,2,1]])
-  sage: mu = ApartmentSphericalStabilityFunction(F, T)
-  sage: mu
-  min(2*w0, w0 + w1, 2*w1, w0 + w2, w1 + w2, 2*w2)/||w||
-  sage: _apply_matrix(T,F)
-  -x0^2 - x0*x1 - x1^2 + x0*x2 + x1*x2 - x2^2
-  sage:
-  sage: T = matrix(GF(3), [[1,2,0], [1,1,1], [0,1,1]])
-  sage: mu = ApartmentSphericalStabilityFunction(F, T)
-  sage: mu
-  min(2*w0, w0 + w2, w1 + w2, 2*w2)/||w||
-  sage: _apply_matrix(T, F)
-  -x0^2 + x0*x2 + x1*x2 - x2^2
-  sage:
-  sage: T = identity_matrix(GF(3), 3)
-  sage: F = x0^4 + x1^4 + x1^2*x2^2
-  sage: mu = ApartmentSphericalStabilityFunction(F, T)
-  sage: mu
-  min(4*w0, 4*w1, 2*w1 + 2*w2)/||w||
+  EXAMPLES::
+    sage: R.<x0,x1,x2> = GF(3)[]
+    sage: F = x0^2 + x1^2 + x2^2
+    sage: T = matrix(GF(3), [[1,0,2],[1,1,0],[0,2,1]])
+    sage: mu = ApartmentSphericalStabilityFunction(F, T)
+    sage: mu
+    max(-2*w0, -w0 - w1, -2*w1, -w0 - w2, -w1 - w2, -2*w2)/||w||
+    sage:
+    sage: T = matrix(GF(3), [[1,2,0], [1,1,1], [0,1,1]])
+    sage: mu = ApartmentSphericalStabilityFunction(F, T)
+    sage: mu
+    max(-2*w0, -w0 - w2, -w1 - w2, -2*w2)/||w||
+    sage:
+    sage: T = identity_matrix(GF(3), 3)
+    sage: F = x0^4 + x1^4 + x1^2*x2^2
+    sage: mu = ApartmentSphericalStabilityFunction(F, T)
+    sage: mu
+    max(-4*w0, -4*w1, -2*w1 - 2*w2)/||w||
 
-  MATHEMATICAL INTERPRETATION:
+  ..MATH::
   Let F = self._homogeneous_form \in K[x_0,...,x_n].
   Let I = {i \in NN^3 : i_0 + ... + i_n = d}.
   Let H = {w \in \RR^{n+1} : w_0 + ... + w_n = 0}.
@@ -301,7 +296,7 @@ class ApartmentSphericalStabilityFunction:
   with
   J = {i : a_i \neq 0} \subset I.
   Then self is given by the function
-  \mu(w) = min_{i\in J}((<i, w>)/||w||),
+  \mu(w) = max_{i\in J}(-<i, w> / ||w||),
   where <i,w> = i_0*w_0 + ... + i_n*w_n, for w \in H.
   """
 
@@ -310,44 +305,40 @@ class ApartmentSphericalStabilityFunction:
     Construct a concave piecewise affine function to the following conditions
 
     INPUT:
-    homogeneous_form      - homogeneous polynomial in K[x_0,...,x_n]
-    transformation_matrix - invertible matrix over K
+      - ``homogeneous_form`` -- homogeneous polynomial in K[x_0,...,x_n]
+      - ``transformation_matrix`` -- invertible matrix over K
 
     OUTPUT:
-    The function
-    H ---> \RR, w \mapsto min_{i \in J}(i_0*w_0 + ... + i_n*w_n) / ||w||
-    where H = {w \in \RR^{n+1} : w_0 + ... + w_n = 0} and J is the set of
-    multi indices corresponding to nonzero coefficients of the homogeneous
-    polynomial G = _apply_matrix(transformation_matrix, homogeneous_form).
+      The function
+      H ---> \RR, w \mapsto max_{i \in J}(-i_0*w_0 - ... - i_n*w_n) / ||w||
+      where H = {w \in \RR^{n+1} : w_0 + ... + w_n = 0}, ||w|| is the euclidean
+      norn of w and J is the set of multi indices corresponding to nonzero
+      coefficients of the homogeneous polynomial
+      G = _apply_matrix(transformation_matrix, homogeneous_form).
 
-    EXAMPLES:
-    sage: R.<x0,x1,x2> = GF(3)[]
-    sage: F = x0^2 + x1^2 + x2^2
-    sage: mu = SphericalStabilityFunction(F)
-    sage: T = matrix(GF(3), [[1,0,2],[1,1,0],[0,2,1]])
-    sage: mu = ApartmentSphericalStabilityFunction(F, T)
-    sage: mu
-    min(2*w0, w0 + w1, 2*w1, w0 + w2, w1 + w2, 2*w2)/||w||
-    sage: _apply_matrix(T,F)
-    -x0^2 - x0*x1 - x1^2 + x0*x2 + x1*x2 - x2^2
-    sage:
-    sage: T = matrix(GF(3), [[1,2,0], [1,1,1], [0,1,1]])
-    sage: mu = ApartmentSphericalStabilityFunction(F, T)
-    sage: mu
-    min(2*w0, w0 + w2, w1 + w2, 2*w2)/||w||
-    sage: _apply_matrix(T, F)
-    -x0^2 + x0*x2 + x1*x2 - x2^2
-    sage:
-    sage: T = identity_matrix(GF(3), 3)
-    sage: F = x0^4 + x1^4 + x1^2*x2^2
-    sage: mu = ApartmentSphericalStabilityFunction(F, T)
-    sage: mu
-    min(4*w0, 4*w1, 2*w1 + 2*w2)/||w||
+    EXAMPLES::
+      sage: R.<x0,x1,x2> = GF(3)[]
+      sage: F = x0^2 + x1^2 + x2^2
+      sage: T = matrix(GF(3), [[1,0,2],[1,1,0],[0,2,1]])
+      sage: mu = ApartmentSphericalStabilityFunction(F, T)
+      sage: mu
+      max(-2*w0, -w0 - w1, -2*w1, -w0 - w2, -w1 - w2, -2*w2)/||w||
+      sage:
+      sage: T = matrix(GF(3), [[1,2,0], [1,1,1], [0,1,1]])
+      sage: mu = ApartmentSphericalStabilityFunction(F, T)
+      sage: mu
+      max(-2*w0, -w0 - w2, -w1 - w2, -2*w2)/||w||
+      sage:
+      sage: T = identity_matrix(GF(3), 3)
+      sage: F = x0^4 + x1^4 + x1^2*x2^2
+      sage: mu = ApartmentSphericalStabilityFunction(F, T)
+      sage: mu
+      max(-4*w0, -4*w1, -2*w1 - 2*w2)/||w||
 
-    MATHEMATICAL INTERPRETATION:
+    ..MATH::
     Let F = self._homogeneous_form \in K[x_0,...,x_n].
     Let I = {i \in NN^3 : i_0 + ... + i_n = d}.
-    Let H = {w \in \RR^{n+1} : w_0 + ... + w_n = 0}
+    Let H = {w \in \RR^{n+1} : w_0 + ... + w_n = 0}.
     Let G = _apply_matrix(transformation_matrix, F).
     Note that G != 0, since transformation_matrix is invertible.
     Now we can write
@@ -355,7 +346,7 @@ class ApartmentSphericalStabilityFunction:
     with
     J = {i : a_i \neq 0} \subset I.
     Then self is given by the function
-    \mu(w) = min_{i\in J}((<i, w>)/||w||),
+    \mu(w) = max_{i\in J}(-<i, w> / ||w||),
     where <i,w> = i_0*w_0 + ... + i_n*w_n, for w \in H.
     """
     if not transformation_matrix.is_invertible():
@@ -371,9 +362,9 @@ class ApartmentSphericalStabilityFunction:
   def __repr__(self):
     linear_functions = []
     for multi_index in self.multi_indices():
-      L = sum(multi_index[i]*var('w'+str(i)) for i in range(self.dimension()))
-      linear_functions.append(L)
-    return "min" + str(tuple(linear_functions)) + "/||w||"
+      linear_functions.append(-sum(multi_index[i] * var('w' + str(i))
+                                   for i in range(self.dimension())))
+    return "max" + str(tuple(linear_functions)) + "/||w||"
 
 
   def __call__(self, position):
@@ -410,49 +401,26 @@ class ApartmentSphericalStabilityFunction:
 
   def evaluate(self, position):
     r"""
-    Evaluate self at the point given by position.
+    Evaluate `self` at the point given by `position`.
 
     INPUT:
-    position - either a list of rational numbers or an angle in radians,
-               if self.dimension() == 3
+    - ``position`` -- either a list of rational numbers or an angle in radians.
 
-    EXAMPLES:
-    sage: R.<x0,x1,x2> = GF(3)[]
-    sage: F = x0^2 + x1^2 + x2^2
-    sage: T = matrix(GF(3), [[1,2,0], [1,1,1], [0,1,1]])
-    sage: mu = ApartmentSphericalStabilityFunction(F, T)
-    sage: L = [[2,-1,-1], [1,1,-2], [-1,2,-1],[-2,1,1], [-1,-1,2], [1,-2,1]]
-    sage: for i in range(6):
-    ....:     mu(L[i])
-    ....:     RR(mu(L[i]))
-    ....:     RR(mu(pi/6 + i*pi/3))
-    ....:     print()
-    ....:     
-    -1/3*sqrt(6)
-    -0.816496580927726
-    -0.816496580927726
+    EXAMPLES::
+      sage: R.<x0,x1,x2> = GF(3)[]
+      sage: F = x0^2 + x1^2 + x2^2
+      sage: T = matrix(GF(3), [[1,2,0], [1,1,1], [0,1,1]])
+      sage: mu = ApartmentSphericalStabilityFunction(F, T)
+      sage: mu([1,1,-2]); RR(mu([1,1,-2])); RR(mu(pi/6 + 1*pi/3))
+      2/3*sqrt(6)
+      1.63299316185545
+      1.63299316185545
+      sage: mu([1,-2,1]); RR(mu([1,-2,1])); RR(mu(pi/6 + 5*pi/3))
+      1/6*sqrt(6)
+      0.408248290463863
+      0.408248290463863
 
-    -2/3*sqrt(6)
-    -1.63299316185545
-    -1.63299316185545
-
-    -1/3*sqrt(6)
-    -0.816496580927726
-    -0.816496580927726
-
-    -2/3*sqrt(6)
-    -1.63299316185545
-    -1.63299316185545
-
-    -1/3*sqrt(6)
-    -0.816496580927726
-    -0.816496580927726
-
-    -1/6*sqrt(6)
-    -0.408248290463863
-    -0.408248290463863
-
-    MATHEMATICAL INTERPRETATION:
+    ..MATH::
     Assume self.dimension() == 3.
     Let F = self._homogeneous_form \in K[x_0,x_1,x_2].
     Let d = F.degree().
@@ -488,18 +456,18 @@ class ApartmentSphericalStabilityFunction:
       weight_vector = [QQ(i) for i in position]
       weight_vector_norm = vector(QQ, weight_vector).norm()
       if weight_vector_norm == 0:
-        raise ValueError("Weight vector cannot be the zero vector (norm is zero).")
+        raise ValueError("Weight vector cannot be the zero vector.")
       L = []
       for multi_index in self.multi_indices():
         f = sum(multi_index[j] * weight_vector[j]
-                for j in range(self.dimension())) / weight_vector_norm
-        L.append(f)
-      return min(L)
+                for j in range(self.dimension()))
+        L.append(-f / weight_vector_norm)
+      return max(L)
 
     if self.dimension() != 3:
       raise NotImplementedError
     L_theta_coeffs = self._L_theta_coefficients()
-    return min(coeff_dict['A_1'] * cos(position) + coeff_dict['A_2'] * sin(position)
+    return max(coeff_dict['A_1'] * cos(position) + coeff_dict['A_2'] * sin(position)
                for coeff_dict in L_theta_coeffs)
 
 
@@ -548,7 +516,7 @@ class ApartmentSphericalStabilityFunction:
       for multi_index in self.multi_indices():
         L_value = sum(multi_index[j] * weight_vector[j]
                       for j in range(self.dimension())) / weight_vector_norm
-        if self_value == L_value:
+        if self_value == -L_value:
           active_funcs.add(multi_index)
       return active_funcs
 
@@ -660,90 +628,6 @@ class ApartmentSphericalStabilityFunction:
       all_sings.add(local_sign)
 
     return max(all_sings)
-
-
-  def derivative_plus(self, theta):
-    r"""
-    Compute the right-hand derivative f'_+(theta) of the function 
-    f(theta) = min_k L_k(theta) for this apartment.
-    Only applicable if self.dimension() == 3.
-    """
-    if self.dimension() != 3:
-      raise NotImplementedError("Derivative f'_+(theta) is only defined for dimension 3.")
-
-    # Get the multi-index labels of the functions active at theta
-    active_labels_set = self.active_functions(theta)
-
-    if not active_labels_set:
-      # This could happen if theta leads to an issue or no functions are defined.
-      # Depending on desired behavior, could return NaN, raise error, or handle.
-      # If L_theta_coeffs is empty, active_functions would likely also indicate this.
-      # For now, assume valid theta and non-empty set of L_k if this point is reached.
-      # Consider a case where self.multi_indices() is empty (no terms in G).
-      # evaluate() would return 0 or error for min of empty. active_functions would be empty.
-      if not self._get_L_theta_coefficients(): # No L_k functions at all
-          return S.NaN # Sage's Not a Number, or raise error
-      # If there are L_k but none are active (e.g. due to float precision in active_functions)
-      # this indicates a problem. For now, proceed assuming active_functions is robust.
-      # A robust active_functions would use math.isclose for float results.
-      # With symbolic, Sage's == should be fine.
-      print(f"Warning: No active functions found for theta = {theta}. Returning NaN for derivative_plus.")
-      return S.NaN 
-
-
-    all_L_theta_coeffs = self._get_L_theta_coefficients()
-    derivatives_of_active = []
-
-    for coeff_dict in all_L_theta_coeffs:
-      if coeff_dict['label'] in active_labels_set:
-        A1_k = coeff_dict['A_1']
-        A2_k = coeff_dict['A_2']
-        # L_k'(theta) = -A1_k * sin(theta) + A2_k * cos(theta)
-        # Using Sage's sin and cos for symbolic capabilities
-        derivative_val = -A1_k * sin(theta) + A2_k * cos(theta)
-        derivatives_of_active.append(derivative_val)
-
-    if not derivatives_of_active:
-      # This should not be reached if active_labels_set was non-empty
-      # and all_L_theta_coeffs contained those labels.
-      print(f"Warning: Could not compute derivatives for active functions at theta = {theta}. Returning NaN.")
-      return S.NaN
-      
-    return min(derivatives_of_active)
-
-
-  def derivative_minus(self, theta):
-    r"""
-    Compute the left-hand derivative f'_-(theta) of the function 
-    f(theta) = min_k L_k(theta) for this apartment.
-    Only applicable if self.dimension() == 3.
-    """
-    if self.dimension() != 3:
-      raise NotImplementedError("Derivative f'_-(theta) is only defined for dimension 3.")
-
-    active_labels_set = self.active_functions(theta)
-
-    if not active_labels_set:
-      if not self._get_L_theta_coefficients():
-          return S.NaN
-      print(f"Warning: No active functions found for theta = {theta}. Returning NaN for derivative_minus.")
-      return S.NaN
-
-    all_L_theta_coeffs = self._get_L_theta_coefficients()
-    derivatives_of_active = []
-
-    for coeff_dict in all_L_theta_coeffs:
-      if coeff_dict['label'] in active_labels_set:
-        A1_k = coeff_dict['A_1']
-        A2_k = coeff_dict['A_2']
-        derivative_val = -A1_k * sin(theta) + A2_k * cos(theta)
-        derivatives_of_active.append(derivative_val)
-    
-    if not derivatives_of_active:
-      print(f"Warning: Could not compute derivatives for active functions at theta = {theta}. Returning NaN.")
-      return S.NaN
-      
-    return max(derivatives_of_active)
 
 
   def plot_cartesian(self, plot_individual_Li=True, base_radius=1.0):
@@ -1072,24 +956,23 @@ class ApartmentSphericalStabilityFunction:
 
   def _L_theta_coefficients(self):
     r"""
-    Return the coefficients of the parameterization of self
-    on the unit sphere
+    Return the coefficients of the parameterization of `self`
+    on the unit sphere.
 
-    MATHEMATICAL INTERPRETATION:
+    ..MATH::
     Assume self.dimension() == 3.
     Let F = self._homogeneous_form \in K[x_0,x_1,x_2].
     Let d = F.degree().
     Let I = {i \in NN^3 : i_0 + i_1 + i_2 = d}.
     Let G = _apply_matrix(transformation_matrix, F).
-    Note that G != 0, since transformation_matrix is invertible.
     Now we can write
     G = \sum_{i \in J} a_i x_0^{i_0} x_1^{i_1} x_2^{i_2}
     with
     J = {i : a_i \neq 0} \subset I.
     Let H = {w \in \RR^3 : w_0 + w_1 + w_2 = 0}.
     Let S_H = {w \in H : ||w|| = 1}.
-    Then self is given by the function
-    \mu(w) = min_{i\in J}((<i, w>)/||w||),
+    Then `self` is given by the function
+    \mu(w) = max_{i\in J}(-<i, w> / ||w||),
     where <i,w> = i_0*w_0 + i_1*w_1 + i_2*w_2, for w \in H.
     Now we consider the orthonormal basis
     v_1 = 1/sqrt(2)*(1,-1,0),
@@ -1097,7 +980,7 @@ class ApartmentSphericalStabilityFunction:
     of H. So, we have the isomorphism
     A : \RR^2 ---> H, a \mapsto a_1*v_1 + a_2*v_2.
     For any i \in J we obtain the linear function
-    L_i : \RR^2 ---> \RR, a \mapsto <i, A(a)>.
+    L_i : \RR^2 ---> \RR, a \mapsto -<i, A(a)>.
     The graph of the restriction of L_i to the unit sphere S^1 can be
     described vie the parameterization
     [0, 2pi) ---> \RR, theta \mapsto L_i(cos(theta), sin(theta)).
@@ -1105,9 +988,8 @@ class ApartmentSphericalStabilityFunction:
     graph of L_i with the unit cylinder, i.e. is an ellipse. We have
     L_i(cos(theta), sin(theta)) = A_1*cos(theta) + A_2*sin(theta)
     for
-    A_1 = (i_0 - i_1)/sqrt(2) and A_2 = (i_0 + i_1 - 2*i_2)/sqrt(6).
+    A_1 = (i_1 - i_0)/sqrt(2) and A_2 = (2*i_2 - i_0 - i_1)/sqrt(6).
     """
-
     if self.dimension() != 3:
       raise NotImplementedError
 
@@ -1118,8 +1000,8 @@ class ApartmentSphericalStabilityFunction:
     for _multi_index in self.multi_indices():
       multi_index = [QQ(c) for c in _multi_index]
       i0, i1, i2 = multi_index
-      A_1 = (i0 - i1) / sqrt2
-      A_2 = (i0 + i1 - 2*i2) / sqrt6
+      A_1 = (i1 - i0) / sqrt2
+      A_2 = (2*i2 - i0 - i1) / sqrt6
       coeffs_L_theta.append({'A_1': A_1, 'A_2': A_2, 'label': _multi_index})
 
     return coeffs_L_theta
