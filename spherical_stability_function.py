@@ -847,10 +847,10 @@ class ApartmentSphericalStabilityFunction:
         print(f"Warning: Could not convert {i_vec_sage} to numbers. Skipping.")
         continue
 
-      A_1 = (i0 - i1) / sqrt2
-      A_2 = (i0 + i1 - 2*i2) / sqrt6
+      A_1 = (i1 - i0) / sqrt2
+      A_2 = (2*i2 - i0 - i1) / sqrt6
       
-      coeffs_L_theta.append({'A_1': A_1, 'A_2': A_2, 'label': str(i_vec_sage)})
+      coeffs_L_theta.append({'A_1': A_1, 'A_2': A_2})
 
     def L_theta_numerical_inner(theta_val, A_coeff, B_coeff):
       return A_coeff * math.cos(theta_val) + B_coeff * math.sin(theta_val)
@@ -870,9 +870,6 @@ class ApartmentSphericalStabilityFunction:
 
     fig, ax = plt.subplots(figsize=(8, 8), subplot_kw={'projection': 'polar'})
 
-    legend_handles = []
-    legend_labels = []
-
     num_to_label_Li = 5
     if plot_individual_Li and len(coeffs_L_theta) > 0:
       try:
@@ -883,72 +880,24 @@ class ApartmentSphericalStabilityFunction:
 
       for k, coeff_set_k in enumerate(coeffs_L_theta):
         r_coords_Lk = np.array([L_theta_numerical_inner(t_ang, coeff_set_k['A_1'], coeff_set_k['A_2']) for t_ang in theta_angles])
-        label_for_Lk = None
-        if len(coeffs_L_theta) <= num_to_label_Li:
-          label_for_Lk = f'$L_{{{coeff_set_k["label"]}}}(\\theta)$'
+        ax.plot(theta_angles, r_coords_Lk, linestyle='--',
+                linewidth=1.0, color=colors[k % len(colors)])
 
-        line_Lk, = ax.plot(theta_angles, r_coords_Lk,
-                           linestyle='--', linewidth=1.0,
-                           color=colors[k % len(colors)],
-                           label=label_for_Lk, alpha=0.6)
-        if label_for_Lk:
-          legend_handles.append(line_Lk)
-          legend_labels.append(label_for_Lk)
-
-    main_line_width = 2.0 # Define main line width
-    main_label = rf'$r = f(\theta; d={int(d_poly)}) = \min_{{i \in J_G}} L_i(\theta)$'
-    line_f, = ax.plot(theta_angles, f_values,
-                      color='blue', linewidth=main_line_width, # Use variable
-                      alpha=1.0, label=main_label)
-    legend_handles.insert(0, line_f)
-    legend_labels.insert(0, main_label)
+    main_line_width = 2.0
+    ax.plot(theta_angles, f_values, color='blue',
+            linewidth=main_line_width, alpha=1.0)
     
     # --- Plotting special apartment vertices ---
     special_thetas = [
         math.pi/6, math.pi/2, 5*math.pi/6,
         7*math.pi/6, 3*math.pi/2, 11*math.pi/6
     ]
-    first_special_point = True
-    # Make marker size comparable to main line width
     marker_s = main_line_width**3
 
     for theta_star in special_thetas:
       r_star = f_theta_numerical_inner(theta_star)
-      
-      sp_label = 'Apartment Vertices' if first_special_point else None
-      if first_special_point:
-          sc_point = ax.scatter([theta_star], [r_star], color='red', s=marker_s, 
-                                label=sp_label, zorder=3) 
-          legend_handles.append(sc_point) 
-          legend_labels.append(sp_label)
-          first_special_point = False
-      else:
-          ax.scatter([theta_star], [r_star], color='red', s=marker_s, zorder=3)
+      ax.scatter([theta_star], [r_star], color='red', s=marker_s, zorder=3)
     # --- End of plotting special apartment vertices ---
-
-    ax.set_title(f'2D Polar Plot of $f(\\theta)$ on $S_H$ for $d={int(d_poly)}$', va='bottom', pad=20)
-    ax.set_rlabel_position(22.5)
-    
-    has_negative_values = np.any(f_values < 0)
-    if plot_individual_Li:
-        for coeff_set in coeffs_L_theta:
-            if np.any(np.array([L_theta_numerical_inner(t, coeff_set['A_1'], coeff_set['A_2']) for t in theta_angles]) < 0):
-                has_negative_values = True
-                break
-                
-    if has_negative_values:
-        r0_line, = ax.plot(theta_angles, np.zeros_like(theta_angles), color='grey', linestyle=':', linewidth=1, label='r=0')
-        if 'r=0' not in [lbl for lbl in legend_labels if lbl]: 
-            legend_handles.append(r0_line)
-            legend_labels.append('r=0')
-
-    if legend_handles:
-      unique_legends = {}
-      for handle, label_text in zip(legend_handles, legend_labels):
-        if label_text and label_text not in unique_legends : 
-          unique_legends[label_text] = handle
-      if unique_legends:
-          ax.legend(unique_legends.values(), unique_legends.keys(), loc='upper left', bbox_to_anchor=(1.05, 1))
 
     plt.tight_layout()
     plt.show()
