@@ -49,7 +49,7 @@ class SphericalStabilityFunction:
     sage: mu(T, 3/2*pi)
     -1/3*sqrt(6)
     """
-    mu = ApartmentSphericalStabilityFunction(self._homogeneous_form,
+    mu = ApartmentSphericalStabilityFunction(self.homogeneous_form(),
                                              transformation_matrix)
     if position is None:
       return mu
@@ -92,7 +92,7 @@ class SphericalStabilityFunction:
     if not transformation_matrix.is_invertible():
       raise ValueError
 
-    mu = ApartmentSphericalStabilityFunction(self._homogeneous_form,
+    mu = ApartmentSphericalStabilityFunction(self.homogeneous_form(),
                                              transformation_matrix)
     return mu.evaluate(position)
 
@@ -139,7 +139,7 @@ class SphericalStabilityFunction:
     if not transformation_matrix.is_invertible():
       raise ValueError
 
-    mu = ApartmentSphericalStabilityFunction(self._homogeneous_form,
+    mu = ApartmentSphericalStabilityFunction(self.homogeneous_form(),
                                              transformation_matrix)
     return mu.active_functions(position)
 
@@ -202,7 +202,7 @@ class SphericalStabilityFunction:
 
     INPUT:
     transformation_matrix - invertible matrix over the base ring of
-                            self._homogeneous_form.
+                            self.homogeneous_form().
     """
     if self.dimension() != 3:
       raise NotImplementedError(
@@ -213,7 +213,7 @@ class SphericalStabilityFunction:
     if not transformation_matrix.is_invertible():
       raise ValueError
 
-    mu = ApartmentSphericalStabilityFunction(self._homogeneous_form,
+    mu = ApartmentSphericalStabilityFunction(self.homogeneous_form(),
                                              transformation_matrix)
     mu.plot_cartesian(plot_individual_Li, base_radius)
 
@@ -231,7 +231,7 @@ class SphericalStabilityFunction:
 
     INPUT:
     transformation_matrix - invertible matrix over the base ring of
-                            self._homogeneous_form.
+                            self.homogeneous_form().
     plot_individual_Li    - boolean, whether to plot individual L_i(theta) curves.
     """
 
@@ -244,7 +244,7 @@ class SphericalStabilityFunction:
     if not transformation_matrix.is_invertible():
       raise ValueError
 
-    mu = ApartmentSphericalStabilityFunction(self._homogeneous_form,
+    mu = ApartmentSphericalStabilityFunction(self.homogeneous_form(),
                                              transformation_matrix)
     mu.plot_polar(plot_individual_Li)
 
@@ -252,19 +252,18 @@ class SphericalStabilityFunction:
 
 class ApartmentSphericalStabilityFunction:
   r"""
-  Construct a concave piecewise affine function to the following conditions
+  Construct spherical stability function restricted to an apartment
+  to the following conditions.
 
   INPUT:
-    - ``homogeneous_form`` -- homogeneous polynomial in K[x_0,...,x_n]
-    - ``transformation_matrix`` -- invertible matrix over K
+    - ``homogeneous_form`` -- homogeneous polynomial in K[x_0,...,x_n].
+    - ``transformation_matrix`` -- invertible matrix over K.
 
   OUTPUT:
-    The function
-    H ---> \RR, w \mapsto max_{i \in J}(-i_0*w_0 - ... - i_n*w_n) / ||w||
-    where H = {w \in \RR^{n+1} : w_0 + ... + w_n = 0}, ||w|| is the euclidean
-    norn of w and J is the set of multi indices corresponding to nonzero
-    coefficients of the homogeneous polynomial
-    G = _apply_matrix(transformation_matrix, homogeneous_form).
+    The restriction of the spherical stability function
+    of `F` to the apartment given by `(x_0,...,x_n) * T`, where
+    `F` is the homogeneous form `homogeneous_form` and `T` the
+    transformation matrix `transformation_matrix`.
 
   EXAMPLES::
     sage: R.<x0,x1,x2> = GF(3)[]
@@ -286,35 +285,38 @@ class ApartmentSphericalStabilityFunction:
     max(-4*w0, -4*w1, -2*w1 - 2*w2)/||w||
 
   ..MATH::
-  Let F = self._homogeneous_form \in K[x_0,...,x_n].
-  Let I = {i \in NN^3 : i_0 + ... + i_n = d}.
-  Let H = {w \in \RR^{n+1} : w_0 + ... + w_n = 0}.
-  Let G = _apply_matrix(transformation_matrix, F).
-  Note that G != 0, since transformation_matrix is invertible.
-  Now we can write
+  Let F \in K[x_0,...,x_n] be a homogeneous form.
+  Let T \in GL_{n+1}(K) be an invertible matrix.
+  Let (y_0,...,y_n) = (x_0,...,x_n) * T^{-1}.
+  Note that to write F with respect to the basis (y_0,...,y_n) means
+  to consider the homogeneous form
+  G(y_0,...,y_n) = F((y_0,...,y_n) * T).
+  Write
   G = \sum_{i \in J} a_i x_0^{i_0} ... x_n^{i_n}
   with
-  J = {i : a_i \neq 0} \subset I.
-  Then self is given by the function
-  \mu(w) = max_{i\in J}(-<i, w> / ||w||),
-  where <i,w> = i_0*w_0 + ... + i_n*w_n, for w \in H.
+  J = {i : a_i \neq 0} \subset \NN^{n+1}.
+  Let H = {w \in \RR^{n+1} : w_0 + ... + w_n = 0} \setminus \{0\}.
+  The spherical stability function of `F` restricted to the apartment
+  given by `(y_0,...,y_n)` is the function
+  H ---> \RR, w \mapsto max_{i \in J}(-<i,w>) / ||w||,
+  where ||w|| is the euclidean norm of w and
+  <i,w> = i_0*w_0 + ... + i_n*w_n.
   """
 
   def __init__(self, homogeneous_form, transformation_matrix):
     r"""
-    Construct a concave piecewise affine function to the following conditions
+    Construct spherical stability function restricted to an apartment
+    to the following conditions.
 
     INPUT:
-      - ``homogeneous_form`` -- homogeneous polynomial in K[x_0,...,x_n]
-      - ``transformation_matrix`` -- invertible matrix over K
+      - ``homogeneous_form`` -- homogeneous polynomial in K[x_0,...,x_n].
+      - ``transformation_matrix`` -- invertible matrix over K.
 
     OUTPUT:
-      The function
-      H ---> \RR, w \mapsto max_{i \in J}(-i_0*w_0 - ... - i_n*w_n) / ||w||
-      where H = {w \in \RR^{n+1} : w_0 + ... + w_n = 0}, ||w|| is the euclidean
-      norn of w and J is the set of multi indices corresponding to nonzero
-      coefficients of the homogeneous polynomial
-      G = _apply_matrix(transformation_matrix, homogeneous_form).
+      The restriction of the spherical stability function
+      of `F` to the apartment given by `(x_0,...,x_n) * T`, where
+      `F` is the homogeneous form `homogeneous_form` and `T` the
+      transformation matrix `transformation_matrix`.
 
     EXAMPLES::
       sage: R.<x0,x1,x2> = GF(3)[]
@@ -336,25 +338,28 @@ class ApartmentSphericalStabilityFunction:
       max(-4*w0, -4*w1, -2*w1 - 2*w2)/||w||
 
     ..MATH::
-    Let F = self._homogeneous_form \in K[x_0,...,x_n].
-    Let I = {i \in NN^3 : i_0 + ... + i_n = d}.
-    Let H = {w \in \RR^{n+1} : w_0 + ... + w_n = 0}.
-    Let G = _apply_matrix(transformation_matrix, F).
-    Note that G != 0, since transformation_matrix is invertible.
-    Now we can write
+    Let F \in K[x_0,...,x_n] be a homogeneous form.
+    Let T \in GL_{n+1}(K) be an invertible matrix.
+    Let (y_0,...,y_n) = (x_0,...,x_n) * T^{-1}.
+    Note that to write F with respect to the basis (y_0,...,y_n) means
+    to consider the homogeneous form
+    G(y_0,...,y_n) = F((y_0,...,y_n) * T).
+    Write
     G = \sum_{i \in J} a_i x_0^{i_0} ... x_n^{i_n}
     with
-    J = {i : a_i \neq 0} \subset I.
-    Then self is given by the function
-    \mu(w) = max_{i\in J}(-<i, w> / ||w||),
-    where <i,w> = i_0*w_0 + ... + i_n*w_n, for w \in H.
+    J = {i : a_i \neq 0} \subset \NN^{n+1}.
+    Let H = {w \in \RR^{n+1} : w_0 + ... + w_n = 0} \setminus \{0\}.
+    The spherical stability function of `F` restricted to the apartment
+    given by `(y_0,...,y_n)` is the function
+    H ---> \RR, w \mapsto max_{i \in J}(-<i,w>) / ||w||,
+    where ||w|| is the euclidean norm of w and
+    <i,w> = i_0*w_0 + ... + i_n*w_n.
     """
     if not transformation_matrix.is_invertible():
       raise ValueError("The transformation matrix is not invertible")
 
     self._homogeneous_form = homogeneous_form
-    self.transformation_matrix = transformation_matrix
-    self._dimension = homogeneous_form.parent().ngens()
+    self._transformation_matrix = transformation_matrix
     G = _apply_matrix(transformation_matrix, homogeneous_form)
     self._multi_indices = list(G.dict().keys())
 
@@ -391,8 +396,16 @@ class ApartmentSphericalStabilityFunction:
     return self.evaluate(position)
 
 
+  def homogeneous_form(self):
+    return self._homogeneous_form
+
+
+  def transformation_matrix(self):
+    return self._transformation_matrix
+
+
   def dimension(self):
-    return self._dimension
+    return self.homogeneous_form().parent().ngens()
 
 
   def multi_indices(self):
@@ -419,38 +432,6 @@ class ApartmentSphericalStabilityFunction:
       1/6*sqrt(6)
       0.408248290463863
       0.408248290463863
-
-    ..MATH::
-    Assume self.dimension() == 3.
-    Let F = self._homogeneous_form \in K[x_0,x_1,x_2].
-    Let d = F.degree().
-    Let I = {i \in NN^3 : i_0 + i_1 + i_2 = d}.
-    Let G = _apply_matrix(transformation_matrix, F).
-    Note that G != 0, since transformation_matrix is invertible.
-    Now we can write
-    G = \sum_{i \in J} a_i x_0^{i_0} x_1^{i_1} x_2^{i_2}
-    with
-    J = {i : a_i \neq 0} \subset I.
-    Let H = {w \in \RR^3 : w_0 + w_1 + w_2 = 0}.
-    Let S_H = {w \in H : ||w|| = 1}.
-    Then self is given by the function
-    \mu(w) = min_{i\in J}((<i, w>)/||w||),
-    where <i,w> = i_0*w_0 + i_1*w_1 + i_2*w_2, for w \in H.
-    Now we consider the orthonormal basis
-    v_1 = 1/sqrt(2)*(1,-1,0),
-    v_2 = 1/sqrt(6)*(1,1,-2)
-    of H. So, we have the isomorphism
-    A : \RR^2 ---> H, a \mapsto a_1*v_1 + a_2*v_2.
-    For any i \in J we obtain the linear function
-    L_i : \RR^2 ---> \RR, a \mapsto <i, A(a)>.
-    The graph of the restriction of L_i to the unit sphere S^1 can be
-    described vie the parameterization
-    [0, 2pi) ---> \RR, theta \mapsto L_i(cos(theta), sin(theta)).
-    Note that this graph is the intersection of the plane given by the
-    graph of L_i with the unit cylinder, i.e. is an ellipse. We have
-    L_i(cos(theta), sin(theta)) = A_1*cos(theta) + A_2*sin(theta)
-    for
-    A_1 = (i_0 - i_1)/sqrt(2) and A_2 = (i_0 + i_1 - 2*i_2)/sqrt(6).
     """
     if isinstance(position, list):
       weight_vector = [QQ(i) for i in position]
@@ -466,9 +447,9 @@ class ApartmentSphericalStabilityFunction:
 
     if self.dimension() != 3:
       raise NotImplementedError
-    L_theta_coeffs = self._L_theta_coefficients()
-    return max(coeff_dict['A_1'] * cos(position) + coeff_dict['A_2'] * sin(position)
-               for coeff_dict in L_theta_coeffs)
+
+    return max(A1 * cos(position) + A2 * sin(position)
+               for A1, A2, _ in self._L_theta_coefficients())
 
 
   def active_functions(self, position):
@@ -522,11 +503,11 @@ class ApartmentSphericalStabilityFunction:
 
     if self.dimension() != 3:
       raise NotImplementedError
-    L_theta_coeffs = self._L_theta_coefficients()
-    for coeff_dict in L_theta_coeffs:
-      L_value = coeff_dict['A_1'] * cos(position) + coeff_dict['A_2'] * sin(position)
+
+    for A1, A2, mult_idx in self._L_theta_coefficients():
+      L_value = A1 * cos(position) + A2 * sin(position)
       if self_value == L_value:
-        active_funcs.add(coeff_dict['label'])
+        active_funcs.add(mult_idx)
     return active_funcs
 
 
@@ -632,48 +613,7 @@ class ApartmentSphericalStabilityFunction:
 
   def plot_cartesian(self, plot_individual_Li=True, base_radius=1.0):
     r"""
-    Generates a 3D cylindrical plot of f(theta) = min_{i in J} L_i(theta)
-    on the unit circle S_H, using the direct orthonormal parameterization:
-    w(theta) = cos(theta)v1 + sin(theta)v2.
-
-    L_i(theta) = A1 * cos(theta) + A_2 * sin(theta) where
-    v1 = (1/sqrt(2))*(1,-1,0), v2 = (1/sqrt(6))*(1,1,-2)
-    A_1 = <i, v1> = (i0 - i1) / sqrt(2)
-    A_2 = <i, v2> = (i0 + i1 - 2*i2) / sqrt(6)
-
-    MATHEMATICAL INTERPRETATION:
-    Let F = self._homogeneous_form \in K[x_0,x_1,x_2].
-    Let d = F.degree().
-    Let I = {i \in NN^3 : i_0 + i_1 + i_2 = d}.
-    Let G = _apply_matrix(transformation_matrix, F).
-    Note that G != 0, since transformation_matrix is invertible.
-    Now we can write
-    G = \sum_{i \in J} a_i x_0^{i_0} x_1^{i_1} x_2^{i_2}
-    with
-    J = {i : a_i \neq 0} \subset I.
-    Let H = {w \in \RR^3 : w_0 + w_1 + w_2 = 0}.
-    Let S_H = {w \in H : ||w|| = 1}.
-    Then self is given by the function
-    \mu(w) = min_{i\in J}((<i, w>)/||w||),
-    where <i,w> = i_0*w_0 + i_1*w_1 + i_2*w_2, for w \in S_H.
-    Now we consider the orthonormal basis
-    v_1 = 1/sqrt(2)*(1,-1,0),
-    v_2 = 1/sqrt(6)*(1,1,-2).
-    So, we have the isomorphism
-    A : \RR^2 ---> H, a \mapsto a_1*v_1 + a_2*v_2.
-    For any i \in J we obtain the linear function
-    L_i : \RR^2 ---> \RR, a \mapsto <i, A(a)>.
-    The graph of the restriction of L_i to the unit sphere S^1 can be
-    described vie the parameterization
-    [0, 2pi) ---> \RR, theta \mapsto L_i(cos(theta), sin(theta)).
-    Note that this graph is the intersection of the plane given by the
-    graph of L_i with the unit cylinder, i.e. is an ellipse. We have
-    L_i(cos(theta), sin(theta)) = A_1*cos(theta) + A_2*sin(theta)
-    for
-    A_1 = (i_0 - i_1)/sqrt(2) and A_2 = (i_0 + i_1 - 2*i_2)/sqrt(6).
-
-    This method plots the graph of the function
-    [0, 2pi) ---> \RR, theta \mapsto min_{i \in J}(L_i(cos(theta), sin(theta))).
+    Generates a 3D cylindrical plot.
     """
     if self.dimension() != 3:
       raise NotImplementedError(
@@ -681,7 +621,7 @@ class ApartmentSphericalStabilityFunction:
           "(homogeneous polynomials in 3 variables x0, x1, x2)."
       )
 
-    d_poly = self._homogeneous_form.degree()
+    d_poly = self.homogeneous_form().degree()
 
     coeffs_L_theta = []
     sqrt2 = math.sqrt(2)
@@ -807,34 +747,41 @@ class ApartmentSphericalStabilityFunction:
     plt.show()
 
 
-  def plot_polar(self, plot_individual_Li=True):
+  def plot_polar(self, plot_individual_Li=True, sectors=None):
     r"""
-    Generates a 2D polar plot of r = f(theta) = min_{i in J} L_i(theta).
-    The angle theta corresponds to the parameterization of the unit circle S_H
-    w(theta) = cos(theta)v1 + sin(theta)v2, and r is the value of the function.
+    Generates a 2D polar plot of `self` restricted to the unit sphere.
 
-    L_i(theta) = A_1 * cos(theta) + A_2 * sin(theta) where
-    v1 = (1/sqrt(2))*(1,-1,0), v2 = (1/sqrt(6))*(1,1,-2)
-    A_1 = <i, v1> = (i0 - i1) / sqrt(2)
-    A_2 = <i, v2> = (i0 + i1 - 2*i2) / sqrt(6)
+    ..MATH::
+    Let H = {w \in \RR^{n+1} : w_0 + ... + w_n = 0}.
+    Let \mu : H \to \RR be `self`.
+    Now consider the orthonormal basis of H given by
+    v_1 = 1/sqrt(2)*(1,-1,0),
+    v_2 = 1/sqrt(6)*(1,1,-2)
+    The postcomposition of \mu with the isomorphism
+    A : \RR^2 ---> H, a \mapsto a_1*v_1 + a_2*v_2
+    can be described as follows. We have
+    \mu(w) = \max_i(-<i, w>) / ||w||
+    and therefore for a \in \RR^2 the function value \mu(A(a)) is equal
+    to
+    \max_i(a1*(i_1 - i_0)/sqrt(2), a2*(2*i_2 - i_0 - i_1)/sqrt(6)).
+    The graph of \mu \circ A restricted to the unit sphere S^1 can be
+    described via the parameterization
+    [0, 2pi) \to \RR, theta \mapsto \mu \circ A(cos(theta), sin(theta)).
 
-    INPUT:
-    plot_individual_Li - boolean, whether to plot individual L_i(theta) curves.
-
-    MATHEMATICAL INTERPRETATION:
-    This method plots the same function f(theta) as plot_cartesian,
-    but uses a 2D polar coordinate system (theta, r) where r = f(theta).
-    Negative values of f(theta) will be plotted by reversing the angle
-    (i.e., at theta + pi with radius |f(theta)|), which is standard for
-    matplotlib polar plots.
+    The vertices of the apartment correspond to the following angles:
+    (1)   \pi / 6 ~ ( 2, -1, -1)
+    (2)   \pi / 2 ~ ( 1,  1, -2)
+    (3)  5\pi / 6 ~ (-1,  2, -1)
+    (4)  7\pi / 6 ~ (-2,  1,  1)
+    (5)  3\pi / 2 ~ (-1, -1,  2)
+    (6) 11\pi / 6 ~ ( 1, -2,  1)
     """
     if self.dimension() != 3:
       raise NotImplementedError(
-          "This plotting method is implemented only for dimension 3 "
-          "(homogeneous polynomials in 3 variables x0, x1, x2)."
+          "This plotting method is implemented only for dimension 3."
       )
 
-    d_poly = self._homogeneous_form.degree()
+    d_poly = self.homogeneous_form().degree()
     coeffs_L_theta = []
     sqrt2 = math.sqrt(2)
     sqrt6 = math.sqrt(6)
@@ -849,8 +796,7 @@ class ApartmentSphericalStabilityFunction:
 
       A_1 = (i1 - i0) / sqrt2
       A_2 = (2*i2 - i0 - i1) / sqrt6
-      
-      coeffs_L_theta.append({'A_1': A_1, 'A_2': A_2})
+      coeffs_L_theta.append((A_1, A_2))
 
     def L_theta_numerical_inner(theta_val, A_coeff, B_coeff):
       return A_coeff * math.cos(theta_val) + B_coeff * math.sin(theta_val)
@@ -859,8 +805,8 @@ class ApartmentSphericalStabilityFunction:
       min_val = float('inf')
       if not coeffs_L_theta: 
           return 0.0
-      for coeff_set in coeffs_L_theta:
-        val = L_theta_numerical_inner(theta_val, coeff_set['A_1'], coeff_set['A_2'])
+      for A1, A2 in coeffs_L_theta:
+        val = L_theta_numerical_inner(theta_val, A1, A2)
         if val < min_val:
           min_val = val
       return min_val
@@ -878,15 +824,37 @@ class ApartmentSphericalStabilityFunction:
       except:
         colors = ['darkgrey'] * len(coeffs_L_theta)
 
-      for k, coeff_set_k in enumerate(coeffs_L_theta):
-        r_coords_Lk = np.array([L_theta_numerical_inner(t_ang, coeff_set_k['A_1'], coeff_set_k['A_2']) for t_ang in theta_angles])
+      for k, (A1, A2) in enumerate(coeffs_L_theta):
+        r_coords_Lk = np.array([L_theta_numerical_inner(t_ang, A1, A2) for t_ang in theta_angles])
         ax.plot(theta_angles, r_coords_Lk, linestyle='--',
                 linewidth=1.0, color=colors[k % len(colors)])
 
     main_line_width = 2.0
     ax.plot(theta_angles, f_values, color='blue',
             linewidth=main_line_width, alpha=1.0)
-    
+
+    # --- Sector Shading Logic ---
+    if sectors is not None:
+      try:
+        sec_a, sec_b = sectors
+        # Map indices 1..6 to their respective angles
+        # Formula based on vertices: angle_k = pi/6 + (k-1)*pi/3
+        # 1 -> pi/6, 2 -> pi/2, etc.
+        angle_a = math.pi/6 + (sec_a - 1) * (math.pi/3)
+        angle_b = math.pi/6 + (sec_b - 1) * (math.pi/3)
+
+        # Generate theta range for the sector
+        sector_thetas = np.linspace(angle_a, angle_b, 200)
+
+        # Get current plot limits to fill the background completely
+        r_min, r_max = ax.get_ylim()
+
+        # Shade the sector. zorder=0 places it behind the main plot lines.
+        ax.fill_between(sector_thetas, r_min, r_max, color='lightgrey', alpha=0.5, zorder=0)
+
+      except (ValueError, TypeError):
+        print("Warning: 'sectors' must be a tuple of two integers.")
+
     # --- Plotting special apartment vertices ---
     special_thetas = [
         math.pi/6, math.pi/2, 5*math.pi/6,
@@ -910,7 +878,7 @@ class ApartmentSphericalStabilityFunction:
 
     ..MATH::
     Assume self.dimension() == 3.
-    Let F = self._homogeneous_form \in K[x_0,x_1,x_2].
+    Let F = self.homogeneous_form() \in K[x_0, x_1, x_2].
     Let d = F.degree().
     Let I = {i \in NN^3 : i_0 + i_1 + i_2 = d}.
     Let G = _apply_matrix(transformation_matrix, F).
@@ -946,12 +914,12 @@ class ApartmentSphericalStabilityFunction:
     sqrt2 = sqrt(QQ(2))
     sqrt6 = sqrt(QQ(6))
 
-    for _multi_index in self.multi_indices():
-      multi_index = [QQ(c) for c in _multi_index]
-      i0, i1, i2 = multi_index
+    for _mult_idx in self.multi_indices():
+      mult_idx = [QQ(c) for c in _mult_idx]
+      i0, i1, i2 = mult_idx
       A_1 = (i1 - i0) / sqrt2
       A_2 = (2*i2 - i0 - i1) / sqrt6
-      coeffs_L_theta.append({'A_1': A_1, 'A_2': A_2, 'label': _multi_index})
+      coeffs_L_theta.append((A_1, A_2, mult_idx))
 
     return coeffs_L_theta
 
