@@ -617,8 +617,7 @@ class ApartmentSphericalStabilityFunction:
     """
     if self.dimension() != 3:
       raise NotImplementedError(
-          "This plotting method is implemented only for dimension 3 "
-          "(homogeneous polynomials in 3 variables x0, x1, x2)."
+          "This plotting method is implemented only for dimension 3."
       )
 
     d_poly = self.homogeneous_form().degree()
@@ -628,17 +627,11 @@ class ApartmentSphericalStabilityFunction:
     sqrt6 = math.sqrt(6)
 
     for i_vec_sage in self.multi_indices():
-      try:
-        i_vec = [float(c) for c in i_vec_sage]
-        i0, i1, i2 = i_vec
-      except (TypeError, ValueError):
-        print(f"Warning: Could not convert {i_vec_sage} to numbers. Skipping.")
-        continue
-
+      i_vec = [float(c) for c in i_vec_sage]
+      i0, i1, i2 = i_vec
       A_1 = (i0 - i1) / sqrt2
       A_2 = (i0 + i1 - 2*i2) / sqrt6
-      
-      coeffs_L_theta.append({'A_1': A_1, 'A_2': A_2, 'label': str(i_vec_sage)})
+      coeffs_L_theta.append((A_1, A_2))
 
     def L_theta_numerical_inner(theta_val, A_coeff, B_coeff):
       return A_coeff * math.cos(theta_val) + B_coeff * math.sin(theta_val)
@@ -647,8 +640,8 @@ class ApartmentSphericalStabilityFunction:
       min_val = float('inf')
       if not coeffs_L_theta:
           return 0.0
-      for coeff_set in coeffs_L_theta:
-        val = L_theta_numerical_inner(theta_val, coeff_set['A_1'], coeff_set['A_2'])
+      for A1, A2 in coeffs_L_theta:
+        val = L_theta_numerical_inner(theta_val, A1, A2)
         if val < min_val:
           min_val = val
       return min_val
@@ -663,15 +656,6 @@ class ApartmentSphericalStabilityFunction:
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection='3d')
 
-    legend_handles = []
-    legend_labels = []
-
-    line_base, = ax.plot(x_coords, y_coords, np.zeros_like(x_coords),
-                         color='grey', linestyle=':', linewidth=1,
-                         label='Base Circle ($z=0$)', zorder=0)
-    legend_handles.append(line_base)
-    legend_labels.append('Base Circle ($z=0$)')
-
     num_to_label_Li = 5
     if plot_individual_Li and len(coeffs_L_theta) > 0:
       try:
@@ -680,27 +664,18 @@ class ApartmentSphericalStabilityFunction:
       except:
         colors = ['darkgrey'] * len(coeffs_L_theta)
 
-      for k, coeff_set_k in enumerate(coeffs_L_theta):
-        z_coords_Lk = np.array([L_theta_numerical_inner(t_ang, coeff_set_k['A_1'], coeff_set_k['A_2']) for t_ang in theta_angles])
-        label_for_Lk = None
-        if len(coeffs_L_theta) <= num_to_label_Li:
-          label_for_Lk = f'$L_{{{coeff_set_k["label"]}}}(\\theta)$'
-
+      for k, (A1, A2) in enumerate(coeffs_L_theta):
+        z_coords_Lk = np.array([L_theta_numerical_inner(t_ang, A1, A2)
+                                for t_ang in theta_angles])
         line_Lk, = ax.plot(x_coords, y_coords, z_coords_Lk,
                            linestyle='--', linewidth=1.0,
                            color=colors[k % len(colors)],
-                           label=label_for_Lk, alpha=0.6, zorder=1)
-        if label_for_Lk:
-          legend_handles.append(line_Lk)
-          legend_labels.append(label_for_Lk)
+                           alpha=0.6, zorder=1)
 
-    main_line_width = 2.5 # Define main line width
-    main_label = rf'$z = f(\theta; d={int(d_poly)}) = \min_{{i \in J_G}} L_i(\theta)$'
+    main_line_width = 2.5
     line_f, = ax.plot(x_coords, y_coords, z_coords_f,
-                      color='blue', linewidth=main_line_width, # Use variable
-                      alpha=1.0, zorder=2, label=main_label)
-    legend_handles.insert(0, line_f) 
-    legend_labels.insert(0, main_label)
+                      color='blue', linewidth=main_line_width,
+                      alpha=1.0, zorder=2)
 
     # --- Plotting special apartment vertices ---
     special_thetas = [
@@ -716,34 +691,18 @@ class ApartmentSphericalStabilityFunction:
       x_star = base_radius * math.cos(theta_star)
       y_star = base_radius * math.sin(theta_star)
       z_star = f_theta_star
-      
-      sp_label = 'Apartment Vertices' if first_special_point else None
+
       if first_special_point:
-          sc_point = ax.scatter([x_star], [y_star], [z_star], color='red', s=marker_s, 
-                                label=sp_label, zorder=3, depthshade=False)
-          legend_handles.append(sc_point)
-          legend_labels.append(sp_label)
+          sc_point = ax.scatter([x_star], [y_star], [z_star], color='red', s=marker_s,
+                                zorder=3, depthshade=False)
           first_special_point = False
       else:
           ax.scatter([x_star], [y_star], [z_star], color='red', s=marker_s, 
                      zorder=3, depthshade=False)
     # --- End of plotting special apartment vertices ---
 
-    ax.set_xlabel(r'$X = R \cos\theta$')
-    ax.set_ylabel(r'$Y = R \sin\theta$')
-    ax.set_zlabel('$f(\\theta)$ on $S_H$')
-    ax.set_title(f'3D Plot of $f(\\theta)$ on $S_H$ for $d={int(d_poly)}$', pad=20)
-
-    if legend_handles:
-      unique_legends = {} 
-      for handle, label_text in zip(legend_handles, legend_labels):
-        if label_text and label_text not in unique_legends : 
-          unique_legends[label_text] = handle
-      if unique_legends:
-          ax.legend(unique_legends.values(), unique_legends.keys(), loc='center left', bbox_to_anchor=(1.05, 0.5))
-
     ax.view_init(elev=25., azim=-135)
-    plt.tight_layout(rect=[0, 0, 0.82 if legend_handles and unique_legends else 0.95, 1]) 
+    plt.tight_layout() 
     plt.show()
 
 
@@ -787,13 +746,8 @@ class ApartmentSphericalStabilityFunction:
     sqrt6 = math.sqrt(6)
 
     for i_vec_sage in self.multi_indices():
-      try:
-        i_vec = [float(c) for c in i_vec_sage]
-        i0, i1, i2 = i_vec
-      except (TypeError, ValueError):
-        print(f"Warning: Could not convert {i_vec_sage} to numbers. Skipping.")
-        continue
-
+      i_vec = [float(c) for c in i_vec_sage]
+      i0, i1, i2 = i_vec
       A_1 = (i1 - i0) / sqrt2
       A_2 = (2*i2 - i0 - i1) / sqrt6
       coeffs_L_theta.append((A_1, A_2))
