@@ -782,14 +782,19 @@ class ApartmentSphericalStabilityFunction:
       "(-1, -1, 2)", 
       "(1, -2, 1)"
       ]
+
     ax.set_xticks(special_thetas)
-    ax.set_xticklabels(vertex_labels)
+    ax.set_xticklabels(vertex_labels, fontsize=20)
+    ax.set_yticks([-1.0, 0.0, 1.0, 2.0, 3.0, 4.0])
+    ax.set_yticklabels(["", "0", "", "", "", ""])
+    ax.tick_params(axis='y', labelsize=16)
+
     xticks = ax.xaxis.get_major_ticks()
     for i, tick in enumerate(xticks):
       if i == 1 or i == 4: 
-        tick.set_pad(0)
+        tick.set_pad(3)
       else:
-        tick.set_pad(15)
+        tick.set_pad(34)
 
     num_to_label_Li = 5
     if plot_individual_Li and len(coeffs_L_theta) > 0:
@@ -802,9 +807,9 @@ class ApartmentSphericalStabilityFunction:
       for k, (A1, A2) in enumerate(coeffs_L_theta):
         r_coords_Lk = np.array([L_theta_numerical_inner(t_ang, A1, A2) for t_ang in theta_angles])
         ax.plot(theta_angles, r_coords_Lk, linestyle='--',
-                linewidth=1.0, color=colors[k % len(colors)])
+                linewidth=2.0, color=colors[k % len(colors)])
 
-    main_line_width = 2.0
+    main_line_width = 3.0
     ax.plot(theta_angles, f_values, color='blue',
             linewidth=main_line_width, alpha=1.0)
 
@@ -831,7 +836,7 @@ class ApartmentSphericalStabilityFunction:
         print("Warning: 'sectors' must be a tuple of two integers.")
 
     # --- Plotting special apartment vertices ---
-    marker_s = main_line_width**3
+    marker_s = main_line_width**3.5
     for theta_star in special_thetas:
       r_star = f_theta_numerical_inner(theta_star)
       ax.scatter([theta_star], [r_star], color='red', s=marker_s, zorder=3)
