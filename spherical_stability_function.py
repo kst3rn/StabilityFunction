@@ -637,14 +637,14 @@ class ApartmentSphericalStabilityFunction:
       return A_coeff * math.cos(theta_val) + B_coeff * math.sin(theta_val)
 
     def f_theta_numerical_inner(theta_val):
-      min_val = float('inf')
+      max_val = float('-inf')
       if not coeffs_L_theta:
           return 0.0
       for A1, A2 in coeffs_L_theta:
         val = L_theta_numerical_inner(theta_val, A1, A2)
-        if val < min_val:
-          min_val = val
-      return min_val
+        if val > max_val:
+          max_val = val
+      return max_val
 
     theta_angles = np.linspace(0, 2 * math.pi, 400)
     f_values = np.array([f_theta_numerical_inner(t_ang) for t_ang in theta_angles])
@@ -756,14 +756,14 @@ class ApartmentSphericalStabilityFunction:
       return A_coeff * math.cos(theta_val) + B_coeff * math.sin(theta_val)
 
     def f_theta_numerical_inner(theta_val):
-      min_val = float('inf')
+      max_val = float('-inf')
       if not coeffs_L_theta: 
           return 0.0
       for A1, A2 in coeffs_L_theta:
         val = L_theta_numerical_inner(theta_val, A1, A2)
-        if val < min_val:
-          min_val = val
-      return min_val
+        if val > max_val:
+          max_val = val
+      return max_val
 
     theta_angles = np.linspace(0, 2 * math.pi, 400)
     f_values = np.array([f_theta_numerical_inner(t_ang) for t_ang in theta_angles])
