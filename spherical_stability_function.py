@@ -770,6 +770,27 @@ class ApartmentSphericalStabilityFunction:
 
     fig, ax = plt.subplots(figsize=(8, 8), subplot_kw={'projection': 'polar'})
 
+    special_thetas = [
+      math.pi/6, math.pi/2, 5*math.pi/6,
+      7*math.pi/6, 3*math.pi/2, 11*math.pi/6
+      ]
+    vertex_labels = [
+      "(2, -1, -1)", 
+      "(1, 1, -2)", 
+      "(-1, 2, -1)", 
+      "(-2, 1, 1)", 
+      "(-1, -1, 2)", 
+      "(1, -2, 1)"
+      ]
+    ax.set_xticks(special_thetas)
+    ax.set_xticklabels(vertex_labels)
+    xticks = ax.xaxis.get_major_ticks()
+    for i, tick in enumerate(xticks):
+      if i == 1 or i == 4: 
+        tick.set_pad(0)
+      else:
+        tick.set_pad(15)
+
     num_to_label_Li = 5
     if plot_individual_Li and len(coeffs_L_theta) > 0:
       try:
@@ -810,12 +831,7 @@ class ApartmentSphericalStabilityFunction:
         print("Warning: 'sectors' must be a tuple of two integers.")
 
     # --- Plotting special apartment vertices ---
-    special_thetas = [
-        math.pi/6, math.pi/2, 5*math.pi/6,
-        7*math.pi/6, 3*math.pi/2, 11*math.pi/6
-    ]
     marker_s = main_line_width**3
-
     for theta_star in special_thetas:
       r_star = f_theta_numerical_inner(theta_star)
       ax.scatter([theta_star], [r_star], color='red', s=marker_s, zorder=3)
