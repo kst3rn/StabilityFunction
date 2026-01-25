@@ -2,594 +2,188 @@ r"""
 The component graph of a semistable curve
 =========================================
 
-Let `X` be a projective plane curve over a perfect field `k`. We say that `X` is 
-*semistable* if it is reduced and has at most ordinary double points (nodes) as 
-singularities.
+Given a connected, semistable projective curve `X` over an algebraically closed
+field `k`, we associate to `X` its *component graph* `G` as follows:
 
-To such a semistable curve we can associate a *component graph* `G`, as follows. 
-We first assume that all irreducible components are absolutely irreducible and all 
-singular points are *split* ordinary double points (this can be achieved with
-a finite extension of the base field `k`). Then the vertices of `G` correspond to
-irreducible components of `X` and the edges correspond to the nodes. 
+- the vertices of `G` correspond to the irreducible components of `X`;
+- the edges of `G` correspond to the *nodes* of `X`, i.e. the singular points,
+  which are, by assumption, ordinary double points. Such an edge connects the
+  two vertices corresponding to the components intersecting in the node.
 
-We also consider the following generalization, which is relevant for our paper
-`Semistable reduction of plane quartics`. Assume that `X` is a projective plane
-curve over a field `k` which is reduced and has at most *nodes* and *cusps*
-as singularities. Then we can attach to `X` a component graph as before, where
-we attach for each cusp formally a *one-tail* as a leaf of the component graph.  
+A component may intersect itself, and two components may intersect in several
+nodes. Therefore `G` is an (undirected) graph with multiple edges and loops
+allowed.
 
-In this module we realize the computation of the component graph of a semistable
-curve `X` (possibly with cusps).
+Vertex genera
+-------------
+
+In addition to the underlying graph we record, for each vertex `v` of `G`, a
+nonnegative integer `g_v`, namely the geometric genus of the component
+corresponding to `v` (i.e. the genus of its normalization).  The arithmetic
+genus of `X` can then be recovered from the familiar formula
+
+.. MATH::
+
+    g(X) = \sum_v g_v + |E(G)| - |V(G)| + 1
+
+for connected graphs.
+
+Purely combinatorial design
+---------------------------
+
+This module is deliberately *purely combinatorial*.  An instance of
+:class:`ComponentGraph` stores only:
+
+- an abstract multigraph with loops,
+- the genus attached to each vertex.
+
+In particular, vertices are *not* modeled as curve objects.  This keeps the
+class lightweight and reusable: the same data structure can represent component
+graphs coming from many different sources (stable models, semistable models,
+special fibres of arithmetic surfaces, etc.), independent of how the underlying
+curve is presented.
+
+One-tails and the core
+----------------------
+
+For applications to stable curves of small genus it is convenient to single out
+*one-tails*, i.e. components of arithmetic genus one attached to the rest of the
+curve by a single node.  Combinatorially, one-tails correspond to leaf vertices
+of arithmetic genus one; there are two important cases:
+
+- an *elliptic tail*: a leaf vertex of geometric genus one with no loop;
+- a *pigtail*: a leaf vertex of geometric genus zero with one loop.
+
+Removing all one-tails leaves the *core* of the curve; in the genus three
+applications this typically reduces the size of the relevant graph drastically.
+
+Isomorphism and canonical signatures
+------------------------------------
+
+Two semistable curves can have isomorphic component graphs even if their
+components are numbered differently.  For this reason :class:`ComponentGraph`
+provides a method :meth:`canonical_signature` which assigns to a component graph
+a canonical invariant (a tuple of integers) built from the combinatorial data of
+the core together with the distribution of one-tails.  Two component graphs are
+isomorphic (as graphs with vertex genera and one-tail structure) if and only if
+their canonical signatures agree.  This gives a simple and reliable way to test
+isomorphism and to classify component graphs in small genus.
 
 
-EXAMPLES:
+EXAMPLES::
 
-We compute the component graph of a triangle:
+    We construct a few small component graphs and compare their canonical
+    signatures. Two component graphs are isomorphic (as weighted multigraphs
+    with tails) if and only if their canonical signatures agree.
 
-    sage: k = GF(2)
-    sage: R.<x,y,z> = k[]
-    sage: X = Curve(x*y*z)
-    sage: G = component_graph(X); G
-    component graph of a projective curve over Finite Field of size 2
+    We start with two graphs which are isomorphic.  The first one has a core
+    consisting of two components of genera 1 and 0 meeting in three nodes
+    (type ``1---0``), and the second one is obtained from the first by creating
+    the vertices in a different order::
 
-    sage: G.genus()
-    1
+        sage: from component_graphs import ComponentGraph
+        sage: G1 = ComponentGraph()
+        sage: v1 = G1.add_vertex(1)      # core vertex of genus 1
+        sage: w1 = G1.add_vertex(0)      # core vertex of genus 0
+        sage: G1.add_edge(v1, w1); G1.add_edge(v1, w1); G1.add_edge(v1, w1)
+        sage: G2 = ComponentGraph()
+        sage: w2 = G2.add_vertex(0)      # same graph, but vertices created in opposite order
+        sage: v2 = G2.add_vertex(1)
+        sage: G2.add_edge(v2, w2); G2.add_edge(v2, w2); G2.add_edge(v2, w2)
+        sage: G1.canonical_signature() == G2.canonical_signature()
+        True
 
-    sage: print(G.as_text())
-    Component graph over Finite Field of size 2
-    Vertices: 3, Edges: 3
-    v0: g=0, component: z
-    v1: g=0, component: y
-    v2: g=0, component: x
-    Adjacency:
-    v0: v1, v2
-    v1: v0, v2
-    v2: v0, v1
+    Next we modify the first graph by attaching an elliptic tail to the genus-0
+    component. The resulting graph is no longer isomorphic to the previous one::
 
-The example from § 5.1 of our paper. This is a reduced and integral quartic over `\mathbb{F}_2`
-with one loop and two cusps (defined over `\mathbb{F}_4$).
+        sage: H = ComponentGraph()
+        sage: v = H.add_vertex(1)
+        sage: w = H.add_vertex(0)
+        sage: H.add_edge(v, w); H.add_edge(v, w); H.add_edge(v, w)
+        sage: _ = H.add_elliptic_tail(w)
+        sage: H.canonical_signature() == G1.canonical_signature()
+        False
 
-    sage: X = Curve(x^4 + x*y^2*z + x^2*z^2 + z^4)
-    sage: G = component_graph(X)
-    sage: G.genus()
-    3
+    Finally, we distinguish an elliptic tail from a pigtail.  Starting from a
+    single core component of genus 1, we attach two one-tails, once as two
+    elliptic tails and once as two pigtails.  These graphs are not isomorphic::
 
-    sage: print(G.as_text())
-    Component graph over Finite Field in z2 of size 2^2
-    Vertices: 3, Edges: 3
-    v0: g=0, component: Projective Plane Curve over Finite Field in z2 of size 2^2 defined by x^4 + x*y^2*z + x^2*z^2 + z^4
-    v1: g=1, component: symbolic tail
-    v2: g=1, component: symbolic tail
-    Adjacency:
-    v0: v0, v1, v2
-    v1: v0
-    v2: v0
+        sage: A = ComponentGraph()
+        sage: cA = A.add_vertex(1)
+        sage: _ = A.add_elliptic_tail(cA)
+        sage: _ = A.add_elliptic_tail(cA)
+        sage: B = ComponentGraph()
+        sage: cB = B.add_vertex(1)
+        sage: _ = B.add_pigtail(cB)
+        sage: _ = B.add_pigtail(cB)
+        sage: A.canonical_signature() == B.canonical_signature()
+        False
 
 
 """
 
-from semistable_model.curves.plane_curves import ProjectivePlaneCurve
-from sage.all import SageObject, Graph, Curve, Set, lcm, GF
-from itertools import product
-
-
-def component_graph(X, allow_cusps=True):
-    r""" Return the component graph of a projective plane curve.
-    
-    INPUT:
-
-    - `X` -- a projective plane curve over a field
-    - ``allow_cusps`` -- a boolean
-
-    OUTPUT:
-
-    the component graph of `X`.
-
-    The curve `X` 
-    - must be defined over a finite field, 
-    - must be reduced, 
-    - if ``allow_cusps`` is False, `X` must be semistable, and
-    - if it is ``True``, nodes and cusps are also allowed as singularities
-
-    
-    EXAMPLES:
-
-        sage: from semistable_model.curves.component_graphs import component_graph
-        sage: k = GF(2)
-        sage: R.<x,y,z> = k[]
-        sage: X = Curve(x*y*z)
-        sage: G = component_graph(X); G
-        component graph of a projective curve over Finite Field of size 2
-
-        sage: G.vertices()
-        {0: Projective Plane Curve over Finite Field of size 2 defined by z,
-        1: Projective Plane Curve over Finite Field of size 2 defined by y,
-        2: Projective Plane Curve over Finite Field of size 2 defined by x}
-
-        sage: G.genus()
-        1
-
-        sage: k = GF(3)
-        sage: R.<x,y,z> = k[]
-        sage: X = Curve(y^2*z+x^3+x^2*z)
-        sage: G = component_graph(X); G
-        component graph of a projective curve over Finite Field in z2 of size 3^2
-
-    Note that the base field was extended to have a split node at (0:0:1).
-
-        sage: G.vertices()
-        {0: Projective Plane Curve over Finite Field in z2 of size 3^2 defined by x^3 + x^2*z + y^2*z}
-    
-        sage: G.edges()
-        [[(0,
-        Place (y + 2*z2 + 2) on Projective Plane Curve over Finite Field in z2 of size 3^2 defined by x^3 + x^2*z + y^2*z),
-        (0,
-        Place (y + z2 + 1) on Projective Plane Curve over Finite Field in z2 of size 3^2 defined by x^3 + x^2*z + y^2*z)]]
-
-        sage: G.genus()
-        1
-
-        sage: X = Curve((x^2+y^2-z^2)*((x-z)^2+y^2+z^2))
-        sage: G = component_graph(X); G
-        component graph of a projective curve over Finite Field in z2 of size 3^2
-
-        sage: G.genus()
-        3
-
-    If the curve is not semistable, but has cusps, then each cusp is represented by
-    a one-tail:
-
-        sage: X = Curve(x^3 - y^2*z)
-        sage: G = component_graph(X); G
-        component graph of a projective curve over Finite Field of size 3
-
-        sage: print(G.as_text())
-        Component graph over Finite Field of size 3
-        Vertices: 2, Edges: 1
-          v0: g=0, component: Projective Plane Curve over Finite Field of size 3 defined by x^3 - y^2*z
-          v1: g=1, component: symbolic tail
-        Adjacency:
-          v0: v1
-          v1: v0
-
-    """
-    # we want X to be an object of the native Curve class
-    if isinstance(X, ProjectivePlaneCurve):
-        X = Curve(X.defining_polynomial())
-    assert X.defining_polynomial().is_squarefree(), "X must be reduced"
-    k = X.base_ring()
-    assert k.is_field() and k.is_finite(), "X has to be defined over a finite field"
-    k1  = splitting_field(X)
-    if not k1 == k:
-        X = Curve(X.base_extend(k1))
-        k = k1
-
-    components = [Curve(Y) for Y in X.irreducible_components()]
-    branches = singular_branches(X, components)
-    singular_points = Set(b.rational_point() for b in branches)
-    nodes = []
-    cusps = []
-    for P in singular_points:
-        # test whether P is a node; there is a problem here to be solved!
-        if is_node(X, P):
-            nodes.append(P)
-        elif allow_cusps and is_cusp(X, P):
-            cusps.append(P)
-        else:
-            raise ValueError("X is not semistable")
-
-    G = ComponentGraph(X.base_ring())
-    for Y in components:
-        G.add_vertex(CurveComponent(Y))
-    for P in nodes:
-        # there must be exactly two branches passing through P 
-        e = [b for b in branches if b.rational_point() == P]
-        assert len(e) == 2
-        G.add_node(e)
-    if allow_cusps:
-        for P in cusps:
-            b1 = [b for b in branches if b.rational_point() == P][0]
-            tail_component = TailComponent()
-            G.add_tail(b1, tail_component)
-    return G
-
-
-def splitting_field(X):
-    r""" Return the splitting field of a plane curve.
-    
-    INPUT:
-
-    - `X` -- a plane projective curve 
-
-    OUTPUT:
-
-    a finite extension of `k` over which 
-
-    - all irreducible components
-    - all singular points, and
-    - all branches at singular points 
-    
-    are rational.
-
-    
-    EXAMPLES:
-
-    sage: from semistable_model.curves.component_graphs import splitting_field
-    sage: k = GF(7)
-    sage: R.<x,y,z> = k[]
-    sage: F = y^2*z + x^3 + x^2*z
-    sage: X = Curve(F)
-    sage: splitting_field(X)
-    Finite Field in z2 of size 7^2
-
-    """
-    S = singular_branches(X)
-    p = X.base_ring().characteristic()
-    n = lcm(s.residue_field().degree() for s in S)
-    return GF(p**n)
-
-    
-def singular_branches(X, components=None):
-    r""" Return the list of all singular branches of a projective plane curve.
-
-    INPUT:
-
-    - ``X`` -- a projective plane curve over a field
-    - ``components`` -- the list of irreducible components of `X`, ``None``
-
-    OUTPUT:
-
-    the list of all branches of `X` passing through the singular points.
-
-
-    EXAMPLES:
-
-    sage: from semistable_model.curves.component_graphs import singular_branches
-    sage: k = GF(7)
-    sage: R.<x,y,z> = k[]
-    sage: F = x^2 + y^2
-    sage: X = Curve(F)
-    sage: singular_branches(X)
-    [Place (1/z) on Projective Plane Curve over Finite Field of size 7 defined by x^2 + y^2]
-
-    """
-    if components is None:
-        components = [Curve(Y) for Y in X.irreducible_components()]
-    S = X.singular_subscheme().reduce()
-    I = S.defining_ideal()
-    R = I.ring()
-    ret = []
-    for Y in components:
-        RY = Y.coordinate_ring()
-        coordinates = []
-        for x in R.gens():
-            xb = RY(x)
-            if not xb.is_zero() and not xb.is_unit():
-                coordinates.append(x)
-        places = Set()
-        for f, x in product(I.gens(), coordinates):
-            g = Y.function(f/x**f.degree())
-            if not g.is_zero():
-                places = places.union(Set(g.zeros()))
-        ret += [CurveBranch(Y, v) for v in places 
-                if all(f in Y.place_to_closed_point(v).prime_ideal() for f in I.gens())] 
-    return ret
-
-def is_node(X, P):
-    r""" Return whether `P` is an ordinary double point of `X`.
-    
-    INPUT:
-
-    - `X` -- a projective plane curve over a field
-    - `P` -- a rational point on `X`
-
-    OUTPUT:
-
-    whether `P` is an ordinary double point on `X`, i.e.
-    whether the tangent cone is a reduced conic (i.e.
-    two distinct lines, possibley after a quadratic extension
-    of th ground field).
-    
-    EXAMPLES:
-
-        sage: k = GF(2)
-        sage: R.<x,y,z> = k[]
-        sage: X = Curve(x*y*z)
-        sage: P = X.point([1,0,0])
-        sage: is_node(X, P)
-        True
-
-    Note that Sage's native method :meth:`is_ordinary_singularity` gives a false result:
-
-        sage: X.is_ordinary_singularity(P)
-        False
-
-        sage: P = X.point([1,1,0])
-        sage: is_node(X, P)
-        False
-
-    A nonsplit ordinary double point counts as a node, too:
-
-        sage: X = Curve(x^2 + x*y + y^2)
-        sage: P = X.point([0,0,1])
-        sage: is_node(X, P)
-        True
-
-    A cusp is not an ordinary double point:
-
-        sage: k = GF(3)
-        sage: R.<x,y,z> = k[]
-        sage: X = Curve(x^3 + y^2*z)
-        sage: P = X.point([0,0,1])
-        sage: is_node(X, P)
-        False
-
-
-    """
-    assert P in X, "P must be a point on X"
-    x, y, z = X.ambient_space().coordinate_ring().gens()
-    F = X.defining_polynomial()(x-P[0], y-P[1], z-P[2]).homogeneous_components()
-    return not 1 in F.keys() and 2 in F.keys() and F[2].is_squarefree()
-
-
-def is_cusp(X, P):
-    r""" Return whether `P` is a cusp of `X`.
-    
-    INPUT:
-
-    - ``X`` -- a projective plane curve over a field
-    - ``P`` -- a rational point on `X`
-
-    OUTPUT:
-
-    whether `P` is a cusp, i.e. a singularity of type `A_2`.
-
-
-    EXAMPLES:
-
-        sage: k = GF(2)
-        sage: R.<x,y,z> = k[]
-        sage: X = Curve(y^2*z + x^3)
-        sage: P = X.point([0,0,1])
-        sage: is_cusp(X, P)
-        True
-
-    """ 
-    assert P in X, "P must be a point on X"
-    x, y, z = X.ambient_space().coordinate_ring().gens()
-    F = X.defining_polynomial()(x-P[0], y-P[1], z-P[2]).homogeneous_components()
-    if 1 in F.keys() or not 2 in F.keys():
-        # P is not a double point:
-        return False
-    F2 = F[2]
-    if F2.is_squarefree():
-        # P is an ordinary double point
-        return False
-    # we must test whether P is really a cusp:
-    if not 3 in F.keys():
-        return False
-    L = F2.factor()[0][0]
-    return not F[3] in L.parent().ideal(L)
-
-
-# -----------------------------------------------------------------------------
-
-#                      classes
-
-
-class CurveBranch(SageObject):
-    r""" Return a curve branch.
-
-    INPUT:
-
-    - ``Y`` -- an integral curve over a field
-    - ``v`` -- a place of the function of `Y`
-    
-    OUTPUT:
-
-    an object representing the pair `(Y, v)`.
-
-    """
-    def __init__(self, Y, v):
-        self._curve = Y
-        self._place = v
-        self._point = Y.place_to_closed_point(v)
-
-    def __repr__(self):
-        return f"{self.place()} on {self.curve()}"
-
-    def curve(self):
-        return self._curve
-    
-    def place(self):
-        return self._place
-    
-    def point(self):
-        r""" Return the point on the curve corresponding to this branch.
-        
-        Note that what is returned is a closed point of the curve. You cannot
-        use it directly to compare it with a point on another curve. 
-        """
-        return self._point
-    
-    def rational_point(self):
-        r""" Return the corresponding rational point of the projective plane.
-        
-        If the point is not rational, an error is raised.
-        """
-        assert self.point().degree() == 1, "the center of this point is not rational"
-        return self.curve().ambient_space().point(self.point().rational_point())
-    
-    def residue_field(self):
-        return self.place().residue_field()[0]
-
-
-# -----------------------------------------------------------------------------
-
-
-class Component(SageObject):
-    r""" Return a component object which can be used as vertex of a component graph.
-    
-    This is an abstract base class. Subclasses must, on initilization, define at
-    least the following secret attributes:
-
-    - self._curve : an integral curve, or ``None``
-    - self._genus : the (geometric) genus of the component
-    - self._label : a string giving a short description of the component
-    - self._kind  : a string revealing the subclass (e.g. "curve" or "tail")
-    
-    """
-    def curve(self):
-        return self._curve
-
-    def genus(self):
-        r""" Return the genus of this component.
-        
-        """
-        return self._genus
-
-    def label(self):
-        r""" Return the label of this component.
-        
-        This is a string which gives a short description of the component.
-
-        """
-        return self._label
-
-    def kind(self):
-        r""" Return the kind of this ccomponent.
-        
-        The *kind* must be a short string reavealing the subclass this object
-        belongs to, e.g. "curve" or "tail"
-
-        """
-        return self._kind
-
-
-class CurveComponent(Component):
-    r""" Return the component corresponding to to an integral projective curve over a field.
-    
-    INPUT:
-
-    - ``curve`` -- an integral projective curve over a field
-
-    At the moment, only plane curves are allowed.
-    
-    """
-    def __init__(self, curve):
-        # we have to make sure that ``curve`` lives in the right class
-        curve = Curve(curve)
-        assert curve.is_irreducible(), "the curve must be irreducible"
-        self._curve = curve
-        self._genus = curve.geometric_genus()
-        # this only works for plane curves:
-        self._label = str(curve.defining_polynomial())
-        self._kind = "curve"
-
-    def __repr__(self):
-        return str(self.curve())
-
-    def curve(self):
-        return self._curve
-
-    def coordinate_ring(self):
-        return self.curve().coordinate_ring()
-
-
-class TailComponent(Component):
-    def __init__(self, tail_kind="symbolic"):
-        self._curve = None
-        self._tail_kind = tail_kind   # "elliptic","pig","symbolic"
-        self._genus = 1
-        self._label = f"{tail_kind} tail"
-        self._kind = "tail"
-
-    def __repr__(self):
-        return self.label()
-
-
-# -----------------------------------------------------------------------------
+from sage.all import SageObject, Graph
+from itertools import permutations
 
 
 class ComponentGraph(SageObject):
     r""" The component graph of a semistable curve over a field.
 
-    INPUT:
-
-    - ``base_field`` -- a finite field
-
     OUTPUT:
 
-    An empty component graph over `k`.
+    An empty component graph.
 
     To this component graph one can add new vertices and edges. 
-    
-    
+
     """
 
-    def __init__(self, base_field):
-        assert base_field.is_field() and base_field.is_finite(), "the base field must be a finite field"
-        self._base_field = base_field
+    def __init__(self):
         # upon creation, the component graph is empty 
-        self._vertices = {}
-        self._edges = []
         self._graph = Graph(0, loops=True, multiedges=True)
+        self._genus = {}
+        # omitted for now:
+        # self._tail_kind = {}    
+        # for a vertex v, this should be "symbolic", "elliptic", "pigtail" or None
 
     def __repr__(self):
-        return f"component graph of a projective curve over {self.base_field()}"
+        return f"abstract component graph of a semistable projective curve"
     
-    def base_field(self):
-        r""" Return the base field of this component graph.
-        
-        """
-        return self._base_field
+    def genus_of_vertex(self, v):
+        return self._genus[v]
     
     def genus(self):
         r""" Return the genus of this component graph.
         
         """
         if self.is_connected():
-            return (sum(Y.genus() for Y in self.components()) 
+            return (sum(self.genus_of_vertex(v) for v in self.vertices()) 
                 + self.number_of_edges() - self.number_of_vertices() + 1)
         else:
             raise NotImplementedError("the curve must be connected")
         
     def vertices(self):
-        r""" Return the dictionary of vertices of this component graph.
-
-        The keys of this dictionary are the names of the vertices of the
-        underlying bare graph. The correspondig value, the *vertex*, is 
-        an integral curve on the ambient projective plane.
+        r""" Return the list of vertices of this component graph.
 
         """
-        return self._vertices
+        return self.graph().vertices()
 
     def number_of_vertices(self):
         r""" Return the number of vertices of this component graph.
         
         """
-        return len(self.vertices())
-    
-    def components(self):
-        r""" Return the list of irreducible components.
-        
-        """
-        return list(self.vertices().values())
-        
+        return self.graph().num_verts()
+           
     def edges(self):
         r""" Return the list of edges.
         
-        An *edge* is a pair of distinct branches with the same center,
-        an ordinary double point of the curve.
-
         """
-        return self._edges
+        return self.graph().edges(labels=False)
     
     def number_of_edges(self):
         r""" Return the number of edges of this component graph.
         
         """
-        return len(self.edges())
+        return self.graph().num_edges()
     
     def graph(self):
         r""" Return the abstract graph of this component graph.
@@ -602,125 +196,346 @@ class ComponentGraph(SageObject):
         
         """
         return self.graph().is_connected()
-        
-    def add_vertex(self, Y):
-        r""" Add a vertex to this component graph.
-
-        INPUT:
-
-        - ``Y`` -- a component object
-
-
-        OUTPUT:
-
-        The method adds a new vertex to the underlying graph,
-        corresponding to the component `Y`. The newly created index
-        for this vertex is returned.
-        
-        """
-        index = self.graph().add_vertex()
-        self._vertices[index] = Y
-        return index
     
-    def add_node(self, node_branches):
-        r""" Add an edge to this component graph corresponding to a node of the curve.
-
+    def add_vertex(self, genus):
+        r""" Add a vertex to this component graph.
+        
         INPUT:
 
-        ``node_branches`` -- a pair of distinct branches with the same center, corresponding
-                             to a node of a plane curve
+        - ``genus`` -- a nonnegative integer
 
         OUTPUT:
 
-        This function adds an edge to this component graph which corresponds to
-        the node represented by ``node_branches``. Nothing is returned. 
+        the vertex that has been created (a nonnegative integer)
+        
+        """
+        v = self.graph().add_vertex()
+        self._genus[v] = genus
+        return v
 
-        Note that both branches need to be defined on the same ambient space
-        (for the moment: a projective plane over a field) to make sense of the
-        condition that both have the same center. 
+    def add_edge(self, u,v):
+        r""" Add an edge to the underlying graph.
+   
+        """
+        self.graph().add_edge(u, v)
+
+    def add_elliptic_tail(self, v):
+        r""" Add an elliptic tail to this component graph.
+        
+        INPUT:
+
+        - ``v`` -- a vertex of the graph
+        
+        OUTPUT:
+        
+        A new vertex of genus one is added to the graph, and connected to `v`
+        by a unique edge. This is an *elliptic tail*.
+
+        The newly created vertex is returned.
+        """
+        t = self.add_vertex(1)
+        self.add_edge(v, t)
+        return t
+
+    def add_pigtail(self, v):
+        r""" Add a pigtail to this component graph.
+        
+        INPUT:
+
+        - ``v`` -- a vertex of the graph
+        
+        OUTPUT:
+
+        A new vertex of genus zero is added to the graph, connected to `v`
+        by a unique edge, and a loop on the new vertex is added.
+        This is a *pigtail*. 
+
+        The newly created vertex is returned.       
+        """
+        t = self.add_vertex(0)
+        self.add_edge(v, t)
+        self.add_edge(t, t)   # loop
+        return t
+    
+    def n_loops(self, v):
+        r""" Return the number of loops on this vertex.
+        
+        INPUT:
+
+        - ``v`` -- a vertex of the graph
+
+        OUTPUT:
+
+        the number of loops on `v`, i.e. edges of the form `(v,v)`.
 
         """
-        b1 = node_branches[0]
-        b2 = node_branches[1]
-        assert b1.rational_point() == b2.rational_point()
-        a1 = [a for a, Y in self.vertices().items() if Y.curve() == b1.curve()][0]
-        a2 = [a for a, Y in self.vertices().items() if Y.curve() == b2.curve()][0]
-        self._edges.append([(a1, b1), (a2, b2)])
-        self.graph().add_edge(a1, a2)
+        return sum(1 for (a,b) in self.graph().edges(labels=False) if a == v and b == v)
 
-    def add_tail(self, cusp_branch, tail_component):
-        r""" Add a tail to this component graph corresponding to a cusp of the curve.
+    def nonloop_neighbors(self, v):
+        return [u for u in self.graph().neighbors(v) if u != v]
+    
+    def nonloop_degree(self, v):
+        return len(self.nonloop_neighbors(v))
+    
+    def edge_multiplicity(self, u, v, G=None):
+        H = self.core_graph() if G is None else G
+        if u == v:
+            return sum(1 for (a,b) in H.edges(labels=False) if a==u and b==u)
+        return sum(1 for (a,b) in H.edges(labels=False)
+                   if (a==u and b==v) or (a==v and b==u))
+    
+    def is_one_tail(self, v):
+        r""" Return whether `v` corresponds to a one-tail.
         
-        INPUT:
+        A vertex `v` of a component graph is a *one-tail* if it has arithmetic
+        genus one, and is connected to the rest of the graph by a single edge. 
 
-        - ``cusp_branch`` -- a curve branch
-        - ``tail_component`` -- a tail component
+        There are two types of one-tails:
 
-        
-        OUTPUT:
-
-        This function adds a tail to the component graph, i.e. a leaf of the
-        underlying graph, 
+        - elliptic tails: the component is smooth and has geometric genus one,
+        - pigtail: the component has geometric genus zero, and has one loop.
 
         """
-        a1 = [a for a, Y in self.vertices().items() if Y.curve() == cusp_branch.curve()][0]
-        a2 = self.add_vertex(tail_component)
-        self._edges.append([(a1, cusp_branch), (a2, tail_component)])
-        self.graph().add_edge(a1, a2)
+        return self.is_elliptic_tail(v) or self.is_pigtail(v)
+    
+    def is_elliptic_tail(self, v):
+        r""" Return whether `v` corresponds to an elliptic tail.
         
-    def as_text(self, show_edges=False, show_adjacency=True):
-        r"""Return a text-only representation of the component graph.
+        A vertex `v` of a component graph is a *one-tail* if it has arithmetic
+        genus one, and is connected to the rest of the graph by a single edge. 
 
-        The output is meant to be stable and readable in docstrings.
+        There are two types of one-tails:
 
+        - elliptic tails: the component is smooth and has geometric genus one,
+        - pigtail: the component has geometric genus zero, and has one loop.
+
+        """
+        return self.genus_of_vertex(v)==1 and self.n_loops(v)==0 and self.nonloop_degree(v)==1
+
+    def is_pigtail(self, v):
+        r""" Return whether `v` corresponds to a pigtail.
+        
+        A vertex `v` of a component graph is a *one-tail* if it has arithmetic
+        genus one, and is connected to the rest of the graph by a single edge. 
+
+        There are two types of one-tails:
+
+        - elliptic tails: the component is smooth and has geometric genus one,
+        - pigtail: the component has geometric genus zero, and has one loop.
+
+        """
+        return self.genus_of_vertex(v)==0 and self.n_loops(v)==1 and self.nonloop_degree(v)==1
+    
+    def n_elliptic_tails(self, v):
+        r""" Return the number of elliptic tails attached to this vertex.
+        
         INPUT:
 
-        - ``show_edges`` -- bool (default: False); include an edge list
-        - ``show_adjacency`` -- bool (default: True); include adjacency lists
+        - `v` -- a vertex of the underlying graph, which is not a one-tail
 
         OUTPUT:
 
-        A string describing this component graph.
+        the number of elliptic tails attached to the component corresponding to `v`.
 
+        """
+        assert not self.is_one_tail(v), "v must not be a one-tail"
+        return sum(1 for t in self.graph()[v] if self.is_elliptic_tail(t))
+    
+    def n_pigtails(self, v):
+        r""" Return the number of pigtails attached to this vertex.
+        
+        INPUT:
+
+        - `v` -- a vertex of the underlying graph
+
+        OUTPUT:
+
+        the number of pigtails attached to the component corresponding to `v`.
+
+        """
+        assert not self.is_one_tail(v), "v must not be a one-tail"
+        return sum(1 for t in self.graph()[v] if self.is_pigtail(t))
+
+    def vertex_label(self, v):
+        r""" Return the label of a vertex.
+        
+        INPUT:
+
+        - ``v`` -- a vertex of the underlying graph
+
+        OUTPUT:
+
+        the *label* of `v`, which is a three-tuple `(g, e, p)` where
+
+        - `g` is the geometric genus of the component corresponding to `v`,
+        - `e` is the number of elliptic tails attached, and  
+        - `p` is the number of pigtails attached.
+        
+        """
+        return (self.genus_of_vertex(v), self.n_elliptic_tails(v), self.n_pigtails(v))
+    
+    def core_vertices(self):
+        r""" Return the list of vertices belonging to the core.
+        
+        """
+        return sorted(v for v in self.vertices() if not self.is_one_tail(v))
+
+    def core_graph(self):
+        r""" Return the subgraph corresponding to the core.
+        
+        """
+        return self.graph().subgraph(self.core_vertices())
+    
+    def signature(self, sigma):
+        r"""Return the signature of this component graph, with respect to a permutation.
+
+        INPUT:
+
+        - ``sigma`` -- a permutation of ``range(n)``, where ``n`` is the number
+          of core vertices. (So ``sigma`` is a tuple/list of length ``n``.)
+
+        OUTPUT:
+
+        A tuple ``(L, A)`` where
+
+        - ``L`` is the tuple of vertex labels of the core vertices in the order
+          given by ``sigma``; each label is ``(g,e,p)``.
+        - ``A`` is the tuple encoding the upper-triangular part of the adjacency
+          matrix of the core graph in that same order, including the diagonal.
+          The diagonal entries are the numbers of loops.
+
+        This is designed so that ``canonical_signature()`` is the lexicographic
+        minimum of these values over all permutations.
+        """
+        core = self.core_vertices()
+        n = len(core)
+
+        # normalize sigma to a tuple
+        sigma = tuple(sigma)
+
+        if len(sigma) != n or set(sigma) != set(range(n)):
+            raise ValueError("sigma must be a permutation of range(n), where n=#core vertices")
+
+        # core vertices in permuted order
+        Vp = [core[i] for i in sigma]
+
+        # L: ordered vertex labels (g,e,p)
+        L = tuple(self.vertex_label(v) for v in Vp)
+
+        # A: upper triangular adjacency, including diagonal (loops)
+        H = self.core_graph()
+        A = []
+        for i in range(n):
+            for j in range(i, n):
+                A.append(self.edge_multiplicity(Vp[i], Vp[j], G=H))
+        A = tuple(A)
+
+        return (L, A)
+
+    def canonical_signature(self):
+        r"""Return the canonical signature of this component graph.
+
+        OUTPUT:
+
+        The canonical signature, defined as the lexicographically minimal value
+        of ``self.signature(sigma)`` over all permutations ``sigma`` of the core
+        vertices.
+
+        Since in the genus 3 applications the number of core vertices is small,
+        this brute-force canonicalization is practical and robust.
+        """
+        core = self.core_vertices()
+        n = len(core)
+
+        best = None
+        for sigma in permutations(range(n)):
+            s = self.signature(sigma)
+            if best is None or s < best:
+                best = s
+        return best
+
+    def as_text(self):
+        r"""
+        Return a human-readable description of this component graph.
+
+        The output describes the combinatorial structure of the graph:
+        vertices with their genera, loops, and attached one-tails, and the
+        adjacency structure of the core graph.
+
+        OUTPUT:
+
+        A multiline string.
+
+        EXAMPLES::
+
+            sage: from component_graphs import ComponentGraph
+            sage: G = ComponentGraph()
+            sage: v = G.add_vertex(1)
+            sage: w = G.add_vertex(0)
+            sage: G.add_edge(v, w); G.add_edge(v, w); G.add_edge(v, w)
+            sage: _ = G.add_elliptic_tail(w)
+            sage: print(G.as_text())
+            Component graph of a semistable curve
+            ------------------------------------
+            Connected: True
+            Total genus: 3
+
+            Vertices:
+              v0: genus=1, loops=0, elliptic_tails=0, pigtails=0  [core]
+              v1: genus=0, loops=0, elliptic_tails=1, pigtails=0  [core]
+              v2: genus=1, loops=0                               [elliptic tail]
+
+            Core adjacency (with multiplicities):
+              v0 -- v1 : 3
         """
         lines = []
-        lines.append(f"Component graph over {self.base_field()}")
-        lines.append(f"Vertices: {self.number_of_vertices()}, Edges: {self.number_of_edges()}")
+        lines.append("Component graph of a semistable curve")
+        lines.append("-" * 36)
+        lines.append(f"Connected: {self.is_connected()}")
+        if self.is_connected():
+            lines.append(f"Total genus: {self.genus()}")
+        else:
+            lines.append("Total genus: undefined (graph not connected)")
+        lines.append("")
+        lines.append("Vertices:")
 
-        # vertices (deterministic order)
-        for v in sorted(self.vertices().keys()):
-            Y = self.vertices()[v]
-            g = Y.genus()
-            # short component descriptor
-            try:
-                comp = Y.defining_polynomial()
-            except Exception:
-                comp = Y
-            lines.append(f"  v{v}: g={g}, component: {comp}")
+        for v in self.vertices():
+            g = self.genus_of_vertex(v)
+            loops = self.n_loops(v)
 
-        G = self.graph()
+            if self.is_one_tail(v):
+                if self.is_elliptic_tail(v):
+                    kind = "elliptic tail"
+                elif self.is_pigtail(v):
+                    kind = "pigtail"
+                else:
+                    kind = "one-tail"
+                lines.append(
+                    f"  v{v}: genus={g}, loops={loops}                               [{kind}]"
+                )
+            else:
+                e = self.n_elliptic_tails(v)
+                p = self.n_pigtails(v)
+                lines.append(
+                    f"  v{v}: genus={g}, loops={loops}, elliptic_tails={e}, pigtails={p}  [core]"
+                )
 
-        if show_adjacency:
-            lines.append("Adjacency:")
-            for v in sorted(self.vertices().keys()):
-                nbrs = list(G.neighbors(v))
-                nbrs.sort()
-                lines.append(f"  v{v}: " + (", ".join(f"v{w}" for w in nbrs) if nbrs else "-"))
-
-        if show_edges:
-            # Graph.edges(labels=False) gives (u,v) or (u,v,label) depending on Sage version;
-            # we normalize to pairs.
-            raw = G.edges(labels=False, sort=True)
-            pairs = []
-            for e in raw:
-                if len(e) >= 2:
-                    u, v = e[0], e[1]
-                    pairs.append((u, v))
-            edge_str = ", ".join(f"(v{u},v{v})" for (u, v) in pairs) if pairs else "-"
-            lines.append("Edges:")
-            lines.append(f"  {edge_str}")
+        core = self.core_vertices()
+        if len(core) > 0:
+            lines.append("")
+            lines.append("Core adjacency (with multiplicities):")
+            H = self.core_graph()
+            for i, u in enumerate(core):
+                for v in core[i:]:
+                    m = self.edge_multiplicity(u, v, G=H)
+                    if m == 0:
+                        continue
+                    if u == v:
+                        lines.append(f"  v{u} -- v{u} : {m} (loops)")
+                    else:
+                        lines.append(f"  v{u} -- v{v} : {m}")
+        else:
+            lines.append("")
+            lines.append("Core adjacency: (empty)")
 
         return "\n".join(lines)
-
-
-
