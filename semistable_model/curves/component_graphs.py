@@ -254,6 +254,29 @@ class ComponentGraph(SageObject):
         self.add_edge(v, t)
         return t
 
+    def add_one_tail(self, v, tail_type):
+        r""" Add a one-tail to this component.
+
+        INPUT:
+
+        - ``v`` -- a vertex of the graph
+        - ``tail_type`` -- either "e" or "m"
+        
+        OUTPUT:
+
+        A one-tail of type ``tail_type`` is attached to the vertex `v`,
+        i.e. an elliptic tail if ``tail_type`` is "e", and a pigtail
+        if ``tail_type`` is "m".
+
+        The newly created vertex is returned.                       
+        """
+        if tail_type == "e":
+            return self.add_elliptic_tail(v)
+        elif tail_type == "m":
+            return self.add_pigtail(v)
+        else:
+            ValueError()
+
     def add_pigtail(self, v):
         r""" Add a pigtail to this component graph.
         

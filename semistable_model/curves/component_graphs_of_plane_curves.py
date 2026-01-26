@@ -1,199 +1,229 @@
 r"""
+Component graphs of plane curves
+================================
 
-The component graph of a semistable curve
-=========================================
+This module provides routines which *construct* component graphs (in the sense of
+:mod:`semistable_model.curves.component_graphs`) from concrete plane curves over
+finite fields.
 
-Let `X` be a projective plane curve over a perfect field `k`. We say that `X` is 
-*semistable* if it is reduced and has at most ordinary double points (nodes) as 
-singularities.
+Relation to :mod:`component_graphs`
+-----------------------------------
 
-To such a semistable curve we can associate a *component graph* `G`, as follows. 
-We first assume that all irreducible components are absolutely irreducible and all 
-singular points are *split* ordinary double points (this can be achieved with
-a finite extension of the base field `k`). Then the vertices of `G` correspond to
-irreducible components of `X` and the edges correspond to the nodes. 
+The companion module :mod:`semistable_model.curves.component_graphs` defines the class
+:class:`~semistable_model.curves.component_graphs.ComponentGraph`, which is a purely
+combinatorial object: an undirected multigraph with loops, together with a geometric
+genus attached to each vertex.  The present module is the geometric interface: it
+takes a projective plane curve `X` and produces the corresponding
+:class:`~semistable_model.curves.component_graphs.ComponentGraph`.
 
-We also consider the following generalization, which is relevant for our paper
-`Semistable reduction of plane quartics`. Assume that `X` is a projective plane
-curve over a field `k` which is reduced and has at most *nodes* and *cusps*
-as singularities. Then we can attach to `X` a component graph as before, where
-we attach for each cusp formally a *one-tail* as a leaf of the component graph.  
+In particular, vertices of the resulting component graph are numbered abstractly;
+no curve objects are stored inside the graph.  All geometric computations needed to
+construct the graph (factorization into components, determination of singular points
+and branches, computation of geometric genera, etc.) are carried out here.
 
-In this module we realize the computation of the component graph of a semistable
-curve `X` (possibly with cusps).
+Plane curves with nodes and cusps
+---------------------------------
 
+The basic building blocks are the functions :func:`singular_branches`, :func:`is_node`,
+and :func:`is_cusp`.  Given a reduced plane curve `X`, we consider its irreducible
+components and the branches through the singular points.  A node contributes an edge
+between the vertices corresponding to the two branches through the node (a loop if
+both branches lie on the same component).  Multiple nodes between the same components
+lead to multiple edges.
 
-EXAMPLES:
+For applications to stable curves of genus three (and in particular to the stable
+reduction of plane quartics), it is important to allow *cusps* in addition to nodes.
+A cusp is not a node and hence does not contribute an edge to the core graph.
+Instead, it corresponds (after passing to the stable model) to a genus-one tail attached
+to the component containing the cusp.
 
-We compute the component graph of a triangle:
+GIT-stable plane quartics
+-------------------------
 
-    sage: k = GF(2)
-    sage: R.<x,y,z> = k[]
-    sage: X = Curve(x*y*z)
-    sage: G = component_graph(X); G
-    component graph of a projective curve over Finite Field of size 2
+The main entry point is :func:`component_graph_of_GIT_stable_quartic`.  It takes as
+input a plane quartic `X` over a finite field which is GIT-stable, i.e. reduced and
+having only nodes and cusps as singularities.  The output is the component graph of
+the stable curve obtained by smoothing the cusps and attaching genus-one tails.  The
+type of tail attached at a cusp is specified by the optional argument ``cusp_data``:
+each cusp receives either an elliptic tail (``"e"``) or a pigtail (``"m"``).  If
+``cusp_data`` is not given, elliptic tails are attached by default.
 
-    sage: G.genus()
-    1
+Splitting fields and rationality
+--------------------------------
 
-    sage: print(G.as_text())
-    Component graph over Finite Field of size 2
-    Vertices: 3, Edges: 3
-    v0: g=0, component: z
-    v1: g=0, component: y
-    v2: g=0, component: x
-    Adjacency:
-    v0: v1, v2
-    v1: v0, v2
-    v2: v0, v1
+Several constructions in this module are most naturally performed after a finite
+extension of the ground field over which all components, singular points and branches
+become rational.  The helper function :func:`splitting_field` produces such an
+extension in the situations considered here, and the remaining routines implicitly
+work over this field.
 
-The example from § 5.1 of our paper. This is a reduced and integral quartic over `\mathbb{F}_2`
-with one loop and two cusps (defined over `\mathbb{F}_4$).
-
-    sage: X = Curve(x^4 + x*y^2*z + x^2*z^2 + z^4)
-    sage: G = component_graph(X)
-    sage: G.genus()
-    3
-
-    sage: print(G.as_text())
-    Component graph over Finite Field in z2 of size 2^2
-    Vertices: 3, Edges: 3
-    v0: g=0, component: Projective Plane Curve over Finite Field in z2 of size 2^2 defined by x^4 + x*y^2*z + x^2*z^2 + z^4
-    v1: g=1, component: symbolic tail
-    v2: g=1, component: symbolic tail
-    Adjacency:
-    v0: v0, v1, v2
-    v1: v0
-    v2: v0
-
-
-
+The emphasis of this module is on providing a reliable bridge from explicit plane
+curves to the purely combinatorial invariants implemented by
+:class:`~semistable_model.curves.component_graphs.ComponentGraph` (canonical signatures,
+isomorphism testing, and classification in small genus).
 """
 
+
 from semistable_model.curves.plane_curves import ProjectivePlaneCurve
-from semistable_model.curves.component_graphs import ComponentGraph, Component, TailComponent
+from semistable_model.curves.component_graphs import ComponentGraph
 from sage.all import SageObject, Curve, Set, lcm, GF
 from itertools import product
 
 
-def component_graph_of_plane_curve(X, allow_cusps=True):
-    r""" Return the component graph of a projective plane curve.
-    
-    INPUT:
+def component_graph_of_GIT_stable_quartic(X, cusp_data=None, check_degree=True):
+    """
 
-    - `X` -- a projective plane curve over a field
-    - ``allow_cusps`` -- a boolean
+    INPUT:
+    
+    - ``X`` -- a GIT-stable plane quartic over a finite field
+    - ``cusp_data`` -- data that provides the resolved tail types for each cusp
+    - ``check_degree`` -- a boolean
+
+    The condition on `X` means that `X` is reduced and has at most nodes and cusps
+    as singularities. Unless``cusp_data`` is ``None`` we also assume that the cusps
+    are rational points of `X`.
+
+    ``cusp_data`` is a list of pairs (`P`, ``tail_type``), where `P` is a cusp,
+    as a rational point of `X`, and ``tail_type`` is either "e" (for an elliptic 
+    tail), or "m" (for a pigtail).
+     
 
     OUTPUT:
-
-    the component graph of `X`.
-
-    The curve `X` 
-    - must be defined over a finite field, 
-    - must be reduced, 
-    - if ``allow_cusps`` is False, `X` must be semistable, and
-    - if it is ``True``, nodes and cusps are also allowed as singularities
-
     
+    The component graph of the stable curve `X_1` of genus `3`which is obtained 
+    by smoothing the cusps and attaching to it a one-tail of the kind indicated
+    by ``cusp_data``. 
+
+    Note that the component graph is of type :class:`ComponentGraph` and is
+    a purely combinatorial object.
+
+    If cusp_data is not None, it must contain an entry for each cusp of X 
+    (otherwise a ValueError is raised). If ``cusp_data`` is ``None`` then 
+    we attach to each cusp an elliptic tail.
+
+    If ``check_degree`` is ``False`` it is not checked whether `X` is actually
+    a quartic.
+
     EXAMPLES:
 
-        sage: from semistable_model.curves.component_graphs import component_graph
         sage: k = GF(2)
         sage: R.<x,y,z> = k[]
         sage: X = Curve(x*y*z)
-        sage: G = component_graph_of_plane_curve(X); G
-        component graph of a projective curve over Finite Field of size 2
+        sage: G = component_graph_of_GIT_stable_quartic(X, check_degree=False); G
+        abstract component graph of a semistable projective curve
 
-        sage: G.vertices()
-        {0: Projective Plane Curve over Finite Field of size 2 defined by z,
-        1: Projective Plane Curve over Finite Field of size 2 defined by y,
-        2: Projective Plane Curve over Finite Field of size 2 defined by x}
+        sage: print(G.as_text())
+        Component graph of a semistable curve
+        ------------------------------------
+        Connected: True
+        Total genus: 1
 
-        sage: G.genus()
-        1
+        Vertices:
+        v0: genus=0, loops=0, elliptic_tails=0, pigtails=0  [core]
+        v1: genus=0, loops=0, elliptic_tails=0, pigtails=0  [core]
+        v2: genus=0, loops=0, elliptic_tails=0, pigtails=0  [core]
+
+        Core adjacency (with multiplicities):
+        v0 -- v1 : 1
+        v0 -- v2 : 1
+        v1 -- v2 : 1
 
         sage: k = GF(3)
         sage: R.<x,y,z> = k[]
-        sage: X = Curve(y^2*z+x^3+x^2*z)
-        sage: G = component_graph_of_plane_curve(X); G
-        component graph of a projective curve over Finite Field in z2 of size 3^2
-
-    Note that the base field was extended to have a split node at (0:0:1).
-
-        sage: G.vertices()
-        {0: Projective Plane Curve over Finite Field in z2 of size 3^2 defined by x^3 + x^2*z + y^2*z}
-    
-        sage: G.edges()
-        [[(0,
-        Place (y + 2*z2 + 2) on Projective Plane Curve over Finite Field in z2 of size 3^2 defined by x^3 + x^2*z + y^2*z),
-        (0,
-        Place (y + z2 + 1) on Projective Plane Curve over Finite Field in z2 of size 3^2 defined by x^3 + x^2*z + y^2*z)]]
-
-        sage: G.genus()
-        1
-
         sage: X = Curve((x^2+y^2-z^2)*((x-z)^2+y^2+z^2))
-        sage: G = component_graph_of_plane_curve(X); G
-        component graph of a projective curve over Finite Field in z2 of size 3^2
-
-        sage: G.genus()
-        3
-
-    If the curve is not semistable, but has cusps, then each cusp is represented by
-    a one-tail:
-
-        sage: X = Curve(x^3 - y^2*z)
-        sage: G = component_graph_of_plane_curve(X); G
-        component graph of a projective curve over Finite Field of size 3
-
+        sage: G = component_graph_of_GIT_stable_quartic(X)
         sage: print(G.as_text())
-        Component graph over Finite Field of size 3
-        Vertices: 2, Edges: 1
-          v0: g=0, component: Projective Plane Curve over Finite Field of size 3 defined by x^3 - y^2*z
-          v1: g=1, component: symbolic tail
-        Adjacency:
-          v0: v1
-          v1: v0
+        Component graph of a semistable curve
+        ------------------------------------
+        Connected: True
+        Total genus: 3
+
+        Vertices:
+        v0: genus=0, loops=0, elliptic_tails=0, pigtails=0  [core]
+        v1: genus=0, loops=0, elliptic_tails=0, pigtails=0  [core]
+
+        Core adjacency (with multiplicities):
+        v0 -- v1 : 4
+
+        sage: k = GF(2)
+        sage: R.<x,y,z> = k[]
+        sage: X = Curve(x^4 + x*y^2*z + x^2*z^2 + z^4)
+        sage: G = component_graph_of_GIT_stable_quartic(X)
+        sage: print(G.as_text())
+        Component graph of a semistable curve
+        ------------------------------------
+        Connected: True
+        Total genus: 3
+
+        Vertices:
+        v0: genus=0, loops=1, elliptic_tails=2, pigtails=0  [core]
+        v1: genus=1, loops=0                               [elliptic tail]
+        v2: genus=1, loops=0                               [elliptic tail]
+
+        Core adjacency (with multiplicities):
+        v0 -- v0 : 1 (loops)
 
     """
     # we want X to be an object of the native Curve class
     if isinstance(X, ProjectivePlaneCurve):
         X = Curve(X.defining_polynomial())
     assert X.defining_polynomial().is_squarefree(), "X must be reduced"
+    if check_degree:
+        assert X.degree() == 4, "X must be a quartic"
     k = X.base_ring()
     assert k.is_field() and k.is_finite(), "X has to be defined over a finite field"
     k1  = splitting_field(X)
     if not k1 == k:
         X = Curve(X.base_extend(k1))
+        if not cusp_data is None:
+            cusp_data = [(P.base_change(k1), t) for P, t in cusp_data]
         k = k1
 
     components = [Curve(Y) for Y in X.irreducible_components()]
     branches = singular_branches(X, components)
     singular_points = Set(b.rational_point() for b in branches)
+    # this dictionary remembers all singular branches through a given point 
+    bs_at_P = {}
+    for b in branches:
+        bs_at_P.setdefault(b.rational_point(), []).append(b)
+
     nodes = []
     cusps = []
     for P in singular_points:
-        # test whether P is a node; there is a problem here to be solved!
         if is_node(X, P):
             nodes.append(P)
-        elif allow_cusps and is_cusp(X, P):
+        elif is_cusp(X, P):
             cusps.append(P)
         else:
-            raise ValueError("X is not semistable")
+            raise ValueError("X is not GIT-stable")
+        
+    if cusp_data is None:
+        # by default, one-tails are elliptic tails
+        cusp_data = [(P, "e") for P in cusps]
+    else:
+        # check that each cusp occurs exactly once
+        if not all(len([Q for Q, _ in cusp_data if Q == P]) == 1 
+                  for P in cusps):
+            raise ValueError("every cusp must occur exactly once")
+        for Q, _ in cusp_data:
+            if not any(Q == P for P in cusps):
+                raise ValueError("cusp_data contains a point which is not a cusp of X")
 
-    G = ComponentGraph(X.base_ring())
+    G = ComponentGraph()
+    comp_to_vert = {}
     for Y in components:
-        G.add_vertex(CurveComponent(Y))
+        # I can use the components as items because I only 
+        # draw them from the initial list `components`
+        comp_to_vert[Y] = G.add_vertex(Y.geometric_genus())
     for P in nodes:
         # there must be exactly two branches passing through P 
-        e = [b for b in branches if b.rational_point() == P]
-        assert len(e) == 2
-        G.add_node(e)
-    if allow_cusps:
-        for P in cusps:
-            b1 = [b for b in branches if b.rational_point() == P][0]
-            tail_component = TailComponent()
-            G.add_tail(b1, tail_component)
+        e = bs_at_P[P]
+        assert len(e) == 2, f"the point {P} is not a node"
+        G.add_edge(comp_to_vert[e[0].curve()], comp_to_vert[e[1].curve()])
+    for P in cusps:
+        b1 = bs_at_P[P][0]
+        tail_type = [t for Q, t in cusp_data if Q == P][0]
+        G.add_one_tail(comp_to_vert[b1.curve()], tail_type)
     return G
 
 
@@ -427,226 +457,3 @@ class CurveBranch(SageObject):
         return self.place().residue_field()[0]
 
 
-# -----------------------------------------------------------------------------
-
-
-class CurveComponent(Component):
-    r""" Return the component corresponding to to an integral projective curve over a field.
-    
-    INPUT:
-
-    - ``curve`` -- an integral projective curve over a field
-
-    At the moment, only plane curves are allowed.
-    
-    """
-    def __init__(self, curve):
-        # we have to make sure that ``curve`` lives in the right class
-        curve = Curve(curve)
-        assert curve.is_irreducible(), "the curve must be irreducible"
-        self._curve = curve
-        self._genus = curve.geometric_genus()
-        # this only works for plane curves:
-        self._label = str(curve.defining_polynomial())
-        self._kind = "curve"
-
-    def __repr__(self):
-        return str(self.curve())
-
-    def curve(self):
-        return self._curve
-
-    def coordinate_ring(self):
-        return self.curve().coordinate_ring()
-
-
-class ComponentGraphOfPlaneCurve(ComponentGraph):
-    r""" Return an (empty) component graph of a plane curve.
-    
-    INPUT:
-
-    - ``P`` -- a projective plane over a field
-    
-    """
-    def __init__(self, P):
-        # initialize the ComponentGraph object
-        self._projective_plane = P
-
-    def components(self):
-        r""" Return the list of irreducible components.
-    
-        """
-        raise NotImplementedError()
-    
-    def add_component(self, Y):
-        r""" Add a component to this component graph.
-
-        INPUT:
-
-        - ``Y`` -- a component object
-
-
-        OUTPUT:
-
-        The method adds a new vertex `v` to the underlying graph,
-        records `Y` as the component corresponding to `v`, and returns `v`.
-        
-        """
-        v = self.graph().add_vertex()
-        self._vertices[v] = Y
-        return v
-
-    def add_node(self, node_branches):
-        r""" Add an edge to this component graph corresponding to a node of the curve.
-
-        INPUT:
-
-        ``node_branches`` -- a pair of distinct branches with the same center, corresponding
-                             to a node of a plane curve
-
-        OUTPUT:
-
-        This function adds an edge to this component graph which corresponds to
-        the node represented by ``node_branches``. Nothing is returned. 
-
-        Note that both branches need to be defined on the same ambient space
-        (for the moment: a projective plane over a field) to make sense of the
-        condition that both have the same center. 
-
-        """
-        b1 = node_branches[0]
-        b2 = node_branches[1]
-        assert b1.rational_point() == b2.rational_point()
-        a1 = [a for a, Y in self.vertices().items() if Y.curve() == b1.curve()][0]
-        a2 = [a for a, Y in self.vertices().items() if Y.curve() == b2.curve()][0]
-        self._edges.append([(a1, b1), (a2, b2)])
-        self.graph().add_edge(a1, a2)
-
-    def add_tail(self, cusp_branch, tail_component):
-        r""" Add a tail to this component graph corresponding to a cusp of the curve.
-        
-        INPUT:
-
-        - ``cusp_branch`` -- a curve branch
-        - ``tail_component`` -- a tail component
-
-        
-        OUTPUT:
-
-        This function adds a tail to the component graph, i.e. a leaf of the
-        underlying graph, 
-
-        """
-        a1 = [a for a, Y in self.vertices().items() if Y.curve() == cusp_branch.curve()][0]
-        a2 = self.add_vertex(tail_component)
-        self._edges.append([(a1, cusp_branch), (a2, tail_component)])
-        self.graph().add_edge(a1, a2)
-        
-    def as_text(self, show_edges=False, show_adjacency=True):
-        r"""Return a text-only representation of the component graph.
-
-        The output is meant to be stable and readable in docstrings.
-
-        INPUT:
-
-        - ``show_edges`` -- bool (default: False); include an edge list
-        - ``show_adjacency`` -- bool (default: True); include adjacency lists
-
-        OUTPUT:
-
-        A string describing this component graph.
-
-        """
-        lines = []
-        lines.append(f"Component graph over {self.base_field()}")
-        lines.append(f"Vertices: {self.number_of_vertices()}, Edges: {self.number_of_edges()}")
-
-        # vertices (deterministic order)
-        for v in sorted(self.vertices().keys()):
-            Y = self.vertices()[v]
-            g = Y.genus()
-            # short component descriptor
-            try:
-                comp = Y.defining_polynomial()
-            except Exception:
-                comp = Y
-            lines.append(f"  v{v}: g={g}, component: {comp}")
-
-        G = self.graph()
-
-        if show_adjacency:
-            lines.append("Adjacency:")
-            for v in sorted(self.vertices().keys()):
-                nbrs = list(G.neighbors(v))
-                nbrs.sort()
-                lines.append(f"  v{v}: " + (", ".join(f"v{w}" for w in nbrs) if nbrs else "-"))
-
-        if show_edges:
-            # Graph.edges(labels=False) gives (u,v) or (u,v,label) depending on Sage version;
-            # we normalize to pairs.
-            raw = G.edges(labels=False, sort=True)
-            pairs = []
-            for e in raw:
-                if len(e) >= 2:
-                    u, v = e[0], e[1]
-                    pairs.append((u, v))
-            edge_str = ", ".join(f"(v{u},v{v})" for (u, v) in pairs) if pairs else "-"
-            lines.append("Edges:")
-            lines.append(f"  {edge_str}")
-
-        return "\n".join(lines)
-
-
-class Component(SageObject):
-    r""" Return a component object which can be used as vertex of a component graph.
-    
-    This is an abstract base class. Subclasses must, on initilization, define at
-    least the following secret attributes:
-
-    - self._curve : an integral curve, or ``None``
-    - self._genus : the (geometric) genus of the component
-    - self._label : a string giving a short description of the component
-    - self._kind  : a string revealing the subclass (e.g. "curve" or "tail")
-    
-    """
-    def curve(self):
-        return self._curve
-
-    def genus(self):
-        r""" Return the genus of this component.
-        
-        """
-        return self._genus
-
-    def label(self):
-        r""" Return the label of this component.
-        
-        This is a string which gives a short description of the component.
-
-        """
-        return self._label
-
-    def kind(self):
-        r""" Return the kind of this ccomponent.
-        
-        The *kind* must be a short string reavealing the subclass this object
-        belongs to, e.g. "curve" or "tail"
-
-        """
-        return self._kind
-
-
-class TailComponent(Component):
-    def __init__(self, tail_kind="symbolic"):
-        self._curve = None
-        self._tail_kind = tail_kind   # "elliptic","pig","symbolic"
-        self._genus = 1
-        self._label = f"{tail_kind} tail"
-        self._kind = "tail"
-
-    def __repr__(self):
-        return self.label()
-
-# ---------------------------------------------------------------------------------
-
- 
