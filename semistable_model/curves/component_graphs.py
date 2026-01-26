@@ -149,6 +149,17 @@ class ComponentGraph(SageObject):
         return f"abstract component graph of a semistable projective curve"
     
     def genus_of_vertex(self, v):
+        r"""Return the geometric genus attached to a vertex.
+
+        INPUT:
+
+        - ``v`` -- a vertex of the component graph
+
+        OUTPUT:
+
+        the nonnegative integer giving the geometric genus of the component
+        corresponding to ``v``.
+        """
         return self._genus[v]
     
     def genus(self):
@@ -213,9 +224,15 @@ class ComponentGraph(SageObject):
         self._genus[v] = genus
         return v
 
-    def add_edge(self, u,v):
-        r""" Add an edge to the underlying graph.
-   
+    def add_edge(self, u, v):
+        r"""Add an edge between two vertices.
+
+        INPUT:
+
+        - ``u, v`` -- vertices of the component graph
+
+        This adds an (undirected) edge between ``u`` and ``v``.  Multiple edges
+        and loops (when ``u == v``) are allowed.
         """
         self.graph().add_edge(u, v)
 
@@ -272,18 +289,50 @@ class ComponentGraph(SageObject):
         return sum(1 for (a,b) in self.graph().edges(labels=False) if a == v and b == v)
 
     def nonloop_neighbors(self, v):
+        r"""Return the neighbors of ``v`` excluding loops.
+
+        INPUT:
+
+        - ``v`` -- a vertex of the component graph
+
+        OUTPUT:
+
+        a list of vertices adjacent to ``v`` by a non-loop edge.
+        """
         return [u for u in self.graph().neighbors(v) if u != v]
-    
+
     def nonloop_degree(self, v):
+        r"""Return the number of non-loop edges incident to ``v``.
+
+        INPUT:
+
+        - ``v`` -- a vertex of the component graph
+
+        OUTPUT:
+
+        the number of edges connecting ``v`` to *distinct* vertices.
+        """
         return len(self.nonloop_neighbors(v))
-    
+
     def edge_multiplicity(self, u, v, G=None):
+        r"""Return the multiplicity of edges between two vertices.
+
+        INPUT:
+
+        - ``u, v`` -- vertices of the component graph
+        - ``G`` -- an optional graph (default: the core graph)
+
+        OUTPUT:
+
+        the number of edges between ``u`` and ``v`` in ``G``.  If ``u == v``,
+        this is the number of loops on ``u``.
+        """
         H = self.core_graph() if G is None else G
         if u == v:
             return sum(1 for (a,b) in H.edges(labels=False) if a==u and b==u)
         return sum(1 for (a,b) in H.edges(labels=False)
                    if (a==u and b==v) or (a==v and b==u))
-    
+   
     def is_one_tail(self, v):
         r""" Return whether `v` corresponds to a one-tail.
         
