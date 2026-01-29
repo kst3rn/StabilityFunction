@@ -333,10 +333,48 @@ class ComponentGraph(SageObject):
 
         OUTPUT:
 
-        the number of edges connecting ``v`` to *distinct* vertices.
-        """
-        return len(self.nonloop_neighbors(v))
+        the number of non-loop edges (counted with multiplicity), 
+        connecting ``v`` to *distinct* vertices.
 
+        EXAMPLES::
+
+            The function :meth:`nonloop_degree` counts non-loop edges *with multiplicity*.
+            This is important in multigraph situations: a vertex which is connected to the
+            rest of the graph by two parallel edges is **not** a one-tail.
+
+            In the following example we build the core graph of type ``1=1`` (two genus-1
+            components meeting in two nodes).  Neither vertex is a one-tail::
+
+                sage: from component_graphs import ComponentGraph
+                sage: G = ComponentGraph()
+                sage: v = G.add_vertex(1)
+                sage: w = G.add_vertex(1)
+                sage: G.add_edge(v, w)
+                sage: G.add_edge(v, w)   # two parallel edges
+                sage: G.nonloop_neighbors(v)
+                [1]
+                sage: G.nonloop_degree(v)
+                2
+                sage: G.is_one_tail(v)
+                False
+                sage: G.core_vertices()
+                [0, 1]   # both vertices are core vertices
+
+            As a sanity check, attaching an elliptic tail *is* detected as a one-tail::
+
+                sage: H = ComponentGraph()
+                sage: c = H.add_vertex(2)
+                sage: t = H.add_elliptic_tail(c)
+                sage: H.nonloop_degree(t)
+                1
+                sage: H.is_one_tail(t)
+                True
+                sage: H.core_vertices()
+                [0]
+
+        """
+        return sum(self.edge_multiplicity(v,u) for u in self.nonloop_neighbors(v))
+        
     def edge_multiplicity(self, u, v, G=None):
         r"""Return the multiplicity of edges between two vertices.
 
@@ -350,7 +388,7 @@ class ComponentGraph(SageObject):
         the number of edges between ``u`` and ``v`` in ``G``.  If ``u == v``,
         this is the number of loops on ``u``.
         """
-        H = self.core_graph() if G is None else G
+        H = self.graph() if G is None else G
         if u == v:
             return sum(1 for (a,b) in H.edges(labels=False) if a==u and b==u)
         return sum(1 for (a,b) in H.edges(labels=False)
