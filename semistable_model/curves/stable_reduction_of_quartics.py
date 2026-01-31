@@ -1,0 +1,182 @@
+from sage.all import matrix
+from semistable_model.curves.plane_curves_valued import PlaneCurveOverValuedField
+from semistable_model.curves.component_graphs import ComponentGraph
+
+def stable_reduction_of_quartic(F, v_K):
+    r""" Return the stable reduction of a smooth quartic.
+    
+    INPUT:
+
+    - ``F`` -- a form of degree `4` in three variables over a number field `K`
+    - ``v_K`` -- a p-adic valuation on `K`
+
+    It is assume that `F` defines a smooth plane quartic `X`.
+
+    OUTPUT:
+
+    data describing the stable reduction of `X` with respect to `v_K`, 
+    if `X` does not have hyperelliptic reduction. If it has hyperelliptic 
+    reduction then ``None`` is returned.
+
+    The data is ..
+    """
+    K = F.base_ring()
+    if not v_K.domain() == K:
+        raise ValueError("base field of F must be the domain of v_K")
+    res = StableReductionResult(status="fail", F=F, v_K=v_K)
+    try:
+        # 1.) Find GIT-semistable model
+        X = PlaneCurveOverValuedField(F, v_K)
+        XX = X.semistable_model_with_rational_cusps()
+        v_L = XX.base_ring_valuation()
+        L = v_L.domain()
+        Xs = XX.special_fiber_with_rational_cusps()
+        # res.change_of_coordinates = ...
+        res.git_model = XX
+        res.special_fiber = Xs
+        res.v_L = v_L
+        # res.residue_field = ...
+        # res.splitting_field = ...
+
+        # 2) detect hyperelliptic reduction early
+        if not Xs.is_stable():
+            res.status = "hyperelliptic"
+            return res
+
+        # 3) resolve cusps -> tail types
+        cusps = Xs.rational_cusps()
+        # this is a list of `flags`
+        res.cusps = cusps
+        cusp_data = []   
+        # must be a list of pairs (P, tail_type), where P is a *rational*
+        # point and ``tail_type`` is "e" or "m"     
+        for C in cusps:
+            T = C.move_to_e2_x0()
+            M = [[0,0,0],[0,0,0],[0,0,0]]
+            for i in range(3):
+                for j in range(3):
+                    M[i][j] = v_L.lift(T[i][j])
+            M = matrix(L, M)
+            cusp_model = X.apply_matrix(M)
+        
+
+        # res.tail_types = {P:"e"/"m", ...}
+
+        # 4) build component graph + classify
+        # res.component_graph = G
+        # res.signature = G.canonical_signature()
+        # res.reduction_type = classify_genus3_type(G)
+
+        res.status = "ok"
+        return res
+
+    except Exception as e:
+        res.warnings.append(f"Exception: {e}")
+        return res
+
+
+class StableReductionResult:
+    """
+    Lightweight container for the stable reduction computation of a plane quartic.
+
+    The object is meant to be:
+      - convenient to inspect interactively,
+      - easy to serialize (at least in 'light' form) for databases,
+      - extensible as the pipeline grows.
+    """
+
+    def __init__(self, status, F, v_K):
+        # status: "ok", "hyperelliptic", "fail"
+        self.status = status
+
+        # input provenance
+        self.K = v_K.domain()
+        self.v_K = v_K
+        self.F_input = F
+
+        # normalization / transformations
+        self.F_normalized = None
+        self.change_of_coordinates = None   # e.g. matrix in GL3(K)
+        self.scaling = None                 # e.g. scalar in K^*
+
+        # model data (GIT model etc.)
+        self.git_model = None               # your model object, if you keep it
+        self.special_fiber = None           # plane curve over residue field (or splitting field)
+        self.residue_field = None
+        self.splitting_field = None
+        self.field_extension_data = {}      # e.g. degrees, defining polynomials
+
+        # cusp / tail data
+        self.cusps = []                     # list of points on special_fiber
+        self.tail_types = {}                # cusp -> "e"/"m"
+        self.cusp_resolution_data = {}      # optional: per cusp diagnostics
+
+        # final combinatorics
+        self.component_graph = None         # ComponentGraph
+        self.signature = None               # canonical signature (tuple)
+        self.reduction_type = None          # string among 42 types
+
+        # logging / diagnostics
+        self.warnings = []
+        self.debug = {}                     # anything else you want to stash
+
+    # ---------------------------
+    # Convenience helpers
+    # ---------------------------
+
+    def is_ok(self):
+        return self.status == "ok"
+
+    def summary(self):
+        if self.status == "ok":
+            return (f"StableReductionResult(ok, type={self.reduction_type}, "
+                    f"sig={self.signature})")
+        return f"StableReductionResult({self.status})"
+
+    def __repr__(self):
+        return self.summary()
+
+    # ---------------------------
+    # Serialization
+    # ---------------------------
+
+    def to_dict(self, light=True):
+        """
+        Convert to a dict suitable for storage.
+
+        If light=True, omit heavy Sage objects and keep only strings/primitive data.
+        """
+        d = {
+            "status": self.status,
+            "reduction_type": self.reduction_type,
+            "signature": self.signature,
+            "warnings": list(self.warnings),
+            "field_extension_data": dict(self.field_extension_data),
+        }
+
+        # Store polynomials as strings if possible
+        if self.F_input is not None:
+            d["F_input"] = str(self.F_input)
+        if self.F_normalized is not None:
+            d["F_normalized"] = str(self.F_normalized)
+
+        # Cusps / tails: store as strings (points can be non-JSON)
+        if self.cusps:
+            d["cusps"] = [str(P) for P in self.cusps]
+        if self.tail_types:
+            d["tail_types"] = {str(P): t for P, t in self.tail_types.items()}
+
+        if not light:
+            # keep heavy objects for pickling / in-session storage
+            d.update({
+                "K": self.K,
+                "v_K": self.v_K,
+                "git_model": self.git_model,
+                "special_fiber": self.special_fiber,
+                "residue_field": self.residue_field,
+                "splitting_field": self.splitting_field,
+                "component_graph": self.component_graph,
+                "debug": dict(self.debug),
+            })
+
+        return d
