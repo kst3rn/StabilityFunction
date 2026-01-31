@@ -176,7 +176,7 @@ def component_graph_of_GIT_stable_quartic(X, cusp_data=None, check_degree=True):
     if not k1 == k:
         X = Curve(X.base_extend(k1))
         if not cusp_data is None:
-            cusp_data = [(P.base_change(k1), t) for P, t in cusp_data]
+            cusp_data = [(P.change_ring(k1), t) for P, t in cusp_data]
         k = k1
 
     components = [Curve(Y) for Y in X.irreducible_components()]

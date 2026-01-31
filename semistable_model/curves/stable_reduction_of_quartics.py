@@ -1,6 +1,46 @@
-from sage.all import matrix
+r"""
+Stable reduction of plane quartics
+==================================
+
+This module implements the computation of the *geometric stable reduction* of a
+smooth plane quartic over a p-adic number field, restricted to the case of
+*non-hyperelliptic reduction*.
+
+Given a homogeneous quartic form `F` over a number field `K` and a p-adic
+valuation `v_K` on `K`, the main entry point
+:func:`stable_reduction_of_quartic` carries out the following steps:
+
+1. Construct a GIT-semistable model of the plane quartic with respect to `v_K`,
+   using the machinery provided by
+   :class:`~semistable_model.curves.plane_curves_valued.PlaneCurveOverValuedField`.
+
+2. Compute the special fibre of this model over a finite extension of the residue
+   field, and test whether the resulting curve is stable.  If the special fibre
+   is not stable, the reduction is hyperelliptic and the computation stops.
+
+3. Resolve each cusp of the special fibre and determine whether the corresponding
+   exceptional divisor is an elliptic tail or a pigtail.
+
+4. Construct the component graph of the stable curve using
+   :func:`component_graph_of_GIT_stable_quartic`, and classify its combinatorial
+   type via canonical signatures.
+
+The output is packaged in a lightweight container class
+:class:`StableReductionResult`, which records the most important intermediate
+objects (GIT model, special fibre, component graph) together with the final
+reduction type.  The class is designed to be easy to inspect interactively and
+to allow later serialization for large-scale experimental computations.
+
+At present, only the non-hyperelliptic case is handled; if hyperelliptic
+reduction is detected, this is recorded in the result object.
+"""
+
+from sage.all import Curve
 from semistable_model.curves.plane_curves_valued import PlaneCurveOverValuedField
-from semistable_model.curves.component_graphs import ComponentGraph
+from semistable_model.curves.cusp_resolution import resolve_cusp
+from semistable_model.curves.component_graphs_of_plane_curves import component_graph_of_GIT_stable_quartic
+from semistable_model.curves.genus3_reduction_types import classify_genus3_type
+
 
 def stable_reduction_of_quartic(F, v_K):
     r""" Return the stable reduction of a smooth quartic.
@@ -14,11 +54,55 @@ def stable_reduction_of_quartic(F, v_K):
 
     OUTPUT:
 
+    An instance of :class:`StableReductionResult` describing the geometric stable
+    reduction of ``X`` with respect to ``v_K``.
+
+    The returned object has one of the following statuses:
+
+    - ``status == "ok"``:
+      The special fibre of a GIT-semistable model of ``X`` is stable and
+      non-hyperelliptic.  In this case the result object contains, among other
+      data:
+      
+        * the GIT-semistable model and its special fibre,
+        * the component graph of the stable curve,
+        * the canonical signature of this graph,
+        * the reduction type as a string (one of the 42 genus-3 types).
+
+    - ``status == "hyperelliptic"``:
+      The special fibre is not stable, which in genus 3 corresponds to
+      hyperelliptic reduction.  No component graph is produced in this case.
+
+    - ``status == "fail"``:
+      An exception occurred during the computation.  The exception message is
+      recorded in the ``warnings`` attribute of the result object.
+
+    ALGORITHM (overview):
+
+    1. Construct a GIT-semistable model of ``X`` with respect to ``v_K`` and
+       compute its special fibre over a finite extension of the residue field.
+
+    2. Test whether the special fibre is stable.  If not, record hyperelliptic
+       reduction and stop.
+
+    3. For each cusp of the special fibre, compute the resolution and determine
+       whether the corresponding exceptional divisor is an elliptic tail or a
+       pigtail.
+
+    4. Build the component graph of the resulting stable curve and classify its
+       combinatorial type via canonical signatures.
+
+    NOTES:
+
+    - Only the non-hyperelliptic case is handled at present.
+    - The function is designed for expensive computations; the result object is
+      intended to be inspected interactively or stored for later analysis.
+
     data describing the stable reduction of `X` with respect to `v_K`, 
     if `X` does not have hyperelliptic reduction. If it has hyperelliptic 
     reduction then ``None`` is returned.
 
-    The data is ..
+
     """
     K = F.base_ring()
     if not v_K.domain() == K:
@@ -30,13 +114,10 @@ def stable_reduction_of_quartic(F, v_K):
         XX = X.semistable_model_with_rational_cusps()
         v_L = XX.base_ring_valuation()
         L = v_L.domain()
-        Xs = XX.special_fiber_with_rational_cusps()
-        # res.change_of_coordinates = ...
+        Xs = XX.special_fiber()
         res.git_model = XX
         res.special_fiber = Xs
         res.v_L = v_L
-        # res.residue_field = ...
-        # res.splitting_field = ...
 
         # 2) detect hyperelliptic reduction early
         if not Xs.is_stable():
@@ -46,26 +127,30 @@ def stable_reduction_of_quartic(F, v_K):
         # 3) resolve cusps -> tail types
         cusps = Xs.rational_cusps()
         # this is a list of `flags`
-        res.cusps = cusps
-        cusp_data = []   
+        # below we need Xs to be an object of `Curve`
+        Xs = Curve(Xs.defining_polynomial()) 
+        cusp_data = [] 
         # must be a list of pairs (P, tail_type), where P is a *rational*
         # point and ``tail_type`` is "e" or "m"     
         for C in cusps:
-            T = C.move_to_e2_x0()
-            M = [[0,0,0],[0,0,0],[0,0,0]]
-            for i in range(3):
-                for j in range(3):
-                    M[i][j] = v_L.lift(T[i][j])
-            M = matrix(L, M)
-            cusp_model = X.apply_matrix(M)
-        
+            T = C.move_to_e0_x2()
+            M = T.map_coefficients(v_L.lift, L)
+            cusp_model = XX.apply_matrix(M)
+            _, _, Fb = resolve_cusp(cusp_model.defining_polynomial(), v_L)
+            P = Xs.point(C.point)
+            if Curve(Fb).is_smooth():
+                cusp_data.append((P, "e"))
+            else:
+                cusp_data.append((P, "m"))
 
         # res.tail_types = {P:"e"/"m", ...}
 
         # 4) build component graph + classify
-        # res.component_graph = G
-        # res.signature = G.canonical_signature()
-        # res.reduction_type = classify_genus3_type(G)
+        G = component_graph_of_GIT_stable_quartic(Xs, cusp_data=cusp_data)
+
+        res.component_graph = G
+        res.signature = G.canonical_signature()
+        res.reduction_type = classify_genus3_type(G)
 
         res.status = "ok"
         return res
@@ -97,7 +182,6 @@ class StableReductionResult:
         # normalization / transformations
         self.F_normalized = None
         self.change_of_coordinates = None   # e.g. matrix in GL3(K)
-        self.scaling = None                 # e.g. scalar in K^*
 
         # model data (GIT model etc.)
         self.git_model = None               # your model object, if you keep it
