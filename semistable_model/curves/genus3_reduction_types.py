@@ -55,7 +55,7 @@ EXAMPLES::
 
 from functools import lru_cache
 
-from component_graphs import ComponentGraph
+from semistable_model.curves.component_graphs import ComponentGraph
 
 
 # --------------------------------------------------------------------
