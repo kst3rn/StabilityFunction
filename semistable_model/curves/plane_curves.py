@@ -73,14 +73,20 @@ class ProjectivePlaneCurve:
     r"""
     Return the base change of `self` to `Spec(R)`.
     """
-
-    PolRin0 = self.defining_polynomial().parent()
-    var_names = [str(x) for x in self.standard_basis()]
-    PolRin1 = PolynomialRing(R, var_names)
-    phi = PolRin1.coerce_map_from(PolRin0)
+    R0 = self.base_ring()
+    phi = R0.an_embedding(R)
     if phi is None:
       raise NotImplementedError(f"No coercion from the polynomial ring over {self.base_ring()} to the polynomial ring over {R}")
-    new_poly = phi(self.defining_polynomial())
+    new_poly = self.defining_polynomial().change_ring(phi)
+
+    # this code didn't work for certain isomorphic finite fields (issue #48)
+    # PolRin0 = self.defining_polynomial().parent()
+    # var_names = [str(x) for x in self.standard_basis()]
+    # PolRin1 = PolynomialRing(R, var_names)
+    # phi = PolRin1.coerce_map_from(PolRin0)
+    # if phi is None:
+    #   raise NotImplementedError(f"No coercion from the polynomial ring over {self.base_ring()} to the polynomial ring over {R}")
+    # new_poly = phi(self.defining_polynomial())
 
     return ProjectivePlaneCurve(new_poly)
 
