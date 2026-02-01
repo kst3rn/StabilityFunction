@@ -983,7 +983,6 @@ class ProjectivePlaneCurve:
       sage: X.is_A2_singularity([0,0,1])
       False
     """
-
     P = list(P)
     if not any(P):
       return ValueError(f"{P} does not define a point on the projective plane.")
@@ -992,7 +991,7 @@ class ProjectivePlaneCurve:
       return False
 
     tangent_lines = self.tangent_cone(P).embedded_lines()
-    if len(tangent_lines) > 1:
+    if len(tangent_lines) != 1:
       return False
     P_tangent_line = tangent_lines[0][0]
 
