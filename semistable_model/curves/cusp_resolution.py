@@ -56,6 +56,27 @@ def resolve_cusp(F, v_K):
     representing the base change to the plane model resolving the cusp `P`, and
     `\bar{F}` is a semistable cubic, the resulting one-tail.
 
+    EXAMPLES:
+
+    The following example gives an error:
+
+        sage: R.<x,y,z> = QQ[]
+        sage: F = -16*x^4 - 15*x^3*y - 12*x^2*y^2 - 5*x*y^3 + 15*x^2*z^2 + 12*x*y*z^2 - 4*y^2*z^2 + 8*z^4
+        sage: v_K = QQ.valuation(2)
+        sage: X = PlaneCurveOverValuedField(F, v_K)
+        sage: XX = X.semistable_model_with_rational_cusps()
+        sage: Xs = XX.special_fiber()
+        sage: C = Xs.rational_cusps()[0]
+        sage: v_L = XX.base_ring_valuation()
+        sage: L = v_L.domain()
+        sage: T = C.move_to_e0_x2()
+        sage: M = T.map_coefficients(v_L.lift, L)
+        sage: cusp_model = XX.apply_matrix(M)
+        sage: resolve_cusp(cusp_model.defining_polynomial(), v_L)
+        ---------------------------------------------------------------------------
+        NotImplementedError                       Traceback (most recent call last)
+        ...
+        NotImplementedError: Expected G[1] to be linear in beta (beta - r(alpha)).
     """
     # check validity of the input
     assert v_K.is_discrete_valuation()
@@ -99,9 +120,15 @@ def resolve_cusp(F, v_K):
     # A=B=C=0, with valuations at least v_a,v_b,v_c
     J = R.ideal([A, B, C])
     G = J.groebner_basis()
-    assert len(G) == 3, "Unexpected Groebner basis length."
 
-    f = G[2].univariate_polynomial()
+    f, _, _ = assert_groebner_expected_order(G, a, b, c)
+    f = f.univariate_polynomial()
+    # proceed with root finding on f and set beta=r(alpha), gamma=s(alpha)
+
+    # old code
+    # assert len(G) == 3, "Unexpected Groebner basis length."
+    # f = G[2].univariate_polynomial()
+
     f_factors = approximate_factorization(f, v_K)
     # print(f"f_factors = {f_factors}")
     # f is a univariate equation for alpha
@@ -178,7 +205,7 @@ def _solve1(G, g, v_K, prec, E=1):
     This is a helper function for `resolve_cusp`.
     
     """
-    b, c, _ = G[0].parent().gens()
+    c, b, _ = G[0].parent().gens()
     K = v_K.domain()
     if E == 1:
         L = K.extension(g.approximate_factor(prec), "alpha")
@@ -209,6 +236,58 @@ def _valuation_matrix(F1, d, v_L):
                 if s < t:
                     t = QQ(s)
     return V, t
+
+
+def _is_univariate_in(p, var):
+    # True iff p involves no variables other than var
+    vars_ = p.variables()
+    return vars_ == () or vars_ == (var,)
+
+
+def assert_groebner_expected_order(G, alpha, beta, gamma):
+    """
+    Assert that the Groebner basis G is exactly in the expected triangular form
+        [gamma - s(alpha), beta - r(alpha), f(alpha)]
+    (with respect to lex(gamma, beta, alpha)), and normalized so the leading
+    coefficients of gamma and beta are 1.
+
+    Raises NotImplementedError if not, otherwise returns (f, r, s).
+    """
+    if len(G) != 3:
+        raise NotImplementedError(f"Expected Groebner basis of length 3, got {len(G)}.")
+
+    p_gamma, p_beta, p_alpha = G[0], G[1], G[2]
+
+    # --- check G[2] = f(alpha)
+    if not _is_univariate_in(p_alpha, alpha):
+        raise NotImplementedError("Expected G[2] to be univariate f(alpha).")
+
+    # --- check G[1] = beta - r(alpha)
+    if gamma in p_beta.variables():
+        raise NotImplementedError("Expected G[1] to involve only alpha,beta (no gamma).")
+    if p_beta.degree(beta) != 1:
+        raise NotImplementedError("Expected G[1] to be linear in beta (beta - r(alpha)).")
+    if p_beta.coefficient({beta: 1}) != 1:
+        raise NotImplementedError("Expected G[1] to be monic in beta (leading coeff 1).")
+    r = -p_beta.subs({beta: 0})
+    if not _is_univariate_in(r, alpha):
+        raise NotImplementedError("Expected r(alpha) to be univariate in alpha.")
+
+    # --- check G[0] = gamma - s(alpha)
+    if p_gamma.degree(gamma) != 1:
+        raise NotImplementedError("Expected G[0] to be linear in gamma (gamma - s(alpha)).")
+    if p_gamma.coefficient({gamma: 1}) != 1:
+        raise NotImplementedError("Expected G[0] to be monic in gamma (leading coeff 1).")
+    s = -p_gamma.subs({gamma: 0})
+    if not _is_univariate_in(s, alpha):
+        raise NotImplementedError("Expected s(alpha) to be univariate in alpha.")
+    # (Strictly enforces "gamma - s(alpha)" i.e. no beta-dependence at all.)
+    if beta in p_gamma.variables():
+        raise NotImplementedError("Expected G[0] not to involve beta (gamma - s(alpha)).")
+
+    f = p_alpha  # already univariate
+
+    return f, r, s
 
 # ------------------------------------------------------------------------------------------------------
 
