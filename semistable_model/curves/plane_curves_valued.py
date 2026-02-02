@@ -317,7 +317,14 @@ class PlaneModel(ProjectivePlaneCurve):
     E = identity_matrix(R.base_ring(), R.ngens())
     v_K = self.as_point_on_BTB().base_ring_valuation()
     v = LinearValuation(R, v_K, E, [0]*R.ngens())
-    return ProjectivePlaneCurve(v.reduction(self.defining_polynomial()))
+    f_wrong = v.reduction(self.defining_polynomial())
+    k_wrong = f_wrong.base_ring()
+    p = k_wrong.characteristic()
+    d = k_wrong.degree()
+    k_right = GF(p**d)
+    phi = k_wrong.an_embedding(k_right)
+    f_right = f_wrong.change_ring(phi)
+    return ProjectivePlaneCurve(f_right)
 
 
   def has_semistable_reduction(self):
