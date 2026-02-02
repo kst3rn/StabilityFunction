@@ -134,7 +134,10 @@ def stable_reduction_of_quartic(F, v_K):
         # point and ``tail_type`` is "e" or "m"     
         for C in cusps:
             T = C.move_to_e0_x2()
-            M = T.map_coefficients(v_L.lift, L)
+            # we want to lift T to a matrix in L; for this we first have
+            # to change the base ring of T to the residue field of v_L
+            phi = T.base_ring().an_embedding(v_L.residue_field())
+            M = T.map_coefficients(phi, v_L.residue_field()).map_coefficients(v_L.lift, L)
             cusp_model = XX.apply_matrix(M)
             _, _, Fb = resolve_cusp(cusp_model.defining_polynomial(), v_L)
             P = Xs.point(C.point)
