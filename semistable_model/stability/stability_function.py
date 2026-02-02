@@ -71,11 +71,11 @@ class StabilityFunction:
     return linear_valuation.graded_reduction(self.homogeneous_form())
 
 
-  def has_semistable_reduction_at(self, point_on_BTB):
+  def has_git_semistable_reduction(self, point_on_BTB):
     return self.graded_reduction(point_on_BTB).is_graded_semistable()
 
 
-  def has_stable_reduction_at(self, point_on_BTB):
+  def has_git_stable_reduction(self, point_on_BTB):
     return self.graded_reduction(point_on_BTB).is_graded_stable()
 
 
@@ -83,7 +83,7 @@ class StabilityFunction:
     return point_on_BTB.linear_valuation().initial_form(self.homogeneous_form())
 
 
-  def active_functions_at(self, base_change_matrix, weight_vector):
+  def active_functions(self, base_change_matrix, weight_vector):
     return RestrictedStabilityFunction(self, base_change_matrix).active_functions(weight_vector)
 
 
@@ -254,7 +254,7 @@ class StabilityFunction:
       global_trafo_matrix = local_trafo_matrix * global_trafo_matrix
 
 
-  def evaluate_at(self, point_on_BTB):
+  def evaluate(self, point_on_BTB):
     r"""
     Return the value of self at 'point_on_BTB'
     """
@@ -675,7 +675,7 @@ class ApartmentStabilityFunction:
     """
 
     a, b = self.maximize()
-    if not self.stability_function().has_semistable_reduction_at(b):
+    if not self.stability_function().has_git_semistable_reduction(b):
       return None
 
     v_K = self.base_ring_valuation()

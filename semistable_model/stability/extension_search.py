@@ -78,7 +78,7 @@ def extension_search(homogeneous_form,
   K = homogeneous_form.base_ring()
   phi = StabilityFunction(homogeneous_form, base_ring_valuation)
   minimum, btb_point = phi.global_minimum('uut')
-  if phi.has_semistable_reduction_at(btb_point):
+  if phi.has_git_semistable_reduction(btb_point):
     if btb_point.is_vertex():
       return K
     piK = base_ring_valuation.uniformizer()
@@ -145,7 +145,7 @@ def _search_tree(F, valuation1, step, minimum, trafo_matrix, depth, depth_limit)
   char_p = v_K_residue_field.characteristic()
   phi_typeI = StabilityFunction(F_K, K.valuation(char_p))
   aI, bI = phi_typeI.local_minimum(_evaluate_matrix(trafo_matrix, piK))
-  if phi_typeI.has_semistable_reduction_at(bI):
+  if phi_typeI.has_git_semistable_reduction(bI):
     if bI.minimal_simplex_dimension(step.denominator()) == 0:
       return K
     v_K = phi_typeI.base_ring_valuation()

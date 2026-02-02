@@ -401,7 +401,7 @@ class ProjectivePlaneCurve:
     return self.degree() == 2
 
 
-  def is_semistable(self):
+  def is_git_semistable(self):
     r"""
     Return `True` if `self` is semistable and `False` otherwise.
 
@@ -409,45 +409,32 @@ class ProjectivePlaneCurve:
     A nodal cubic is semistable.
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x1^2*x2 + x0^3 + x0^2*x2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^3 + x0^2*x2 + x1^2*x2
-      sage: X.is_semistable()
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.is_git_semistable()
       True
 
     A cuspidal cubic is unstable.
       sage: R.<x0,x1,x2> = GF(2)[]
       sage: f = x1^2*x2 + x0^3 + x0^2*x2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^3 + x0^2*x2 + x1^2*x2
-      sage: X.is_semistable()
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.is_git_semistable()
       False
       sage:
       sage: R.<x0,x1,x2> = GF(3)[]
       sage: f = x0^3 + x1^2 * x2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^3 + x1^2*x2
-      sage: X.is_semistable()
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.is_git_semistable()
       False
 
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x0^4 + x1^4 + x2^4
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
-      sage: X.is_semistable()
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.is_git_semistable()
       True
       sage:
-      sage: R.<x0,x1,x2> = GF(2)[]
-      sage: f = x0^4 + x1^4 + x2^4
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
-      sage: X.is_semistable()
-      False
-
-      sage: R.<x0,x1,x2> = QQ[]
       sage: f = (x0^2 + x1*x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^4 + 2*x0^2*x1*x2 + x1^2*x2^2
-      sage: X.is_semistable()
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.is_git_semistable()
       True
     """
 
@@ -458,7 +445,7 @@ class ProjectivePlaneCurve:
     return True
 
 
-  def is_stable(self):
+  def is_git_stable(self):
     r"""
     Return `True` if `self` is stable and `False` otherwise.
 
@@ -466,40 +453,36 @@ class ProjectivePlaneCurve:
     A smooth curve is stable.
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x0^4 + x1^4 + x2^4
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
-      sage: X.is_stable()
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.is_git_stable()
       True
 
     A singular but stable curve.
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x0^4 + x0*x1^2*x2 + x0*x1*x2^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^4 + x0*x1^2*x2 + x0*x1*x2^2
-      sage: X.is_stable()
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.is_git_stable()
       True
 
     A nonreduced but stable curve.
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = (x0^4 + x1^3*x2 + x2^4)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^8 + 2*x0^4*x1^3*x2 + x1^6*x2^2 + 2*x0^4*x2^4 + 2*x1^3*x2^5 + x2^8
-      sage: X.is_stable()
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.is_git_stable()
       True
 
     A properly semistable curve.
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = (x0^2 + x1*x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^4 + 2*x0^2*x1*x2 + x1^2*x2^2
-      sage: X.is_stable()
+      sage: X = ProjectivePlaneCurve(f)
+      sage: X.is_git_stable()
       False
     """
 
     if self.is_smooth():
       return True
 
-    if not self.is_semistable():
+    if not self.is_git_semistable():
       return False
 
     # X_red is a conic.

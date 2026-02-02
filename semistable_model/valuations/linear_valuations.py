@@ -591,7 +591,7 @@ class GradedReduction:
     """
     from semistable_model.curves import ProjectivePlaneCurve
     reduced_curve = ProjectivePlaneCurve(self.normalized_reduction_polynomial())
-    return reduced_curve.is_semistable()
+    return reduced_curve.is_git_semistable()
 
 
   def is_graded_stable(self):
@@ -601,7 +601,7 @@ class GradedReduction:
     """
     from semistable_model.curves import ProjectivePlaneCurve
     reduced_curve = ProjectivePlaneCurve(self.normalized_reduction_polynomial())
-    return reduced_curve.is_stable()
+    return reduced_curve.is_git_stable()
 
 
   def graded_instability(self, matrix_form='ult'):
