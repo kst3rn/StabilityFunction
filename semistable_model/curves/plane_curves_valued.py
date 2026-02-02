@@ -327,12 +327,12 @@ class PlaneModel(ProjectivePlaneCurve):
     return ProjectivePlaneCurve(f_right)
 
 
-  def has_semistable_reduction(self):
+  def has_git_semistable_reduction(self):
     r"""
     Return `True` if the special fiber of `self` is
     semistable and `False` otherwise.
     """
-    return self.special_fiber().is_semistable()
+    return self.special_fiber().is_git_semistable()
 
 
   def resolve_cusp(self):
