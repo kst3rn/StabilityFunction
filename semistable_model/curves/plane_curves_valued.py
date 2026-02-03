@@ -9,6 +9,7 @@
 #                  https://www.gnu.org/licenses/
 # ****************************************************************************
 
+from itertools import product
 from sage.all import matrix, identity_matrix, PolynomialRing, GF
 from semistable_model.curves import ProjectivePlaneCurve
 from semistable_model.valuations import LinearValuation
@@ -173,15 +174,17 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
     X = self.git_semistable_model_with_rational_cusps(ramification_index)
     L = X.base_ring()
     Xs = X.special_fiber()
+    k_right = Xs.base_ring()
     cusps = Xs.rational_cusps()
     v = X.base_ring_valuation()
+    k_wrong = v.residue_field()
+    phi = k_right.an_embedding(k_wrong)
     models = []
     for C in cusps:
       T = C.move_to_e2_x0()
       M = [[0,0,0],[0,0,0],[0,0,0]]
-      for i in range(3):
-        for j in range(3):
-          M[i][j] = v.lift(T[i][j])
+      for i, j in product(range(3), repeat=2):
+        M[i][j] = v.lift(phi(T[i][j]))
       M = matrix(L, M)
       models.append(X.apply_matrix(M))
     return models
@@ -207,15 +210,17 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
     X = self.git_semistable_model_with_rational_cusps(ramification_index)
     L = X.base_ring()
     Xs = X.special_fiber()
+    k_right = Xs.base_ring()
     cusps = Xs.rational_cusps()
     v = X.base_ring_valuation()
+    k_wrong = v.residue_field()
+    phi = k_right.an_embedding(k_wrong)
     models = []
     for C in cusps:
       T = C.move_to_e0_x2()
       M = [[0,0,0],[0,0,0],[0,0,0]]
-      for i in range(3):
-        for j in range(3):
-          M[i][j] = v.lift(T[i][j])
+      for i, j in product(range(3), repeat=2):
+        M[i][j] = v.lift(phi(T[i][j]))
       M = matrix(L, M)
       models.append(X.apply_matrix(M))
     return models
