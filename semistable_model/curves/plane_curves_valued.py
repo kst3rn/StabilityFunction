@@ -109,6 +109,8 @@ class PlaneCurveOverValuedField(ProjectivePlaneCurve):
     F = self.defining_polynomial()
     v_K = self.base_ring_valuation()
     L = semistable_reduction_field(F, v_K, ramification_index)
+    if ramification_index is not None and L is None:
+      return None
     v_L = v_K.extension(L)
     X_L = self.base_change(v_L)
     phiL = StabilityFunction(X_L.defining_polynomial(), v_L)
