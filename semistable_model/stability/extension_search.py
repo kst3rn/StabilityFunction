@@ -21,22 +21,15 @@ def semistable_reduction_field(homogeneous_form,
     raise ValueError(f"{homogeneous_form} is not homogeneous.")
   if not base_ring_valuation.domain() == QQ:
     raise NotImplementedError(f"The base ring must be {QQ}")
-  if homogeneous_form.degree() != 4:
-    warn(
-      f"Provided homogeneous form has degree {homogeneous_form.degree()}, but "
-      "currently this function is designed for quartics (degree 4). "
-      "For other degrees, the algorithm may enter an infinite loop "
-      "or take an excessive amount of time.",
-      UserWarning,
-      stacklevel=2
-      )
 
   if ramification_index is not None:
     return extension_search(homogeneous_form,
                             base_ring_valuation,
                             ramification_index)
+
+  p = base_ring_valuation.residue_ring().characteristic()
   for i in count(start=1):
-    L = extension_search(homogeneous_form, base_ring_valuation, i)
+    L = extension_search(homogeneous_form, base_ring_valuation, p**i)
     if L is not None:
       return L
 
