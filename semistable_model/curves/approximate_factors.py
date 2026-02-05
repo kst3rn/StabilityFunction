@@ -84,7 +84,7 @@ def approximate_factorization(f, v_K, g0=None, assume_squarefree=False,
     
     INPUT:
 
-    - ``f`` -- a nonconstant polynomial over a number field `k`
+    - ``f`` -- a nonconstant polynomial over a number field `K`
     - ``v_K`` - a nontrivial discrete valuation on `K`
     - `g0` -- an approximate factor of `f`, or ``None``
     - `assume_squarefree` --  a boolean (default: ``False``)
@@ -112,6 +112,9 @@ def approximate_factorization(f, v_K, g0=None, assume_squarefree=False,
                                               assume_squarefree=True, 
                                               assume_irreducible=True)
         return ret
+    # make f integral and primitive
+    m = min(v_K(c) for c in f.coefficients())
+    f = v_K.element_with_valuation(-m)*f
     if g0 is None:
         v0 = GaussValuation(f.parent(), v_K)
         g0 = ApproximateFactor(f, v0)
@@ -123,6 +126,36 @@ def approximate_factorization(f, v_K, g0=None, assume_squarefree=False,
                                           assume_squarefree=True, 
                                           assume_irreducible=True)
     return ret
+
+
+def approximate_roots(f, v_K, positive_valuation=True):
+    r"""
+    Return approximate roots of an univariate polynomial.
+
+    INPUT:
+
+    - ``f`` -- a nonconstant polynomial over a number field `K`
+    - ``v_K`` -- a `p`-adic valuation on `K`
+    - ``positive_valuation`` -- boolean (default: ``True``); if set, 
+                                require `v_L(a) > 0` for all approximations
+
+    OUTPUT:
+
+    a list of instances of :class:`ApproximateRoot`.
+
+    The returned objects represent approximate roots `a in L` (for some finite
+    extension `(L,v_L)/(K,v_K)`) whose residual valuations can be made arbitrarily large
+    by repeated calls to :meth:`ApproximateRoot.improve_approximation`.
+
+    """
+    factors = approximate_factorization(f, v_K)
+    if positive_valuation:
+        return [ApproximateRoot(g) for g in factors if g.value() > 0]
+    else:
+        # the test g.value() >= 0 is superfluous because the current code
+        # only produces factors with this property; included for clarity 
+        # and because this may change in the future
+        return [ApproximateRoot(g) for g in factors if g.value()>=0]
 
 
 class ApproximateFactor(SageObject):
@@ -163,7 +196,7 @@ class ApproximateFactor(SageObject):
         self._equivalence_decomposition = F
 
     def __repr__(self):
-        return f"approximate factor of {self._polynomial()} of degree {self.degree()}"
+        return f"approximate factor of {self.polynomial()} of degree {self.degree()}"
     
     def base_valuation(self):
         return self._base_valuation
@@ -244,7 +277,8 @@ class ApproximatePrimeFactor(ApproximateFactor):
       
     """
     def __init__(self, f, v):
-        v_K = v._base_valuation
+        K = f.base_ring()
+        v_K = v.restriction(K)
         assert v.domain() == f.parent(), "the domain of v must be the parent of f"
         self._polynomial = f
         self._valuation = v
@@ -271,7 +305,7 @@ class ApproximatePrimeFactor(ApproximateFactor):
             self._compute_precision()
 
     def __repr__(self):
-        return f"approximate prime factor of {self._polynomial()} of degree {self.degree()}"
+        return f"approximate prime factor of {self.polynomial()} of degree {self.degree()}"
     
     def _compute_precision(self):
         r""" Compute and store the current precision of this approximate prime factor.
@@ -283,7 +317,7 @@ class ApproximatePrimeFactor(ApproximateFactor):
         self._precision = max((v_g(F[0]) - v_g(F[i]))/i for i in range(1, self.degree() + 1))
 
     def polynomial(self):
-        r""" Return the irreducible polynomial of which this is aan approximate prime factor.
+        r""" Return the irreducible polynomial of which this is an approximate prime factor.
         """
         return self._polynomial
     
@@ -362,6 +396,221 @@ class ApproximatePrimeFactor(ApproximateFactor):
             return self.valuation().phi()
         
 
+class ApproximateRoot(SageObject):
+    r"""
+    An object representing an *approximate root* of an univariate polynomial.
+
+    INPUT:
+
+    - ``g`` -- an instance of :class:`ApproximatePrimeFactor`, representing
+               an irreducible factor of a polynomial `f` over the completion
+               `\hat{K}` of its base field `K`
+    - ``name`` -- an alphanumerical string (default: "alpha")
+
+    OUTPUT:
+
+    an object representing the tautological root `a\in \hat{L}`, where 
+
+    .. MATH::
+
+        \hat{L} := \hat{K}[x]/(g)
+
+    Internally, an approximate root `a` is represented by 
+
+    - an approximate prime factor `g` of `f`
+    - a fixed approximation `g_0` of `g`.
+
+    The approximation `g_0` has the property that the stem field 
+
+    .. MATH::
+
+        L := K(a_0) = K[x]/(g_0)
+
+    of `g_0` is stable, after completion and up to isomorphism, for further 
+    approximations of `g`. By Krasner's Lemma this condition is satisfied 
+    for every sufficiently precise approximation `g_0`. 
+
+    The element `a_0\in L`, the tautological root of `g_0`, is then the
+    first approximation of the approximate root `a`. 
+
+    Calling :meth:`improve_approximation` computes and returns an improved 
+    approximation.
+
+    """
+    def __init__(self, g, name="alpha"):
+        self._is_exact = (g.precision() == Infinity)
+        self._g = g
+        f = g.polynomial()
+        self._f = f
+        self._df = f.derivative()
+        # 1. improve approximation until Hensel's lemma applies
+        self._force_hensel()
+        # 2. construct L
+        K = self.base_field()
+        g0 = self.prime_factor().approximate_factor()
+        L = K.extension(g0, name)
+        v_L = self.base_valuation().extension(L)
+        self._extension = L
+        self._extension_valuation = v_L
+        # 3. initialize first approximation
+        self._approximation = L.gen()
+        self._precision = g.precision()
+        # 4. construct limit valuation
+        # to do:
+        # self._init_limit_valuation()
+
+    def base_field(self):
+        r""" Return the base field of this approximate root.
+        """
+        return self.prime_factor().base_field()
+    
+    def base_valuation(self):
+        r""" Return the valuation of the base field of this approximate root.
+        """
+        return self.prime_factor().base_valuation()
+
+    def prime_factor(self):
+        r""" Return the strong prime factor of which ``self`` is a root. 
+        """
+        return self._g
+
+    def extension(self):
+        r"""Return the field extension in which this approximate root lives."""
+        return self._extension
+
+    def extension_valuation(self):
+        r"""Return the valuation on the extension field."""
+        return self._extension_valuation
+    
+    def polynomial_ring(self):
+        return self.polynomial().parent()
+    
+    def polynomial(self):
+        r""" Return the polynomial of which ``self`` is a root.
+        """
+        return self._f
+    
+    def derivative(self):
+        return self._df
+    
+    def value(self):
+        r""" Return the valuation of this root.
+        """
+        return self.prime_factor().value()
+
+    def approximation(self):
+        r"""Return the current approximation of this root."""
+        return self._approximation
+    
+    def precision(self):
+        r""" Return a lower bound for the precision of the current approximation.
+        
+        If `t` is return, then `v_L(a-a_0) >= t`, where `a_0` is the 
+        current approximation and `a` is the exact root. 
+        """
+        if self.is_exact():
+            return Infinity
+        # I need to check this later!
+        return  2**self._count*(self._m - 2*self._s) + self._s
+    
+    def is_exact(self):
+        r""" Return whether this approximate root is exact.
+        
+        """
+        return self._is_exact
+    
+    def value_of_poly(self, r):
+        r"""Return the valuation of a polynomial in this root.
+        
+        INPUT:
+
+        - ``r`` -- a univariate polynomial over the base field
+
+        OUTPUT:
+
+        the valuation `v_L(r(a))`, where `a\in \hat{L}` is the root
+        of `f` represented by ``self``.
+
+        """
+        try:
+            r = self.polynomial_ring()(r)
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"r must be coercible into {self.polynomial_ring()} (got {r.parent()})")
+        return self._limit_valuation(r)
+
+    def improve_approximation(self):
+        r"""
+        Improve the current approximation.
+
+        OUTPUT:
+
+        The improved approximation of this root.
+
+        """
+        if self.is_exact():
+            # there is nothing to improve
+            return
+        # we can assume that the approximation can be improve using Hensel's Lemma, 
+        # i.e. Newton approximation
+        f = self.polynomial()
+        df = self.derivative()
+        a0 = self._approximation
+        t = self.precision()
+        a = a0 - f(a0)/df(a0)
+        # simplify a; we assume quadratic convergence
+        a = self.extension_valuation().simplify(a, 2*t+1)
+        self._approximation = a
+        self._count = self._count + 1
+        return a
+    
+    def _force_hensel(self):
+        r""" Improve the approximation of the prime factor `g` so that
+        approximations of the root can be improved using Hensel's Lemma.
+        
+        This guarantees that the stem field `\hat{L}=\hat{K}[x]/(g_0)`, 
+        where `g_0` is the current approximation, contains the root of `f`
+        represented by ``self``.
+        """
+        
+        if self.is_exact():
+            self._precision = Infinity
+            return
+        g = self.prime_factor()
+        g.improve_approximation()
+        f = self.polynomial()
+        df = self.derivative()
+        m = g.valuation()(f)
+        s = g.valuation()(df)
+        while m <= 2*s + 1:
+            g.improve_approximation()
+            m = g.valuation()(f)
+            s = g.valuation()(df)
+        self._count = 0
+        self._m = m
+        self._s = s
+    
+    def _init_limit_valuation(self):
+        r""" Construct the limit valuation corresponding to this approximate root,
+        i.e. the discrete valuation v on `K[x]` such that
+        
+        .. MATH::
+
+            v(r) = v_L(r(a)),
+
+        for all polynomials `r\in K[x]`, and where `a\in\hat{L}` is the exact root
+        represented by this approximate root. 
+        """
+        # in principal we can use LimitValuation(v, f), where v is the MacLane valuation
+        # corresponding to the approximate factor.
+        # the problem is that this only works if f is monic and integral
+        # which we can't assume. 
+        # We have to force this by scaling, i.e. replace f by
+        # f(pi_K^(-m)*x).monic(), v by the right valuation and then rescaling the result
+        raise NotImplementedError()
+
+
+
 # ---------------------------------------------------------------------------------------
 
 #     Tests
@@ -376,3 +625,15 @@ def test_precision(g):
         print(f"prec = {g.precision()}")
         print()
         g.improve_approximation()
+
+def test_approximate_roots(R, v_K, N=10, d = 12):
+    for _ in range(N):
+        f = R.random_element(d)
+        print()
+        print(f"f = {f}")
+        roots = approximate_roots(f, v_K)
+        for a in roots:
+            print(f"   a_0 = {a.approximation()}")
+            for _ in range(5):
+                a.improve_approximation()                
+            print(f"v_L(f(a_5)) = {a.extension_valuation()(f(a.approximation()))}")

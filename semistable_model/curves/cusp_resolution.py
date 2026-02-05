@@ -28,17 +28,21 @@ whose special fiber consists of a semistable plane cubic in Weierstrass normal f
 plus the line at infinity. Thus this cubic is the one-tail of the semistable model
 corresponding to the cusp.  
 
-TODO (benchmark): experiment with different variable orders in R to compare performance.
+TODO: 
+
+- experiment with different variable orders in R to compare performance.
+- add flag in :func:`resolve_cusp` that allows computing the tail type without
+  computing the tail itself; this will be much faster.
 
 
 """
 
 
-from sage.all import QQ, NumberField, PolynomialRing, matrix, Infinity, randint, Curve, SR
+from sage.all import QQ, PolynomialRing, matrix, Infinity, randint, Curve, SR
 from semistable_model.curves.approximate_solutions import approximate_solutions
 
 
-def resolve_cusp(F, v_K, return_J=False):
+def resolve_cusp(F, v_K, only_tail_type=False, return_J=False):
     r""" Return a base change matrix resolving the cusp.
 
     INPUT:
@@ -54,10 +58,20 @@ def resolve_cusp(F, v_K, return_J=False):
 
     OUTPUT:
 
-    a tripel `(v_L, T, \bar{F})`, where `v_L` is an extension of `v_K` to a finite field
-    extension `L/K`, `T` is an upper triangular`(3,3)`-matrix over `L`,
+    a tripel `(v_L, T, \bar{F})`, where `v_L` is an extension of `v_K` to a finite 
+    field extension `L/K`, `T` is an upper triangular`(3,3)`-matrix over `L`,
     representing the base change to the plane model resolving the cusp `P`, and
     `\bar{F}` is a semistable cubic, the resulting one-tail.
+
+    FLAGS:
+
+    - if ``only_tail_type`` is ``True``, the function returns either "e" or "m",
+      depending on whether the exceptional divisor of the blowup is smooth
+      (elliptic tail, "e") or not (pigtail, "m")
+    - if ``return_J`` is ``True`` the function returns the ideal `J` of the 
+      polynomial ring `K[c,b,a]` corresponding to the system of equations
+      that needs to be solved by the resolution algorithm. This is for 
+      debugging purposes only, and should be removed at some point
 
     EXAMPLES:
 
@@ -80,7 +94,11 @@ def resolve_cusp(F, v_K, return_J=False):
         NotImplementedError                       Traceback (most recent call last)
         ...
         NotImplementedError: Expected G[1] to be linear in beta (beta - r(alpha)).
+
     """
+
+    if only_tail_type:
+        raise NotImplementedError("the `only tail type´ option is not yet implemented.")
     # check validity of the input
     assert v_K.is_discrete_valuation()
     K = v_K.domain()
