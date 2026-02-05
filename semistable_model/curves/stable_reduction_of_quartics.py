@@ -118,6 +118,13 @@ def stable_reduction_of_quartic(F, v_K):
         res.git_model = XX
         res.special_fiber = Xs
         res.v_L = v_L
+        # the attribute "git_wild" registers whether the the git-semistable model
+        # is defined over a wild or tame extension of K
+        if v_K.p().divides(v_L(v_K.uniformizer())/v_L(v_L.uniformizer())):
+            res.git_wild = True
+
+        else:
+            res.git_wild = False
 
         # 2) detect hyperelliptic reduction early
         if not Xs.is_stable():
