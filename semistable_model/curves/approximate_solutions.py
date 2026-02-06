@@ -83,21 +83,34 @@ unsuccessful attempts.
 EXAMPLES::
 
     sage: v2 = QQ.valuation(2)
-    sage: R.<x,y> = QQ[]
+    sage: R = PolynomialRing(QQ, 2, ["x", "y"], order='lex')
+    sage: x, y = R.gens()
     sage: J = R.ideal([x^2 + y^2 + 2, 2*x^2 + x*y + y])
     sage: S = approximate_solutions(J, v2)
     sage: len(S)
     2
-    sage: s = S[0]
+    sage: s = S[0]; s
+    approximate solution in 2 variables over Number Field in alpha \
+        with defining polynomial y^2 + 40*y - 80 (residual valuation ≥ 10)
+
     sage: s.extension()
-    ...
+    Number Field in alpha with defining polynomial y^2 + 40*y - 80
+
     sage: s.approximation()
-    ...
+    [-2359.../2605...*alpha + ..., 1389.../1867...*alpha - 3548.../1867...]
+
+    sage: s.residual_valuation()
+    10
     sage: s.improve_approximation()
-    ...
+    [243270472557965/196*alpha - 810932028059849/343, -839*alpha + 64/7]
+
+    sage: s.residual_valuation()
+    13
+
 """
 
 from sage.all import SageObject, ZZ
+from semistable_model.curves.approximate_factors import approximate_roots
 
 
 def approximate_solutions(J, v_K, positive_valuation=True, one_solution=False,
@@ -149,7 +162,8 @@ def approximate_solutions(J, v_K, positive_valuation=True, one_solution=False,
 
     # Step 2: build one ApproximateSolution per "univariate branch" for f(x_n)=0
     sols = []
-    for br in _branches_for_shape_polynomial(f, v_K):
+    for br in approximate_roots(f, v_K, 
+                                positive_valuation=positive_valuation):
         sol = ApproximateSolution(J1, phi, f, rs, v_K, br,
                                   positive_valuation=positive_valuation)
         if sol.is_admissible():
@@ -188,14 +202,42 @@ class ApproximateSolution(SageObject):
         self._x_shape = self._xs[-1]
 
         # Branch must provide (L,v_L) and a way to refine x_n
-        self._extension = _branch_field(branch)
-        self._extension_valuation = _branch_valuation(branch)
+        self._extension = branch.extension()
+        self._extension_valuation = branch.extension_valuation()
 
         self._approximation = None
         self._residual_min = None
 
         # initialize first approximation
         self.improve_approximation()
+
+    def __repr__(self):
+        """
+        String representation of an approximate solution.
+        """
+        n = len(self._xs)
+
+        try:
+            L = self._extension
+            vL = self._extension_valuation
+            field_str = f"over {L}"
+        except Exception:
+            field_str = "over unknown extension"
+
+        try:
+            prec = self._residual_min
+            if prec is None:
+                prec_str = "residual valuation not computed"
+            else:
+                prec_str = f"residual valuation ≥ {prec}"
+        except Exception:
+            prec_str = "residual valuation unknown"
+
+        return (
+            f"approximate solution in {n} variables "
+            f"{field_str} "
+            f"({prec_str})"
+        )
 
     def extension(self):
         r"""Return the field extension in which this approximate solution lives."""
@@ -213,20 +255,6 @@ class ApproximateSolution(SageObject):
         r"""Return `min_i v_L(F_i(a))` for the chosen generators at the current approximation."""
         return self._residual_min
 
-    def is_admissible(self):
-        r"""
-        Return True if the current approximation satisfies the requested valuation constraint
-        on the coordinates (integral or strictly positive).
-        """
-        vL = self._extension_valuation
-        if vL is None or self._approximation is None:
-            return False
-
-        if self._positive_valuation:
-            return all(vL(ai) > 0 for ai in self._approximation)
-        else:
-            return all(vL(ai) >= 0 for ai in self._approximation)
-
     def improve_approximation(self):
         r"""
         Improve the current approximation.
@@ -235,19 +263,49 @@ class ApproximateSolution(SageObject):
 
         The improved approximation vector `[a_1,...,a_n]`.
 
-        This method refines the underlying univariate approximation for `x_n`, evaluates
-        `x_i=r_i(x_n)` for `i<n`, and updates the cached residual valuation.
+        This method refines the underlying univariate approximation for `x_n`,
+        evaluates `x_i = r_i(x_n)` for `i < n`, and updates the cached residual
+        valuation.
         """
-        x_shape = _branch_next_root_approx(self._branch)
-        vec = []
-        for r in self._rs:
-            vec.append(r(x_shape))
-        vec.append(x_shape)
+        # refine the shape root (does nothing if the root is exact)
+        self._branch.improve_approximation()
+
+        # read off the current approximation of x_n
+        x_shape = self._branch.approximation()
+
+        # compute the remaining coordinates via x_i = r_i(x_n)
+        vec = [r(x_shape) for r in self._rs] + [x_shape]
 
         self._approximation = vec
-        self._residual_min = _min_residual_valuation(self._J1, self._xs, vec,
-                                                     self._extension_valuation)
+        self._residual_min = _min_residual_valuation(
+            self._J1, self._xs, vec, self._extension_valuation
+        )
+
         return self._approximation
+
+    def is_admissible(self):
+        r"""
+        Return True if the *limit* solution satisfies the valuation constraint.
+
+        Uses the limit valuation machinery of ApproximateRoot to test v(x_i) for i<n.
+        """
+        # valuation of the shape variable itself
+        vx = self._branch.value()
+
+        if self._positive_valuation:
+            if vx <= 0:
+                return False
+            for r in self._rs:
+                if self._branch.value_of_poly(r) <= 0:
+                    return False
+            return True
+        else:
+            if vx < 0:
+                return False
+            for r in self._rs:
+                if self._branch.value_of_poly(r) < 0:
+                    return False
+            return True
 
 
 # --------------------------------------------------------------------
@@ -317,6 +375,8 @@ def _strict_shape_data_from_groebner(G, xs):
     f = G[-1]
     if not _is_univariate_in(f, x_shape):
         raise ValueError("Not in shape position: last Groebner element not univariate in x_n.")
+    # now we can coerce f into a univariate polynomial ring
+    f = f.univariate_polynomial()
 
     r_map = {}
     for i in range(n-1):
@@ -338,7 +398,7 @@ def _strict_shape_data_from_groebner(G, xs):
             r = -p.subs({xi: 0})
             if not _is_univariate_in(r, x_shape):
                 continue
-            found = r
+            found = r.univariate_polynomial()
             break
         if found is None:
             raise ValueError("Missing equation x_%s - r(x_n)." % (i+1))
@@ -368,34 +428,6 @@ def _random_shape_transforms(n, bound, seed):
             b = int(state % (2 * bound + 1)) - bound
             bs.append(b)
         yield tuple(bs)
-
-
-def _branches_for_shape_polynomial(f, v_K):
-    r"""
-    Return a list of branch objects describing approximate root clusters of f with v(root) >= 0
-    (or >0, depending on your univariate machinery).
-
-    This is the only place that must be connected to your MacLane-based code.
-    """
-    # TODO: replace by your actual API from approximate_factors.py
-    from semistable_model.curves.approximate_factors import approximate_factors
-    return list(approximate_factors(f, v_K))
-
-
-def _branch_field(branch):
-    return getattr(branch, "field", None)
-
-
-def _branch_valuation(branch):
-    return getattr(branch, "valuation", None)
-
-
-def _branch_next_root_approx(branch):
-    if hasattr(branch, "next_root_approx"):
-        return branch.next_root_approx()
-    if hasattr(branch, "__next__"):
-        return next(branch)
-    raise NotImplementedError("Branch object does not provide a refinement method for x_n.")
 
 
 def _min_residual_valuation(J1, xs, vec, vL):
