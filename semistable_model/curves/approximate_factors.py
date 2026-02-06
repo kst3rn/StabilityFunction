@@ -74,8 +74,9 @@ but may not be equal to it:
 
 """
 
-from sage.all import SageObject, GaussValuation, Infinity, PolynomialRing
+from sage.all import SageObject, GaussValuation, Infinity, PolynomialRing, QQ
 from sage.geometry.newton_polygon import NewtonPolygon
+from sage.rings.valuation.limit_valuation import LimitValuation 
 
 
 def approximate_factorization(f, v_K, g0=None, assume_squarefree=False, 
@@ -291,6 +292,7 @@ class ApproximatePrimeFactor(ApproximateFactor):
         phi = F[0][0]
         self._degree = phi.degree()
         if phi.degree() == f.degree():
+            self._valuation = v.augmentation(f, Infinity)
             self._precision = Infinity
         else:
             R = f.parent()
@@ -456,8 +458,10 @@ class ApproximateRoot(SageObject):
         self._approximation = L.gen()
         self._precision = g.precision()
         # 4. construct limit valuation
-        # to do:
-        # self._init_limit_valuation()
+        self._init_limit_valuation()
+
+    def __repr__(self):
+        return f"approximate root of {self.polynomial()}"
 
     def base_field(self):
         r""" Return the base field of this approximate root.
@@ -530,6 +534,25 @@ class ApproximateRoot(SageObject):
 
         the valuation `v_L(r(a))`, where `a\in \hat{L}` is the root
         of `f` represented by ``self``.
+
+        ALGORITHM:
+
+        the *actual root* `a\in\hat{L}` can be realized as a 
+        *limit valuation* on `K[x]`, i.e. the discrete pseudovaluation
+        `v` defined by `v(r) = v_L(r(a))`. Note that `v(f)=\infty`,
+        where `f` is the minimal polynomial of `a` over `K`. Therefore,
+        `v` is only a pseudovaluation. 
+
+        There is a native implementation :class:`LimitValuation` in 
+        Sage; however, it expects the equation `f` to be monic and integral
+        with respect to `v_K`. For this reason we have first rescale
+        `v` before it can be implemented, i.e. replace `f` by
+
+        .. MATH::
+
+            f_1 := c^{-1}\pi^{ad}\cdot f(\pi^{-a}x),
+
+        where `d` is the degree of `f` and `c` its leading coefficient.
 
         """
         try:
@@ -606,9 +629,55 @@ class ApproximateRoot(SageObject):
         # the problem is that this only works if f is monic and integral
         # which we can't assume. 
         # We have to force this by scaling, i.e. replace f by
-        # f(pi_K^(-m)*x).monic(), v by the right valuation and then rescaling the result
-        raise NotImplementedError()
+        # f(c^(-1)*x).monic() and v by the corresponding `scaled valuation' 
+        f = self.polynomial()
+        v_K = self.base_valuation()
+        # we compute the maximal slope of the NP of f
+        d = f.degree()
+        a_d = v_K(f[d])
+        m = max((a_d-v_K(f[i])) for i in range(d))
+        # if m <= 0, f is already integral
+        if m > 0:
+            c = v_K.element_with_valuation(-m)
+        else:
+            m = QQ.zero()
+            c = v_K.domain().one()
+        self._scaling_factor = c
+        f1 = f(c*f.parent().gen()).monic()
+        v1 = _scale_inductive_valuation(self.prime_factor().valuation(), v_K, m)
+        self._scaled_limit_valuation = LimitValuation(v1, f1)
+    
+    def _limit_valuation(self, r):
+        x = r.parent().gen()
+        c = self._scaling_factor
+        v = self._scaled_limit_valuation
+        return v(r(c*x))
 
+
+def _scale_inductive_valuation(v, v_K, m):
+    r""" Scale a MacLane valuation. 
+    
+    INPUT:
+
+    - ``v`` -- an inductive valuation on a polynomial ring `K[x]`
+    - ``v_K`` -- the base valuation, i.e. the restriction of v to `K`
+    - ``m`` -- a nonnegative value of `v_K`
+
+    OUTPUT:
+
+    the scaling of `v` by `m`; this is the inductive valuation `v_1:=v\circ\tau`,
+    where `\tau:K[x]\to K[x]` is the ring automorphism defined by
+    `\tau(x) = c\cdot x` for an element `c\in K` with `v_K(c)=m`.
+
+    """
+    ci = v_K.element_with_valuation(-m)  # inverse of the scaling element
+    x = v.domain().gen()
+    if v.is_gauss_valuation():
+        return v
+    v0 = _scale_inductive_valuation(v.augmentation_chain()[1], v_K, m)
+    phi = v.phi()
+    l = v(phi)
+    return v0.augmentation(phi(ci*x).monic(), l + phi.degree()*m)
 
 
 # ---------------------------------------------------------------------------------------
@@ -637,3 +706,6 @@ def test_approximate_roots(R, v_K, N=10, d = 12):
             for _ in range(5):
                 a.improve_approximation()                
             print(f"v_L(f(a_5)) = {a.extension_valuation()(f(a.approximation()))}")
+            h = R.random_element()
+            print(f"h= {h}")
+            assert a.extension_valuation()(h(a.approximation())) <= a.value_of_poly(h)
