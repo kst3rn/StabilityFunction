@@ -74,7 +74,7 @@ but may not be equal to it:
 
 """
 
-from sage.all import SageObject, GaussValuation, Infinity, PolynomialRing, QQ
+from sage.all import SageObject, GaussValuation, Infinity, PolynomialRing, QQ, ZZ
 from sage.geometry.newton_polygon import NewtonPolygon
 from sage.rings.valuation.limit_valuation import LimitValuation 
 
@@ -100,6 +100,11 @@ def approximate_factorization(f, v_K, g0=None, assume_squarefree=False,
 
     NOTE: for the moment, only irreducible factors which are integral with respect
     to `v_K` are returned.
+
+    
+    TODO:
+
+    - write examples
 
     """
     f = f.change_ring(v_K.domain())
@@ -147,6 +152,10 @@ def approximate_roots(f, v_K, positive_valuation=True):
     The returned objects represent approximate roots `a in L` (for some finite
     extension `(L,v_L)/(K,v_K)`) whose residual valuations can be made arbitrarily large
     by repeated calls to :meth:`ApproximateRoot.improve_approximation`.
+
+    TODO:
+
+    - write examples
 
     """
     factors = approximate_factorization(f, v_K)
@@ -669,15 +678,62 @@ def _scale_inductive_valuation(v, v_K, m):
     where `\tau:K[x]\to K[x]` is the ring automorphism defined by
     `\tau(x) = c\cdot x` for an element `c\in K` with `v_K(c)=m`.
 
+    EXAMPLES:
+
+    sage: R.<x> = QQ[]
+    sage: v_K = QQ.valuation(5)
+    sage: f = x^9 + 2*x^8 + x^7 + 4*x^6 + 2*x^5 + x^4 + 3*x^3 + 2
+    sage: v0 = GaussValuation(R, v_K)
+    sage: v = v0.augmentation(f, 1)
+    sage: _scale_inductive_valuation(v, v_K, 2)
+    [ Gauss valuation induced by 5-adic valuation, v(x) = 2, v(x^9 + ...) = 19 ]
+
     """
     ci = v_K.element_with_valuation(-m)  # inverse of the scaling element
     x = v.domain().gen()
     if v.is_gauss_valuation():
-        return v
+        if m == 0:
+            return v
+        else:
+            return v.augmentation(x, m) 
     v0 = _scale_inductive_valuation(v.augmentation_chain()[1], v_K, m)
     phi = v.phi()
     l = v(phi)
-    return v0.augmentation(phi(ci*x).monic(), l + phi.degree()*m)
+    # this may give an error, because phi(ci*x).monic may not be equivalence irreducible!
+    #return v0.augmentation(phi(ci*x).monic(), l + phi.degree()*m)
+    return _augmentation(v0, phi(ci*x).monic(), l + phi.degree()*m)
+
+
+def _augmentation(v0, phi, s):
+    r""" Helper function for _scale_inductive_valution.
+    
+    INPUT:
+
+    - ``v_0`` -- an inductive valuation on a polynomial ring `K[x]`
+    - ``phi`` -- a monic, integral and absolutely irreducible element of `K[x]`
+    - ``s`` -- a rational number 
+
+    It is assumed that `\phi` is not an equivalence unit for `v_0`, and that
+    `v_0(\phi) < s`.
+
+    OUTPUT:
+
+    the unique inductive valuation of the form
+
+    .. MATH::
+
+         v = [v_0,\ldots, v(\phi)=s].
+
+    """
+    F = v0.equivalence_decomposition(phi)
+    if len(F) != 1:
+        raise ValueError(f"phi = {phi} is either not absolutely irreducible"+
+                         f"or an equivalence unit for v0 = {v0}")
+    while not v0.is_key(phi):
+        v1 = v0.mac_lane_step(phi)[0]
+        assert v1(phi) < s, "v0= {v0}, v1 = {v1}, phi = {phi}"
+        v0 = v1
+    return v0.augmentation(phi, s)
 
 
 # ---------------------------------------------------------------------------------------
@@ -695,6 +751,7 @@ def test_precision(g):
         print()
         g.improve_approximation()
 
+
 def test_approximate_roots(R, v_K, N=10, d = 12):
     for _ in range(N):
         f = R.random_element(d)
@@ -709,3 +766,21 @@ def test_approximate_roots(R, v_K, N=10, d = 12):
             h = R.random_element()
             print(f"h= {h}")
             assert a.extension_valuation()(h(a.approximation())) <= a.value_of_poly(h)
+
+
+def test_scale_valuation(N=10, p=2):
+    R = PolynomialRing(QQ, "x")
+    x = R.gen()
+    for _ in range(N):
+         f = R.random_element(10)
+         print(f"f = {f}")
+         G = approximate_factorization(f, QQ.valuation(p))
+         for g in G:
+             v = g.valuation()
+             print(f"v= {v}")
+             s = ZZ.random_element().abs()
+             print(f"s = {s}")
+             v_s = _scale_inductive_valuation(v, QQ.valuation(p), s)
+             print(f"v_s = {v_s}")
+             h = R.random_element()
+             assert v(h) == v_s(h(x/p**s)), "h = {h}, v(h) = {v(h)}, v_s(h_1) = {v_s(h(x/p**s))}"
