@@ -2,7 +2,7 @@ r"""
 Stable reduction of plane quartics
 ==================================
 
-This module implements the computation of the *geometric stable reduction* of a
+This module implements the computation of the *stable reduction* of a
 smooth plane quartic over a p-adic number field, restricted to the case of
 *non-hyperelliptic reduction*.
 
@@ -146,9 +146,9 @@ def stable_reduction_of_quartic(F, v_K):
             phi = T.base_ring().an_embedding(v_L.residue_field())
             M = T.map_coefficients(phi, v_L.residue_field()).map_coefficients(v_L.lift, L)
             cusp_model = XX.apply_matrix(M)
-            _, _, Fb = resolve_cusp(cusp_model.defining_polynomial(), v_L)
+            _, E, _ = resolve_cusp(cusp_model.defining_polynomial(), v_L)
             P = Xs.point(C.point)
-            if Curve(Fb).is_smooth():
+            if E.is_smooth():
                 cusp_data.append((P, "e"))
             else:
                 cusp_data.append((P, "m"))

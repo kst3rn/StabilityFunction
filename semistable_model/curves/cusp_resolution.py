@@ -12,37 +12,34 @@ This form represents an integral plane model of a smooth quartic over `\QQ`,
 whose special fiber with respect to the `2`-adic valuation has a cusp in
 normal form in `(1:0:0)`. We can resolve this cusp as follows:
 
-    sage: v_L, T, Fb = resolve_cusp(F, v_2)
+    sage: v_L, E, e = resolve_cusp(F, v_2)
 
 Here `v_L` is the unique extension of `v_2` to a finite extension `L` of `K=\QQ`,
 
     sage: v_L.domain()
     Number Field in alpha with defining polynomial a^8 + 13464*a^7 + 21040*a^6 - 6832/5*a^5 + 93040*a^4 + 39360/43*a^3 + 2820928*a^2 - 10112/443*a - 10816/367
 
-and `T` is a base change matrix with entries in `L` representing a plane model
-whose special fiber consists of a semistable plane cubic in Weierstrass normal form,
+and is *tail*, a semistable plane cubic in Weierstrass normal form,
 
-    sage: Fb
-    x^3 + z^2*y + z*y^2
+    sage: E
+    Projective Plane Curve over Finite Field of size 2 defined by x^3 + y^2*z + y*z^2,
 
-plus the line at infinity. Thus this cubic is the one-tail of the semistable model
-corresponding to the cusp.  
+and `e` is a positive integer, the ramification index needed for an extension `L'/L`
+over which the resolution can be performed.
 
 TODO: 
 
 - experiment with different variable orders in R to compare performance.
-- add flag in :func:`resolve_cusp` that allows computing the tail type without
-  computing the tail itself; this will be much faster.
 
 
 """
 
 
-from sage.all import QQ, PolynomialRing, matrix, Infinity, randint, Curve, SR
+from sage.all import ZZ, QQ, PolynomialRing, matrix, Infinity, randint, Curve, SR
 from semistable_model.curves.approximate_solutions import approximate_solutions
 
 
-def resolve_cusp(F, v_K, only_tail_type=False, return_J=False):
+def resolve_cusp(F, v_K, compute_matrix=False):
     r""" Return a base change matrix resolving the cusp.
 
     INPUT:
@@ -58,20 +55,22 @@ def resolve_cusp(F, v_K, only_tail_type=False, return_J=False):
 
     OUTPUT:
 
-    a tripel `(v_L, T, \bar{F})`, where `v_L` is an extension of `v_K` to a finite 
-    field extension `L/K`, `T` is an upper triangular`(3,3)`-matrix over `L`,
-    representing the base change to the plane model resolving the cusp `P`, and
-    `\bar{F}` is a semistable cubic, the resulting one-tail.
+    If ``compute_matrix`` is ``False`` (the default):
 
-    FLAGS:
+    a triple `(v_L, E, e)`, where 
+    - `e` is a positive integer,
+    - `v_L` is an extension of `v_K` to a finite field extension `L/K` 
+      such that the cusp can be resolved over any extension of `L`
+      with ramification index `e`, 
+    - `E` is a semistable plane cubic over the residue field of `L`, 
+      the resulting one-tail. 
 
-    - if ``only_tail_type`` is ``True``, the function returns either "e" or "m",
-      depending on whether the exceptional divisor of the blowup is smooth
-      (elliptic tail, "e") or not (pigtail, "m")
-    - if ``return_J`` is ``True`` the function returns the ideal `J` of the 
-      polynomial ring `K[c,b,a]` corresponding to the system of equations
-      that needs to be solved by the resolution algorithm. This is for 
-      debugging purposes only, and should be removed at some point
+    If ``compute_matrix`` is ``True``:
+
+    a tripel `(v_L, E, T)`, where v_L` and `E` are as above, with `e=1`,
+    and `T` is an upper triangular`(3,3)`-matrix over `L`,
+    representing the base change to the plane model resolving the cusp `P`.
+   
 
     EXAMPLES:
 
@@ -81,7 +80,7 @@ def resolve_cusp(F, v_K, only_tail_type=False, return_J=False):
         sage: F = -16*x^4 - 15*x^3*y - 12*x^2*y^2 - 5*x*y^3 + 15*x^2*z^2 + 12*x*y*z^2 - 4*y^2*z^2 + 8*z^4
         sage: v_K = QQ.valuation(2)
         sage: X = PlaneCurveOverValuedField(F, v_K)
-        sage: XX = X.semistable_model_with_rational_cusps()
+        sage: XX = X.git_semistable_model_with_rational_cusps()
         sage: Xs = XX.special_fiber()
         sage: C = Xs.rational_cusps()[0]
         sage: v_L = XX.base_ring_valuation()
@@ -89,17 +88,17 @@ def resolve_cusp(F, v_K, only_tail_type=False, return_J=False):
         sage: T = C.move_to_e0_x2()
         sage: M = T.map_coefficients(v_L.lift, L)
         sage: cusp_model = XX.apply_matrix(M)
-        sage: v_L, _, Fb = resolve_cusp(cusp_model.defining_polynomial(), v_L) # long time!
-        sage: Fb
-        y^3 + x^2*z + x*z^2
-
+        sage: v_L, E, e = resolve_cusp(cusp_model.defining_polynomial(), v_L) # long time!
         sage: v_L.domain()
-        Number Field in alpha with defining polynomial a^8 - 129920/13*a^7 ... over its base field
+        Number Field in alpha with defining polynomial a^8 - ... over its base field
 
+        sage: E
+        Projective Plane Curve over Finite Field of size 2 defined by x^3 + y^2*z + y*z^2
+
+        sage: e
+        1
+        
     """
-
-    if only_tail_type:
-        raise NotImplementedError("the `only tail type´ option is not yet implemented.")
     # check validity of the input
     assert v_K.is_discrete_valuation()
     K = v_K.domain()
@@ -141,9 +140,6 @@ def resolve_cusp(F, v_K, only_tail_type=False, return_J=False):
     # we want to find an approximate solution alpha, beta, gamma for
     # A=B=C=0, with valuations at least v_a,v_b,v_c
     J = R.ideal([A, B, C])
-    # this is for debugging only:
-    if return_J:
-        return J
 
     # we find *one* solution to A=B=C=0 in the maximal ideal of O_K
     s = approximate_solutions(J, v_K, positive_valuation=True, one_solution=True)
@@ -168,12 +164,26 @@ def resolve_cusp(F, v_K, only_tail_type=False, return_J=False):
             break
         else:
             gamma, beta, alpha = s.improve_approximation()
+    # the ramification that we would need to resolve the cusp
+    e = (t*v_L.value_group().denominator()).denominator()
+        
+    # compute the tail component
+    Ab = PolynomialRing(v_L.residue_field(), 3, ["x", "y", "z"])
+    Fb = Ab.zero()
+    for i in range(d+1):
+        for j in range(d-i+1):
+            if 2*i + 3*j <= 6:
+                c = _normalized_reduction(v_L, L(F1.coefficient([d-i-j, i, j])), t*(6-2*i-3*j))
+                Fb += c * Ab.monomial(i, j, 3-i-j)
+    E = Curve(Fb)
+
+    if not compute_matrix:
+        return v_L, E, e
 
     # we now have to extend L such that it contains an element Pi with
     # valuation t; then the reduction of F_2:=F_1(Pi^2*x,Pi^3*y,z)
     L = v_L.domain()
-    if not t in v_L.value_group():
-        e = (t*v_L.value_group().denominator()).denominator()
+    if e != 1:
         # we have to replace L by an extension with ramification index e
         S = PolynomialRing(L, "pi")
         pi = S.gen()
@@ -182,15 +192,10 @@ def resolve_cusp(F, v_K, only_tail_type=False, return_J=False):
         alpha = L(alpha)
         beta = L(beta)
         gamma = L(gamma)
-    
     Pi = v_L.element_with_valuation(t)
-    F1 = F(z, alpha*z + x, beta*z + gamma*x + y)
-    F2 = F1(z, Pi**2*x, Pi**3*y)/Pi**6
-    F2b = F2.map_coefficients(v_L.reduce, v_L.residue_field())
-    Fb = [Gb for Gb, _ in F2b.factor() if Gb.degree() == 3][0]
     T = matrix(L, 3, 3, [1, alpha, beta, 0, Pi**2, Pi**2*gamma, 0, 0, Pi**3])
-    return v_L, T, Fb
-    
+    return v_L, E, T
+
 
 def _valuation_matrix(F1, d, v_L):
     r"""
@@ -206,6 +211,50 @@ def _valuation_matrix(F1, d, v_L):
                 if s < t:
                     t = QQ(s)
     return V, t
+
+def _normalized_reduction(v_K, a, s):
+    r""" Return the normalized reduction of an element wrt a discrete valuation.
+    
+    INPUT:
+
+    - ``v_K`` -- a discrete valuation on a field `K`
+    - ``a`` -- an element of `K`
+    - ``s`` -- a rational number,
+
+    It is assumed that
+
+    .. MATH::
+
+        v_K(a) \geq s.
+
+    OUTPUT:
+
+    If `v_K(a) = s` then the reduction of `\pi^{-s}\cdot a` is returned; here 
+    `\pi^{-s}\in K` denotes the standard element of `K` with valuation `-s`, defined
+    as 
+
+    .. MATH::
+
+        pi^{-s} := \pi_K^{s/v_K(\pi_K)},
+
+    where `\pi_K` is a fixed uniformizer for `v_K`.
+
+    If `v_K(a) > s`, then the zero element is returned. If `v_K(a) < s`, an error is
+    raised.
+
+    Note that the result depends on the the choice of `\pi_K`. We use the standard 
+    generator returned by :meth:`uniformizer`. 
+    
+    """
+    t = v_K(a)
+    if t < s:
+        raise ValueError("We must have `v_K(a) >= s; a = {a}, s = {s}")
+    elif t == s:
+        pi = v_K.uniformizer()
+        m = ZZ(t/v_K(pi))
+        return v_K.reduce(pi**(-m)*a)
+    else:
+        return v_K.residue_field().zero() 
 
 
 # ------------------------------------------------------------------------------------------------------
