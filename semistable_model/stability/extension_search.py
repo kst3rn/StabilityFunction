@@ -21,22 +21,15 @@ def semistable_reduction_field(homogeneous_form,
     raise ValueError(f"{homogeneous_form} is not homogeneous.")
   if not base_ring_valuation.domain() == QQ:
     raise NotImplementedError(f"The base ring must be {QQ}")
-  if homogeneous_form.degree() != 4:
-    warn(
-      f"Provided homogeneous form has degree {homogeneous_form.degree()}, but "
-      "currently this function is designed for quartics (degree 4). "
-      "For other degrees, the algorithm may enter an infinite loop "
-      "or take an excessive amount of time.",
-      UserWarning,
-      stacklevel=2
-      )
 
   if ramification_index is not None:
     return extension_search(homogeneous_form,
                             base_ring_valuation,
                             ramification_index)
+
+  p = base_ring_valuation.residue_ring().characteristic()
   for i in count(start=1):
-    L = extension_search(homogeneous_form, base_ring_valuation, i)
+    L = extension_search(homogeneous_form, base_ring_valuation, p**i)
     if L is not None:
       return L
 
@@ -78,7 +71,7 @@ def extension_search(homogeneous_form,
   K = homogeneous_form.base_ring()
   phi = StabilityFunction(homogeneous_form, base_ring_valuation)
   minimum, btb_point = phi.global_minimum('uut')
-  if phi.has_semistable_reduction_at(btb_point):
+  if phi.has_git_semistable_reduction(btb_point):
     if btb_point.is_vertex():
       return K
     piK = base_ring_valuation.uniformizer()
@@ -145,7 +138,7 @@ def _search_tree(F, valuation1, step, minimum, trafo_matrix, depth, depth_limit)
   char_p = v_K_residue_field.characteristic()
   phi_typeI = StabilityFunction(F_K, K.valuation(char_p))
   aI, bI = phi_typeI.local_minimum(_evaluate_matrix(trafo_matrix, piK))
-  if phi_typeI.has_semistable_reduction_at(bI):
+  if phi_typeI.has_git_semistable_reduction(bI):
     if bI.minimal_simplex_dimension(step.denominator()) == 0:
       return K
     v_K = phi_typeI.base_ring_valuation()

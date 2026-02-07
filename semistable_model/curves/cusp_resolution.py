@@ -28,14 +28,21 @@ whose special fiber consists of a semistable plane cubic in Weierstrass normal f
 plus the line at infinity. Thus this cubic is the one-tail of the semistable model
 corresponding to the cusp.  
 
+TODO: 
+
+- experiment with different variable orders in R to compare performance.
+- add flag in :func:`resolve_cusp` that allows computing the tail type without
+  computing the tail itself; this will be much faster.
+
+
 """
 
 
-from sage.all import QQ, NumberField, PolynomialRing, matrix, Infinity, randint, Curve, SR
-from semistable_model.curves.approximate_factors import approximate_factorization
+from sage.all import QQ, PolynomialRing, matrix, Infinity, randint, Curve, SR
+from semistable_model.curves.approximate_solutions import approximate_solutions
 
 
-def resolve_cusp(F, v_K):
+def resolve_cusp(F, v_K, only_tail_type=False, return_J=False):
     r""" Return a base change matrix resolving the cusp.
 
     INPUT:
@@ -51,14 +58,24 @@ def resolve_cusp(F, v_K):
 
     OUTPUT:
 
-    a tripel `(v_L, T, \bar{F})`, where `v_L` is an extension of `v_K` to a finite field
-    extension `L/K`, `T` is an upper triangular`(3,3)`-matrix over `L`,
+    a tripel `(v_L, T, \bar{F})`, where `v_L` is an extension of `v_K` to a finite 
+    field extension `L/K`, `T` is an upper triangular`(3,3)`-matrix over `L`,
     representing the base change to the plane model resolving the cusp `P`, and
     `\bar{F}` is a semistable cubic, the resulting one-tail.
 
+    FLAGS:
+
+    - if ``only_tail_type`` is ``True``, the function returns either "e" or "m",
+      depending on whether the exceptional divisor of the blowup is smooth
+      (elliptic tail, "e") or not (pigtail, "m")
+    - if ``return_J`` is ``True`` the function returns the ideal `J` of the 
+      polynomial ring `K[c,b,a]` corresponding to the system of equations
+      that needs to be solved by the resolution algorithm. This is for 
+      debugging purposes only, and should be removed at some point
+
     EXAMPLES:
 
-    The following example gives an error:
+    The following example caused problems before, but is now fixed:
 
         sage: R.<x,y,z> = QQ[]
         sage: F = -16*x^4 - 15*x^3*y - 12*x^2*y^2 - 5*x*y^3 + 15*x^2*z^2 + 12*x*y*z^2 - 4*y^2*z^2 + 8*z^4
@@ -72,12 +89,17 @@ def resolve_cusp(F, v_K):
         sage: T = C.move_to_e0_x2()
         sage: M = T.map_coefficients(v_L.lift, L)
         sage: cusp_model = XX.apply_matrix(M)
-        sage: resolve_cusp(cusp_model.defining_polynomial(), v_L)
-        ---------------------------------------------------------------------------
-        NotImplementedError                       Traceback (most recent call last)
-        ...
-        NotImplementedError: Expected G[1] to be linear in beta (beta - r(alpha)).
+        sage: v_L, _, Fb = resolve_cusp(cusp_model.defining_polynomial(), v_L) # long time!
+        sage: Fb
+        y^3 + x^2*z + x*z^2
+
+        sage: v_L.domain()
+        Number Field in alpha with defining polynomial a^8 - 129920/13*a^7 ... over its base field
+
     """
+
+    if only_tail_type:
+        raise NotImplementedError("the `only tail type´ option is not yet implemented.")
     # check validity of the input
     assert v_K.is_discrete_valuation()
     K = v_K.domain()
@@ -119,51 +141,18 @@ def resolve_cusp(F, v_K):
     # we want to find an approximate solution alpha, beta, gamma for
     # A=B=C=0, with valuations at least v_a,v_b,v_c
     J = R.ideal([A, B, C])
-    G = J.groebner_basis()
+    # this is for debugging only:
+    if return_J:
+        return J
 
-    f, _, _ = assert_groebner_expected_order(G, a, b, c)
-    f = f.univariate_polynomial()
-    # proceed with root finding on f and set beta=r(alpha), gamma=s(alpha)
-
-    # old code
-    # assert len(G) == 3, "Unexpected Groebner basis length."
-    # f = G[2].univariate_polynomial()
-
-    f_factors = approximate_factorization(f, v_K)
-    # print(f"f_factors = {f_factors}")
-    # f is a univariate equation for alpha
-    # we have to identify the correct factor of f, whose root alpha
-    # leads to a solution with alpha, beta, gamma of positive valuation
-
-    # beta and gamma are polynomials in alpha; we find the minimal valuation
-    # m of the coefficients of these polynomials
-    m1 = min(v_K(c) for c in G[0].coefficients())
-    m2 = min(v_K(c) for c in G[1].coefficients())
-    m = min(m1, m2)
-    # print(m1, m2, m)
-    
-    # we have to compute alpha with a precision strictly greater than 
-    # max(0, -m); because then we can already guarantee whether the valuation
-    # of beta and gamma are positive
-    
-    for g in f_factors:
-        # print(f"We try the factor g = {g.approximate_factor()} of degree {g.degree()}")
-        # print()
-        prec = max(0, -m) + 2
-        # print(f"precision = {prec}")
-        v_L, alpha, beta, gamma = _solve1(G, g, v_K, prec)
-        # print(f"solution over {v_L.domain()} with precision {prec}")
-        V = [v_L(a) for a in [alpha, beta, gamma]]
-        # print(f"V = {V}")
-        if all(v > 0 for v in V):
-            # we have found the correct factor g
-            break
-    else:
-        # no factor was found
-        raise ValueError("no solution was found!")
-    
-    # now g is the correct factor of f, but its current precision may not
-    # be sufficient
+    # we find *one* solution to A=B=C=0 in the maximal ideal of O_K
+    s = approximate_solutions(J, v_K, positive_valuation=True, one_solution=True)
+    if s is None:
+        raise ValueError("No solution found! this shouldn't have happend..")
+     
+    L = s.extension()
+    v_L = s.extension_valuation() 
+    gamma, beta, alpha = s.approximation()
     z, x, y = F.variables()
     while True:
         F1 = F(z, alpha*z + x, beta*z + gamma*x + y)
@@ -178,18 +167,22 @@ def resolve_cusp(F, v_K):
         if all([V[i, j]/(6-2*i-3*j) > t for i, j in tests]):
             break
         else:
-            prec += 5
-            v_L, alpha, beta, gamma = _solve1(G, g, v_K, prec)
+            gamma, beta, alpha = s.improve_approximation()
 
     # we now have to extend L such that it contains an element Pi with
     # valuation t; then the reduction of F_2:=F_1(Pi^2*x,Pi^3*y,z)
-    
+    L = v_L.domain()
     if not t in v_L.value_group():
         e = (t*v_L.value_group().denominator()).denominator()
-        # we have to replace L by an extension with ramification index e,
-        # and compute alpha, beta, gamma again
-        v_L, alpha, beta, gamma = _solve1(G, g, v_K, prec, E=e)
-    L = v_L.domain()
+        # we have to replace L by an extension with ramification index e
+        S = PolynomialRing(L, "pi")
+        pi = S.gen()
+        L = L.extension(pi**e - v_L.uniformizer(), "pi_e")
+        v_L = v_L.extension(L)
+        alpha = L(alpha)
+        beta = L(beta)
+        gamma = L(gamma)
+    
     Pi = v_L.element_with_valuation(t)
     F1 = F(z, alpha*z + x, beta*z + gamma*x + y)
     F2 = F1(z, Pi**2*x, Pi**3*y)/Pi**6
@@ -198,29 +191,6 @@ def resolve_cusp(F, v_K):
     T = matrix(L, 3, 3, [1, alpha, beta, 0, Pi**2, Pi**2*gamma, 0, 0, Pi**3])
     return v_L, T, Fb
     
-
-def _solve1(G, g, v_K, prec, E=1):
-    r""" Return v_L, alpha, beta, gamma
-
-    This is a helper function for `resolve_cusp`.
-    
-    """
-    c, b, _ = G[0].parent().gens()
-    K = v_K.domain()
-    if E == 1:
-        L = K.extension(g.approximate_factor(prec), "alpha")
-        v_L = v_K.extension(L)
-        alpha = L.gen()
-    else:
-        S = PolynomialRing(K, "pi")
-        pi = S.gen()
-        L = NumberField([g.approximate_factor(prec), pi**E-v_K.p()], ["alpha", "pi"])
-        alpha, pi, *_ = L.gens()
-        v_L = v_K.extension(L)
-    beta = v_L.simplify(-G[1](c, b, alpha).univariate_polynomial()[0], prec)
-    gamma = v_L.simplify(-G[0](c, b, alpha).univariate_polynomial()[0], prec)
-    return v_L, alpha, beta, gamma 
-        
 
 def _valuation_matrix(F1, d, v_L):
     r"""
@@ -237,57 +207,6 @@ def _valuation_matrix(F1, d, v_L):
                     t = QQ(s)
     return V, t
 
-
-def _is_univariate_in(p, var):
-    # True iff p involves no variables other than var
-    vars_ = p.variables()
-    return vars_ == () or vars_ == (var,)
-
-
-def assert_groebner_expected_order(G, alpha, beta, gamma):
-    """
-    Assert that the Groebner basis G is exactly in the expected triangular form
-        [gamma - s(alpha), beta - r(alpha), f(alpha)]
-    (with respect to lex(gamma, beta, alpha)), and normalized so the leading
-    coefficients of gamma and beta are 1.
-
-    Raises NotImplementedError if not, otherwise returns (f, r, s).
-    """
-    if len(G) != 3:
-        raise NotImplementedError(f"Expected Groebner basis of length 3, got {len(G)}.")
-
-    p_gamma, p_beta, p_alpha = G[0], G[1], G[2]
-
-    # --- check G[2] = f(alpha)
-    if not _is_univariate_in(p_alpha, alpha):
-        raise NotImplementedError("Expected G[2] to be univariate f(alpha).")
-
-    # --- check G[1] = beta - r(alpha)
-    if gamma in p_beta.variables():
-        raise NotImplementedError("Expected G[1] to involve only alpha,beta (no gamma).")
-    if p_beta.degree(beta) != 1:
-        raise NotImplementedError("Expected G[1] to be linear in beta (beta - r(alpha)).")
-    if p_beta.coefficient({beta: 1}) != 1:
-        raise NotImplementedError("Expected G[1] to be monic in beta (leading coeff 1).")
-    r = -p_beta.subs({beta: 0})
-    if not _is_univariate_in(r, alpha):
-        raise NotImplementedError("Expected r(alpha) to be univariate in alpha.")
-
-    # --- check G[0] = gamma - s(alpha)
-    if p_gamma.degree(gamma) != 1:
-        raise NotImplementedError("Expected G[0] to be linear in gamma (gamma - s(alpha)).")
-    if p_gamma.coefficient({gamma: 1}) != 1:
-        raise NotImplementedError("Expected G[0] to be monic in gamma (leading coeff 1).")
-    s = -p_gamma.subs({gamma: 0})
-    if not _is_univariate_in(s, alpha):
-        raise NotImplementedError("Expected s(alpha) to be univariate in alpha.")
-    # (Strictly enforces "gamma - s(alpha)" i.e. no beta-dependence at all.)
-    if beta in p_gamma.variables():
-        raise NotImplementedError("Expected G[0] not to involve beta (gamma - s(alpha)).")
-
-    f = p_alpha  # already univariate
-
-    return f, r, s
 
 # ------------------------------------------------------------------------------------------------------
 
