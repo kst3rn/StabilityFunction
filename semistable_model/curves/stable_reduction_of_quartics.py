@@ -111,7 +111,7 @@ def stable_reduction_of_quartic(F, v_K):
     try:
         # 1.) Find GIT-semistable model
         X = PlaneCurveOverValuedField(F, v_K)
-        XX = X.semistable_model_with_rational_cusps()
+        XX = X.git_semistable_model_with_rational_cusps()
         v_L = XX.base_ring_valuation()
         L = v_L.domain()
         Xs = XX.special_fiber()
@@ -127,7 +127,7 @@ def stable_reduction_of_quartic(F, v_K):
             res.git_wild = False
 
         # 2) detect hyperelliptic reduction early
-        if not Xs.is_stable():
+        if not Xs.is_git_stable():
             res.status = "hyperelliptic"
             return res
 
