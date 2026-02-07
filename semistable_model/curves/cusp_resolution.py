@@ -75,7 +75,7 @@ def resolve_cusp(F, v_K, only_tail_type=False, return_J=False):
 
     EXAMPLES:
 
-    The following example gives an error:
+    The following example caused problems before, but is now fixed:
 
         sage: R.<x,y,z> = QQ[]
         sage: F = -16*x^4 - 15*x^3*y - 12*x^2*y^2 - 5*x*y^3 + 15*x^2*z^2 + 12*x*y*z^2 - 4*y^2*z^2 + 8*z^4
@@ -89,11 +89,12 @@ def resolve_cusp(F, v_K, only_tail_type=False, return_J=False):
         sage: T = C.move_to_e0_x2()
         sage: M = T.map_coefficients(v_L.lift, L)
         sage: cusp_model = XX.apply_matrix(M)
-        sage: resolve_cusp(cusp_model.defining_polynomial(), v_L)
-        ---------------------------------------------------------------------------
-        NotImplementedError                       Traceback (most recent call last)
-        ...
-        NotImplementedError: Expected G[1] to be linear in beta (beta - r(alpha)).
+        sage: v_L, _, Fb = resolve_cusp(cusp_model.defining_polynomial(), v_L) # long time!
+        sage: Fb
+        y^3 + x^2*z + x*z^2
+
+        sage: v_L.domain()
+        Number Field in alpha with defining polynomial a^8 - 129920/13*a^7 ... over its base field
 
     """
 

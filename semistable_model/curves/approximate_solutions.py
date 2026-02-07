@@ -76,9 +76,13 @@ produce approximate roots of `f` over suitable extensions `(L,v_L)/(K,v_K)`,
 and evaluate the `r_i` to obtain approximate solutions of the original system.
 
 NOTE:
-Since shape position is reached via a heuristic (partially probabilistic)
-coordinate change, the function may raise an error after a specified number of
-unsuccessful attempts.
+
+- It is assumed that J is radical. For 0-dimensional non-radical ideals, shape 
+  position may fail and is currently not supported.
+- Since shape position is reached via a heuristic (partially probabilistic)
+  coordinate change, the function may raise an error after a specified number of
+  unsuccessful attempts.
+
 
 EXAMPLES::
 
@@ -88,10 +92,9 @@ EXAMPLES::
     sage: J = R.ideal([x^2 + y^2 + 2, 2*x^2 + x*y + y])
     sage: S = approximate_solutions(J, v2)
     sage: len(S)
-    2
+    1
     sage: s = S[0]; s
-    approximate solution in 2 variables over Number Field in alpha \
-        with defining polynomial y^2 + 40*y - 80 (residual valuation ≥ 10)
+    approximate solution in 2 variables over ... (residual valuation ≥ 10)
 
     sage: s.extension()
     Number Field in alpha with defining polynomial y^2 + 40*y - 80
@@ -109,7 +112,7 @@ EXAMPLES::
 
 """
 
-from sage.all import SageObject, ZZ
+from sage.all import SageObject, ZZ, QQ, PolynomialRing
 from semistable_model.curves.approximate_factors import approximate_roots
 
 
@@ -154,17 +157,18 @@ def approximate_solutions(J, v_K, positive_valuation=True, one_solution=False,
         try_list = []
 
     _check_dim_zero(J)
+    _check_is_radical(J)
     _check_lex_order(J)
 
     # Step 1: attempt shape position
-    J1, phi, f, rs = _put_in_shape_position(J, max_tries=max_tries, bound=bound,
+    phi, f, rs, bs = _put_in_shape_position(J, max_tries=max_tries, bound=bound,
                                             seed=seed, try_list=try_list)
 
     # Step 2: build one ApproximateSolution per "univariate branch" for f(x_n)=0
     sols = []
     for br in approximate_roots(f, v_K, 
                                 positive_valuation=positive_valuation):
-        sol = ApproximateSolution(J1, phi, f, rs, v_K, br,
+        sol = ApproximateSolution(J, phi, f, rs, v_K, br, bs,
                                   positive_valuation=positive_valuation)
         if sol.is_admissible():
             if one_solution:
@@ -187,9 +191,8 @@ class ApproximateSolution(SageObject):
     Calling :meth:`improve_approximation` refines the approximation of `x_n`, and thereby
     improves the residual valuations of the defining equations.
     """
-
-    def __init__(self, J1, phi, f, rs, v_K, branch, positive_valuation=True):
-        self._J1 = J1
+    def __init__(self, J, phi, f, rs, v_K, branch, bs, positive_valuation=True):
+        self._J = J
         self._phi = phi
         self._f = f
         self._rs = rs
@@ -197,18 +200,21 @@ class ApproximateSolution(SageObject):
         self._branch = branch
         self._positive_valuation = positive_valuation
 
-        self._R = J1.ring()
+        self._R = J.ring()
         self._xs = tuple(self._R.gens())
         self._x_shape = self._xs[-1]
 
-        # Branch must provide (L,v_L) and a way to refine x_n
+        # store shear coefficients b_1,...,b_{n-1}
+        self._bs = tuple(int(b) for b in bs)
+        if len(self._bs) != len(self._xs) - 1:
+            raise ValueError("bs must have length n-1.")
+
         self._extension = branch.extension()
         self._extension_valuation = branch.extension_valuation()
 
         self._approximation = None
         self._residual_min = None
 
-        # initialize first approximation
         self.improve_approximation()
 
     def __repr__(self):
@@ -219,7 +225,6 @@ class ApproximateSolution(SageObject):
 
         try:
             L = self._extension
-            vL = self._extension_valuation
             field_str = f"over {L}"
         except Exception:
             field_str = "over unknown extension"
@@ -261,61 +266,73 @@ class ApproximateSolution(SageObject):
 
         OUTPUT:
 
-        The improved approximation vector `[a_1,...,a_n]`.
+        The improved approximation vector `[a_1,...,a_n]` in the original coordinates.
 
-        This method refines the underlying univariate approximation for `x_n`,
-        evaluates `x_i = r_i(x_n)` for `i < n`, and updates the cached residual
-        valuation.
+        This method refines the univariate approximation for the shape variable,
+        constructs the corresponding solution in shape coordinates, maps it back
+        via the inverse coordinate change, and updates the cached residual valuation.
         """
-        # refine the shape root (does nothing if the root is exact)
+        # Refine the shape root (does nothing if exact)
         self._branch.improve_approximation()
 
-        # read off the current approximation of x_n
-        x_shape = self._branch.approximation()
+        # Shape-coordinate for x_n' (i.e. y_n)
+        y_shape = self._branch.approximation()
 
-        # compute the remaining coordinates via x_i = r_i(x_n)
-        vec = [r(x_shape) for r in self._rs] + [x_shape]
+        # Solution in shape coordinates (for J1)
+        # y_i = r_i(y_n) for i < n, y_n = y_shape
+        y = [r(y_shape) for r in self._rs] + [y_shape]
 
-        self._approximation = vec
+        # Map back to original coordinates via phi
+        phi = self._phi
+        subs = {self._xs[i]: y[i] for i in range(len(self._xs))}
+        x = [phi(self._xs[i]).subs(subs) for i in range(len(self._xs))]
+
+        self._approximation = x
         self._residual_min = _min_residual_valuation(
-            self._J1, self._xs, vec, self._extension_valuation
+            self._J, self._xs, x, self._extension_valuation
         )
 
         return self._approximation
 
     def is_admissible(self):
         r"""
-        Return True if the *limit* solution satisfies the valuation constraint.
-
-        Uses the limit valuation machinery of ApproximateRoot to test v(x_i) for i<n.
+        Limit-based admissibility check using ApproximateRoot.value() and value_of_poly().
         """
-        # valuation of the shape variable itself
-        vx = self._branch.value()
+        br = self._branch
+
+        # valuations of x_1,...,x_{n-1}: x_i = r_i(y_n)
+        vals = [br.value_of_poly(r) for r in self._rs]
+
+        # valuation of x_n = y_n - sum b_i r_i(y_n)
+        R = self._rs[0].parent()   # univariate ring K[x_n]
+        t = R.gen()
+        q = t
+        for i, r in enumerate(self._rs):
+            q -= ZZ(self._bs[i]) * R(r)
+        vals.append(br.value_of_poly(q))
 
         if self._positive_valuation:
-            if vx <= 0:
-                return False
-            for r in self._rs:
-                if self._branch.value_of_poly(r) <= 0:
-                    return False
-            return True
+            return all(v > 0 for v in vals)
         else:
-            if vx < 0:
-                return False
-            for r in self._rs:
-                if self._branch.value_of_poly(r) < 0:
-                    return False
-            return True
+            return all(v >= 0 for v in vals)
 
 
 # --------------------------------------------------------------------
 # Helper functions (technical; keep at end of file)
 # --------------------------------------------------------------------
 
+
 def _check_dim_zero(J):
     d = J.dimension()
     if d != 0:
         raise ValueError("Expected dim(J)=0, got dim(J)=%s." % d)
+    
+
+def _check_is_radical(J):
+    J_r = J.radical()
+    if not all(J.reduce(g) == 0 for g in J_r.gens()):
+        raise ValueError("J is not radical.")
+ 
 
 def _check_lex_order(J):
     R = J.ring()
@@ -325,12 +342,13 @@ def _check_lex_order(J):
             f"Got term order: {R.term_order()}."
         )
 
+
 def _put_in_shape_position(J, max_tries=8, bound=2, seed=1, try_list=None):
     r"""
     Try restricted transforms x_n <- x_n + sum_{i<n} b_i x_i until strict shape form holds.
 
     OUTPUT:
-        (J1, phi, f, rs) as in the module documentation.
+        (phi, f, rs, bs) as in the module documentation.
 
     Raises NotImplementedError if unsuccessful after max_tries.
     """
@@ -355,7 +373,7 @@ def _put_in_shape_position(J, max_tries=8, bound=2, seed=1, try_list=None):
         try:
             G = J1.groebner_basis()
             f, rs = _strict_shape_data_from_groebner(G, xs)
-            return J1, phi, f, rs
+            return phi, f, rs, bs
         except Exception as e:
             last_err = e
 
@@ -412,12 +430,14 @@ def _is_univariate_in(p, var):
     vars_ = p.variables()
     return vars_ == () or vars_ == (var,)
 
+
 def _apply_shape_transform_to_ideal(J, xs, bs):
     R = J.ring()
     x_shape = xs[-1]
     new_x_shape = x_shape + sum(ZZ(bs[i]) * xs[i] for i in range(len(xs)-1))
     phi = R.hom(list(xs[:-1]) + [new_x_shape])
     return phi(J), phi
+
 
 def _random_shape_transforms(n, bound, seed):
     state = seed & 0xFFFFFFFF
@@ -430,8 +450,39 @@ def _random_shape_transforms(n, bound, seed):
         yield tuple(bs)
 
 
-def _min_residual_valuation(J1, xs, vec, vL):
+def _min_residual_valuation(J, xs, vec, vL):
     subs = {xs[i]: vec[i] for i in range(len(vec))}
-    # default: track residual on Groebner basis generators; you can change to J1.gens()
-    vals = [vL(F.subs(subs)) for F in J1.groebner_basis()]
+    vals = [vL(F.subs(subs)) for F in J.gens()]
     return min(vals) if vals else None
+
+
+# -----------------------------------------------------------------------------
+
+#          Test functions
+
+def test_approximate_solutions(v_K=QQ.valuation(2), N=10, d=3, n=3, prec=10, n_tries=10):
+    K = v_K.domain()
+    R = PolynomialRing(K, n, "x", order="lex")
+    for _ in range(N):
+        while True:
+            J = R.ideal([R.random_element(d) for _ in range(n)])
+            try:
+                _check_dim_zero(J)
+                _check_is_radical(J)
+                break
+            except:
+                pass
+        print(J)
+        S = approximate_solutions(J, v_K, positive_valuation=False)
+        for s in S:
+            print(f"s = {s}")
+            if s.residual_valuation() < prec:
+                for _ in range(n_tries):
+                    t = s.residual_valuation()
+                    print(f"t = {t}")
+                    s.improve_approximation()
+                    if t > prec:
+                        break
+                else:
+                    raise ValueError("residual doesn't increase enough")
+        print()
