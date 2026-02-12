@@ -281,7 +281,7 @@ class ApproximateSolution(SageObject):
 
         # Solution in shape coordinates (for J1)
         # y_i = r_i(y_n) for i < n, y_n = y_shape
-        y = [br.eval(r, simplify=False) for r in self._rs] + [y_shape]
+        y = [br.eval(r, simplify=True) for r in self._rs] + [y_shape]
 
         # Map back to original coordinates via phi
         phi = self._phi

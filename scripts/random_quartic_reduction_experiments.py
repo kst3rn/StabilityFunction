@@ -11,6 +11,7 @@
 # It is intended for exploratory computations and data generation, not as a
 # library module or automated test.
 
+import time
 from collections import defaultdict
 from random import Random
 
@@ -21,6 +22,13 @@ from semistable_model.curves.stable_reduction_of_quartics import stable_reductio
 # ------------------------------------------------------------
 # Random homogeneous quartics over QQ
 # ------------------------------------------------------------
+
+
+def timed_call(func, *args, **kwargs):
+    start = time.perf_counter()
+    result = func(*args, **kwargs)
+    end = time.perf_counter()
+    return result, end - start
 
 
 def random_int(rng, bound):
@@ -124,7 +132,9 @@ def experiment_random_quartics(
         if verbose:
             print(f"[{found}/{n_samples}] smooth quartic found; running stable reduction...")
             print(f"F = {F}")
-        res = stable_reduction_of_quartic(F, v_K)
+        res, t  = timed_call(stable_reduction_of_quartic, F, v_K)
+        if verbose:
+            print(f"time = {t}")
 
         # bucket key
         if res.status == "ok":
