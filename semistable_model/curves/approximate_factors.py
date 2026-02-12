@@ -515,6 +515,29 @@ class ApproximateRoot(SageObject):
         r"""Return the current approximation of this root."""
         return self._approximation
     
+    def eval(self, r, simplify=True):
+        r""" Evaluate a polynomial on this approximate root.
+        
+        INPUT:
+
+        - ``r`` -- a polynomial over the base field `K`
+        
+        OUTPUT:
+
+        the value `r(a_0)` where `a_0` is the current approximation 
+        of this approximate root.
+
+        If ``simplify`` is ``True`` then the value is simplified to the 
+        current precision before it is returned.
+
+        """
+        v_L = self.extension_valuation()
+        a0 = self.approximation()
+        if simplify:
+            return v_L.simplify(r(a0), self.precision())
+        else:
+            return r(a0)
+    
     def precision(self):
         r""" Return a lower bound for the precision of the current approximation.
         
