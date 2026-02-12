@@ -546,8 +546,7 @@ class ApproximateRoot(SageObject):
         """
         if self.is_exact():
             return Infinity
-        # I need to check this later!
-        return  2**self._count*(self._m - 2*self._s) + self._s
+        return self._precision
     
     def is_exact(self):
         r""" Return whether this approximate root is exact.
@@ -610,11 +609,13 @@ class ApproximateRoot(SageObject):
         # i.e. Newton approximation
         f = self.polynomial()
         df = self.derivative()
+        v_L = self.extension_valuation()
         a0 = self._approximation
-        t = self.precision()
         a = a0 - f(a0)/df(a0)
-        # simplify a; we assume quadratic convergence
-        a = self.extension_valuation().simplify(a, 2*t+1)
+        # compute the new precision
+        self._precision = v_L(f(a)) - v_L(df(a))
+        # simplify a to new precision
+        a = self.extension_valuation().simplify(a, self.precision()+1)
         self._approximation = a
         self._count = self._count + 1
         return a
@@ -642,8 +643,7 @@ class ApproximateRoot(SageObject):
             m = g.valuation()(f)
             s = g.valuation()(df)
         self._count = 0
-        self._m = m
-        self._s = s
+        self._precision = m - s
     
     def _init_limit_valuation(self):
         r""" Construct the limit valuation corresponding to this approximate root,
@@ -784,7 +784,9 @@ def test_approximate_roots(R, v_K, N=10, d = 12):
         for a in roots:
             print(f"   a_0 = {a.approximation()}")
             for _ in range(5):
-                a.improve_approximation()                
+                a.improve_approximation() 
+            print(f"a_5 = {a.approximation()}")           
+            print(f"precision = {a.precision()}")    
             print(f"v_L(f(a_5)) = {a.extension_valuation()(f(a.approximation()))}")
             h = R.random_element()
             print(f"h= {h}")
