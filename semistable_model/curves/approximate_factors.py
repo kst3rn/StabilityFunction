@@ -534,7 +534,7 @@ class ApproximateRoot(SageObject):
         v_L = self.extension_valuation()
         a0 = self.approximation()
         if simplify:
-            return v_L.simplify(r(a0), self.precision())
+            return v_L.simplify(r(a0), error=self.precision()+1, force=True)
         else:
             return r(a0)
     
@@ -610,12 +610,14 @@ class ApproximateRoot(SageObject):
         f = self.polynomial()
         df = self.derivative()
         v_L = self.extension_valuation()
-        a0 = self._approximation
-        a = a0 - f(a0)/df(a0)
+        a0 = self.approximation()
+        t = self.precision()
+        a = v_L.simplify(a0 - f(a0)/df(a0), error=2*t + 1, force=True)
         # compute the new precision
         self._precision = v_L(f(a)) - v_L(df(a))
         # simplify a to new precision
-        a = self.extension_valuation().simplify(a, self.precision()+1)
+        if self.precision() < 2*t:
+            a = self.extension_valuation().simplify(a, error=self.precision()+1, force=True)
         self._approximation = a
         self._count = self._count + 1
         return a
