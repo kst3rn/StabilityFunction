@@ -39,7 +39,7 @@ from sage.all import ZZ, QQ, PolynomialRing, matrix, Infinity, randint, Curve, S
 from semistable_model.curves.approximate_solutions import approximate_solutions
 
 
-def resolve_cusp(F, v_K, compute_matrix=False):
+def resolve_cusp(F, v_K, compute_matrix=False, return_J=False):
     r""" Return a base change matrix resolving the cusp.
 
     INPUT:
@@ -140,6 +140,10 @@ def resolve_cusp(F, v_K, compute_matrix=False):
     # we want to find an approximate solution alpha, beta, gamma for
     # A=B=C=0, with valuations at least v_a,v_b,v_c
     J = R.ideal([A, B, C])
+
+    # for testing:
+    if return_J:
+        return J
 
     # we find *one* solution to A=B=C=0 in the maximal ideal of O_K
     s = approximate_solutions(J, v_K, positive_valuation=True, one_solution=True)
