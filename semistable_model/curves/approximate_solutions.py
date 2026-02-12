@@ -117,7 +117,8 @@ from semistable_model.curves.approximate_factors import approximate_roots
 
 
 def approximate_solutions(J, v_K, positive_valuation=True, one_solution=False,
-                          max_tries=8, bound=2, seed=1, try_list=None):
+                          max_tries=8, bound=2, seed=1, try_list=None, 
+                          check_is_radical=True):
     r"""
     Return approximate solutions of a zero-dimensional system.
 
@@ -134,6 +135,8 @@ def approximate_solutions(J, v_K, positive_valuation=True, one_solution=False,
     - ``bound`` -- positive integer; random integers `b_i` are sampled from `[-bound, bound]`
     - ``seed`` -- integer seed for deterministic pseudo-random tries
     - ``try_list`` -- optional list of tuples `(b_1,...,b_{n-1})` tried before random tries
+    - ``check_is_radical`` -- boolean (default: ``False``); if set, test whether the ideal
+                              `J` is radical  
 
     OUTPUT:
 
@@ -150,6 +153,7 @@ def approximate_solutions(J, v_K, positive_valuation=True, one_solution=False,
     Raises an error in any of the following cases:
     
     - ``dim(J) != 0`` 
+    - ``check_is_radical``is ``True`` and `J` is not radical
     - the term order id not `lex`
     - if shape position is not reached after ``max_tries`` attempts.
     """
@@ -157,7 +161,9 @@ def approximate_solutions(J, v_K, positive_valuation=True, one_solution=False,
         try_list = []
 
     _check_dim_zero(J)
-    _check_is_radical(J)
+    # this seems to take too long in some examples
+    if check_is_radical:
+        _check_is_radical(J)
     _check_lex_order(J)
 
     # Step 1: attempt shape position

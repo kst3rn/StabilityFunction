@@ -146,7 +146,8 @@ def resolve_cusp(F, v_K, compute_matrix=False, return_J=False):
         return J
 
     # we find *one* solution to A=B=C=0 in the maximal ideal of O_K
-    s = approximate_solutions(J, v_K, positive_valuation=True, one_solution=True)
+    s = approximate_solutions(J, v_K, positive_valuation=True, one_solution=True, 
+                              check_is_radical=False)
     if s is None:
         raise ValueError("No solution found! this shouldn't have happend..")
      
