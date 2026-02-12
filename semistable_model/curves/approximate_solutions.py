@@ -100,7 +100,7 @@ EXAMPLES::
     Number Field in alpha with defining polynomial y^2 + 40*y - 80
 
     sage: s.approximation()
-    [-2359.../2605...*alpha + ..., 1389.../1867...*alpha - 3548.../1867...]
+    [-19/4*alpha - 15, 1389599/1867687*alpha - 354816/1867687]
 
     sage: s.residual_valuation()
     10
@@ -272,15 +272,16 @@ class ApproximateSolution(SageObject):
         constructs the corresponding solution in shape coordinates, maps it back
         via the inverse coordinate change, and updates the cached residual valuation.
         """
+        br = self._branch  # the shape root 
         # Refine the shape root (does nothing if exact)
-        self._branch.improve_approximation()
+        br.improve_approximation()
 
         # Shape-coordinate for x_n' (i.e. y_n)
-        y_shape = self._branch.approximation()
+        y_shape = br.approximation()
 
         # Solution in shape coordinates (for J1)
         # y_i = r_i(y_n) for i < n, y_n = y_shape
-        y = [r(y_shape) for r in self._rs] + [y_shape]
+        y = [br.eval(r, simplify=False) for r in self._rs] + [y_shape]
 
         # Map back to original coordinates via phi
         phi = self._phi
