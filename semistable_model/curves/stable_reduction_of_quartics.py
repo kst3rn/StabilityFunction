@@ -158,6 +158,10 @@ def stable_reduction_of_quartic(F, v_K):
         # 4) build component graph + classify
         G = component_graph_of_GIT_stable_quartic(Xs, cusp_data=cusp_data)
 
+        # the above gives an error in rare examples:
+        # F = -x^3*y - 8*x*y^3 - 7*x^3*z - 7*x^2*y*z + 5*x*y^2*z + 6*x^2*z^2 - 6*y*z^3
+        # v_K = QQ.valuation(2)
+
         res.component_graph = G
         res.signature = G.canonical_signature()
         res.reduction_type = classify_genus3_type(G)
