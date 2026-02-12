@@ -123,7 +123,7 @@ def experiment_random_quartics(
         found += 1
         if verbose:
             print(f"[{found}/{n_samples}] smooth quartic found; running stable reduction...")
-
+            print(f"F = {F}")
         res = stable_reduction_of_quartic(F, v_K)
 
         # bucket key
@@ -150,6 +150,7 @@ def experiment_random_quartics(
 # ------------------------------------------------------------
 # Example usage
 # ------------------------------------------------------------
+""""
 if __name__ == "__main__":
     # Example: stable reduction at p=2 over QQ
     v2 = QQ.valuation(2)
@@ -166,3 +167,4 @@ if __name__ == "__main__":
             print("Example from bucket:", k)
             print(lst[0])
             break
+"""
