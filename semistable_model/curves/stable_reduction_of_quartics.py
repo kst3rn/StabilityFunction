@@ -35,14 +35,15 @@ At present, only the non-hyperelliptic case is handled; if hyperelliptic
 reduction is detected, this is recorded in the result object.
 """
 
-from sage.all import Curve
+import hashlib
+from sage.all import QQ, Curve
 from semistable_model.curves.plane_curves_valued import PlaneCurveOverValuedField
 from semistable_model.curves.cusp_resolution import resolve_cusp
 from semistable_model.curves.component_graphs_of_plane_curves import component_graph_of_GIT_stable_quartic
 from semistable_model.curves.genus3_reduction_types import classify_genus3_type
 
 
-def stable_reduction_of_quartic(F, v_K):
+def stable_reduction_of_quartic(F, v_K, compute_matrix=False):
     r""" Return the stable reduction of a smooth quartic.
     
     INPUT:
@@ -76,6 +77,16 @@ def stable_reduction_of_quartic(F, v_K):
     - ``status == "fail"``:
       An exception occurred during the computation.  The exception message is
       recorded in the ``warnings`` attribute of the result object.
+
+    If ``compute_matrix`` is ``True`` then for each cusp/tail we record a triple
+    `(v_L, E, T)`, where `v_L` is the valuation on the field extension over
+    the cusp could be resolved, `E` is the tail (a semistable plane cubic)
+    and `T` is the base change matrix representing the resolution.
+
+    If ``compute_matrix` is ``False`` then instead a triple `(v_L,E, e)` is 
+    recorded, where `E` is as before, `v_L` is the valuation on a subextension
+    and `e` is a positive integer indicating the ramification index necessary
+    to obtain the actual extension.
 
     ALGORITHM (overview):
 
@@ -129,16 +140,10 @@ def stable_reduction_of_quartic(F, v_K):
         L = v_L.domain()
         Xs = XX.special_fiber()
         res.git_model = XX
-        res.special_fiber = Xs
-        res.v_L = v_L
-        # the attribute "git_wild" registers whether the the git-semistable model
-        # is defined over a wild or tame extension of K
-        if v_K.p().divides(v_L(v_K.uniformizer())/v_L(v_L.uniformizer())):
-            res.git_wild = True
-
-        else:
-            res.git_wild = False
-
+        res.git_special_fiber = Xs
+        res.git_extension = L
+        res.git_extension_valuation = v_L
+        
         # 2) detect hyperelliptic reduction early
         if not Xs.is_git_stable():
             res.status = "hyperelliptic"
@@ -149,7 +154,7 @@ def stable_reduction_of_quartic(F, v_K):
         # this is a list of `flags`
         # below we need Xs to be an object of `Curve`
         Xs = Curve(Xs.defining_polynomial()) 
-        cusp_data = [] 
+        cusp_data = []  # list of pairs (P, "e"/"m")
         # must be a list of pairs (P, tail_type), where P is a *rational*
         # point and ``tail_type`` is "e" or "m"     
         for C in cusps:
@@ -159,24 +164,20 @@ def stable_reduction_of_quartic(F, v_K):
             phi = T.base_ring().an_embedding(v_L.residue_field())
             M = T.map_coefficients(phi, v_L.residue_field()).map_coefficients(v_L.lift, L)
             cusp_model = XX.apply_matrix(M)
-            _, E, _ = resolve_cusp(cusp_model.defining_polynomial(), v_L)
+            tail = resolve_cusp(cusp_model.defining_polynomial(), v_L, 
+                                   compute_matrix=compute_matrix)
+            E = tail[1]
             P = Xs.point(C.point)
+            res.tail_data[P] = tail
             if E.is_smooth():
                 cusp_data.append((P, "e"))
             else:
                 cusp_data.append((P, "m"))
-
-        # res.tail_types = {P:"e"/"m", ...}
-
+        
         # 4) build component graph + classify
         G = component_graph_of_GIT_stable_quartic(Xs, cusp_data=cusp_data)
-
-        # the above gives an error in rare examples:
-        # F = -x^3*y - 8*x*y^3 - 7*x^3*z - 7*x^2*y*z + 5*x*y^2*z + 6*x^2*z^2 - 6*y*z^3
-        # v_K = QQ.valuation(2)
-
         res.component_graph = G
-        res.signature = G.canonical_signature()
+        res.canonical_signature = G.canonical_signature()
         res.reduction_type = classify_genus3_type(G)
 
         res.status = "ok"
@@ -202,34 +203,27 @@ class StableReductionResult:
         self.status = status
 
         # input provenance
-        self.K = v_K.domain()
+        self.K = v_K.domain()               
         self.v_K = v_K
-        self.F_input = F
+        self.F = F
 
-        # normalization / transformations
-        self.F_normalized = None
-        self.change_of_coordinates = None   # e.g. matrix in GL3(K)
-
-        # model data (GIT model etc.)
-        self.git_model = None               # your model object, if you keep it
-        self.special_fiber = None           # plane curve over residue field (or splitting field)
-        self.residue_field = None
-        self.splitting_field = None
-        self.field_extension_data = {}      # e.g. degrees, defining polynomials
-
-        # cusp / tail data
-        self.cusps = []                     # list of points on special_fiber
-        self.tail_types = {}                # cusp -> "e"/"m"
-        self.cusp_resolution_data = {}      # optional: per cusp diagnostics
+        # GIT model data 
+        self.git_model = None                  # a GIT-semistable model of X 
+        self.git_special_fiber = None          # its special fiber
+        self.git_extension = None              # the field extension over which a git ss model exists
+        self.git_extension_valuation = None    # its p-adic valuation
+        
+        # tail data
+        self.tail_data = {}              # keys: points P, values:list of triples (v_L, E, T) or (v_L, E, e)
 
         # final combinatorics
-        self.component_graph = None         # ComponentGraph
-        self.signature = None               # canonical signature (tuple)
-        self.reduction_type = None          # string among 42 types
+        self.component_graph = None      # ComponentGraph
+        self.canonical_signature = None  # the canonical signature of the graph
+        self.reduction_type = None       # string among 42 types
 
         # logging / diagnostics
         self.warnings = []
-        self.debug = {}                     # anything else you want to stash
+        self.debug = {}                  # anything else you want to stash
 
     # ---------------------------
     # Convenience helpers
@@ -240,54 +234,171 @@ class StableReductionResult:
 
     def summary(self):
         if self.status == "ok":
-            return (f"StableReductionResult(ok, type={self.reduction_type}, "
-                    f"sig={self.signature})")
+            return (f"StableReductionResult(ok, type={self.reduction_type})")
         return f"StableReductionResult({self.status})"
 
     def __repr__(self):
         return self.summary()
-
-    # ---------------------------
-    # Serialization
-    # ---------------------------
-
-    def to_dict(self, light=True):
+    
+    def to_record(self):
         """
-        Convert to a dict suitable for storage.
+        Return a lightweight record (dict) for the example database.
 
-        If light=True, omit heavy Sage objects and keep only strings/primitive data.
+        Only defined for status == "ok". Otherwise returns None.
+
+        The returned dictionary contains the following entries:
+
+        - ``"K_defpoly"``: the defining polynomial of the number field `K`
+        (as a string). If `K = QQ`, this is `"QQ"`.
+
+        - ``"K_gen"``: the name of the chosen generator of `K`
+        (if applicable).
+
+        - ``"p"``: the rational prime defining the p-adic valuation.
+
+        - ``"F"``: the homogeneous quartic form defining the curve,
+        given as a string in `K[x,y,z]`.
+
+        - ``"reduction_type"``: the reduction type of the stable
+        reduction (one of the 42 genus-3 types).
+
+        - ``"git_dfe"``: a triple ``(d, f, e)`` describing the extension
+        `L_0/K` over which a GIT-semistable model exists, where
+            * `d = [L_0 : K]` is the field degree,
+            * `f` is the residue field degree, and
+            * `e` is the ramification index (so `d = e * f`).
+
+        - ``"cusp_dfes"``: a list of triples ``(d, f, e)``, one for each
+        cusp, describing the field extension `L/L_0` required to resolve
+        that cusp.  Again, `d = e * f`.
+
+        These data are sufficient to reconstruct the example and to
+        filter examples by reduction type and ramification behaviour.
+
         """
-        d = {
-            "status": self.status,
+        if self.status != "ok":
+            return None
+
+        K = self.K
+        if K is QQ:
+            K_defpoly = "QQ"
+            K_gen = None
+        else:
+            K_defpoly = str(K.defining_polynomial())
+            K_gen = str(K.gen())
+        p = int(self.v_K.p())  # assuming this works for your valuation
+        F_str = str(self.F)
+
+        # (d,f,e) for L0/K
+        v0 = self.git_extension_valuation
+        git_dfe = extension_triple(self.v_K, v0)
+
+        # cusp extension data:
+        # tail_data entries are either (v_L, E, T) or (v_L, E, e)
+        cusp_dfes = []
+        for tail in self.tail_data.values():
+            vL = tail[0]
+            third = tail[2]
+
+            # If resolve_cusp returned a matrix, then the cusp resolution was done over vL (e=1)
+            if hasattr(third, "nrows"):  # crude: matrix has nrows()
+                # extension is whatever vL is over v0
+                dfe = extension_triple(v0, vL)
+                cusp_dfes.append(dfe)
+                continue
+
+            # Otherwise third is "e_needed" (positive int)
+            e_needed = int(third)
+
+            # Case 1: vL already extends v0 (possibly nontrivially)
+            if vL.domain() != v0.domain():
+                dfe0 = extension_triple(v0, vL)
+            else:
+                dfe0 = (1, 1, 1)
+
+            # Case 2: additional totally ramified extension of index e_needed over vL
+            # (this is exactly how resolve_cusp constructs it when compute_matrix=True)
+            dfe1 = (e_needed, 1, e_needed) if e_needed != 1 else (1, 1, 1)
+
+            # Store the combined extension over L0 as (d,f,e) if you want,
+            # or store both levels. You asked for L/L0, so combine:
+            d = dfe0[0] * dfe1[0]
+            f = dfe0[1] * dfe1[1]
+            e = dfe0[2] * dfe1[2]
+            cusp_dfes.append((d, f, e))
+        cusp_dfes.sort()  # to have a consistent output
+        payload = f"{K_defpoly}|{p}|{F_str}".encode("utf-8")
+        id = hashlib.sha256(payload).hexdigest()[:16]
+
+
+        rec = {
+            "id": id,
+            "K_defpoly": K_defpoly,
+            "K_gen": K_gen,
+            "p": p,
+            "F": F_str,
             "reduction_type": self.reduction_type,
-            "signature": self.signature,
-            "warnings": list(self.warnings),
-            "field_extension_data": dict(self.field_extension_data),
+            "git_dfe": git_dfe,              # (d,f,e) for L0/K
+            "cusp_dfes": cusp_dfes,          # list of (d,f,e) for each cusp extension L/L0
         }
+        return rec
 
-        # Store polynomials as strings if possible
-        if self.F_input is not None:
-            d["F_input"] = str(self.F_input)
-        if self.F_normalized is not None:
-            d["F_normalized"] = str(self.F_normalized)
+    def to_json_record(self):
+        r""" Return the record in json format.
+        
+        For the moment, this just means that tuples are turned into lists.
+        """
+        rec = self.to_record()
+        if rec is None:
+            return None
+        rec = dict(rec)  # shallow copy
+        rec["git_dfe"] = list(rec["git_dfe"])
+        rec["cusp_dfes"] = [list(t) for t in rec["cusp_dfes"]]
+        return rec
 
-        # Cusps / tails: store as strings (points can be non-JSON)
-        if self.cusps:
-            d["cusps"] = [str(P) for P in self.cusps]
-        if self.tail_types:
-            d["tail_types"] = {str(P): t for P, t in self.tail_types.items()}
 
-        if not light:
-            # keep heavy objects for pickling / in-session storage
-            d.update({
-                "K": self.K,
-                "v_K": self.v_K,
-                "git_model": self.git_model,
-                "special_fiber": self.special_fiber,
-                "residue_field": self.residue_field,
-                "splitting_field": self.splitting_field,
-                "component_graph": self.component_graph,
-                "debug": dict(self.debug),
-            })
+# ---------------------------------------------------------------------------
 
-        return d
+# Helper functions
+
+def _residue_degree(v):
+    k = v.residue_field()
+    # Finite field: degree over prime field
+    if hasattr(k, "degree"):
+        try:
+            return int(k.degree())
+        except Exception:
+            pass
+    # Fallback for finite fields where degree() may not exist
+    if hasattr(k, "cardinality") and hasattr(k, "characteristic"):
+        q = int(k.cardinality())
+        p = int(k.characteristic())
+        # q = p^f
+        f = 0
+        t = 1
+        while t < q:
+            t *= p
+            f += 1
+        if t == q:
+            return f
+    raise ValueError("Cannot determine residue field degree from valuation.")
+
+def extension_triple(v_base, v_ext):
+    """
+    Return (d,f,e) for the extension of valued fields induced by v_ext over v_base.
+    Assumes v_ext extends v_base.
+    """
+    K = v_base.domain()
+    L = v_ext.domain()
+    # field degree d = [L:K]
+    d = int(L.absolute_degree() / K.absolute_degree()) 
+    # residue degree f
+    fK = _residue_degree(v_base)
+    fL = _residue_degree(v_ext)
+    if fL % fK != 0:
+        raise ValueError("Residue degree not divisible; inconsistent valuations?")
+    f = int(fL // fK)
+    if d % f != 0:
+        raise ValueError("d not divisible by f; inconsistent (d,f) data?")
+    e = int(d // f)
+    return (d, f, e)
