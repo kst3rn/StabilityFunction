@@ -102,6 +102,19 @@ def stable_reduction_of_quartic(F, v_K):
     if `X` does not have hyperelliptic reduction. If it has hyperelliptic 
     reduction then ``None`` is returned.
 
+    EXAMPLES:
+
+    The following example produces an error:
+
+        sage: R.<x,y,z> = QQ[]
+        sage: F = -x^3*y - 8*x*y^3 - 7*x^3*z - 7*x^2*y*z + 5*x*y^2*z + 6*x^2*z^2 - 6*y*z^3
+        sage: SR = stable_reduction_of_quartic(F, QQ.valuation(2)); SR  # long time
+        StableReductionResult(fail)
+
+        sage: SR.warnings
+        ["Exception: unsupported operand parent(s) for +: ... over Finite Field in z2 of size 2^2'"]
+
+    The error is caused by a bug in sage, see issue https://github.com/sagemath/sage/issues/41643
 
     """
     K = F.base_ring()
