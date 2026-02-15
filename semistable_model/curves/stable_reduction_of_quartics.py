@@ -33,6 +33,19 @@ to allow later serialization for large-scale experimental computations.
 
 At present, only the non-hyperelliptic case is handled; if hyperelliptic
 reduction is detected, this is recorded in the result object.
+
+.. todo::
+
+    - Refactor :class:`semistable_model.curves.plane_curves_valued.ProjectivePlaneCurve`
+      so that it has all methods we need. In particular, implement the construction
+      of its function field and the morphism from and to it, thus avoiding the bug
+      in the native `Curve` class of Sage (see https://github.com/sagemath/sage/issues/41643)
+    - Look into the assumption made in :mod:`semistable_model.curves.cusp_resolution`
+      that the ideal `J` has dimension `0`. There are examples where this is false!
+    - Improve the performance of :func:`semistable_model.curves.approximate_factors.ApproximateRoot'
+      by simplifying the coefficients of a polynomial before evaluating it on the
+      approximate root.
+
 """
 
 import hashlib
@@ -126,6 +139,16 @@ def stable_reduction_of_quartic(F, v_K, compute_matrix=False):
         ["Exception: unsupported operand parent(s) for +: ... over Finite Field in z2 of size 2^2'"]
 
     The error is caused by a bug in sage, see issue https://github.com/sagemath/sage/issues/41643
+
+    Here is another error, which falsifies the assumption made in :mod:`semistable_model.curves.cusp_resolution`
+    that the ideal `J` has dimension `0`.
+
+        sage: F = 3*x^4 - 12*x^2*y^2 - 5*y^4 - 5*x^3*z - 8*x^2*y*z + 3*x*y^2*z + 18*y*z^3
+        sage: SR = stable_reduction_of_quartic(F, QQ.valuation(3)); SR
+        StableReductionResult(fail)
+
+        sage: SR.warnings
+        ['Exception: Expected dim(J)=0, got dim(J)=1.']
 
     """
     K = F.base_ring()
