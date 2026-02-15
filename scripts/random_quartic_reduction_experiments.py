@@ -87,20 +87,64 @@ def write_run_stats(path, stats):
 # Random homogeneous quartics over QQ
 # ------------------------------------------------------------
 
-def random_int(rng, bound):
-    """Sample an integer uniformly from [-bound, bound]."""
+
+def random_int(rng, bound, p=None, rho=0.0, kmax=3):
+    """
+    Sample an integer coefficient.
+
+    If rho == 0 (default), sample uniformly from [-bound, bound].
+
+    If rho > 0 and p is given, bias the p-adic valuation upward:
+      - sample K via a truncated geometric law:
+            K = number of successes in repeated Bernoulli(rho), capped at kmax
+        so P(K >= k) ~ rho^k (until the cap)
+      - sample u uniformly from [-bound, bound]
+      - return c = p^K * u
+
+    Notes:
+      - If u = 0 then c = 0 regardless of K (fine; v_p(0)=+infty).
+      - For rho in (0,1), this increases the frequency of coefficients divisible by p.
+    """
     if bound <= 0:
         return 0
-    return rng.randint(-bound, bound)
 
+    # uniform box sampling
+    if rho <= 0.0 or p is None:
+        return rng.randint(-bound, bound)
 
-def random_quartic_form_QQ(*, rng, n_terms=8, coeff_bound=10):
+    # Guard against silly rho values
+    if rho >= 1.0:
+        # Always push to the cap
+        K = kmax
+    else:
+        K = 0
+        while K < kmax and rng.random() < rho:
+            K += 1
+
+    u = rng.randint(-bound, bound)
+    return (p**K) * u
+
+def random_quartic_form_QQ(*, rng, n_terms=8, coeff_bound=20, p=None, rho=0.0, kmax=3):
     r"""
     Return a random homogeneous quartic F(x,y,z) over QQ.
 
     Parameters:
       - n_terms: number of monomials used (<= 15 for quartics)
       - coeff_bound: coefficients are sampled from [-coeff_bound, coeff_bound]
+      - p: prime for optional p-adic valuation bias (default: None)
+      - rho: if > 0 and p is given, coefficients are biased so that
+             v_p(c) tends to be positive with probability roughly rho;
+             rho = 0 recovers uniform box sampling
+      - kmax: maximal exponent K used in the valuation bias
+              (coefficients may be multiplied by p^K with
+              K distributed approximately geometrically and truncated at kmax)
+
+    If rho > 0 and p is specified, each coefficient c is generated as
+        c = p^K * u,
+    where u is sampled uniformly from [-coeff_bound, coeff_bound] and
+    K is obtained by a truncated geometric procedure with parameter rho.
+    This increases the frequency of coefficients divisible by p and
+    hence the probability that the naive reduction modulo p is singular.
     """
     R = PolynomialRing(QQ, names=("x", "y", "z"))
     mons = list(R.monomials_of_degree(4))  # 15 monomials
@@ -109,7 +153,7 @@ def random_quartic_form_QQ(*, rng, n_terms=8, coeff_bound=10):
 
     F = R.zero()
     for m in mons:
-        c = random_int(rng, coeff_bound)
+        c = random_int(rng, coeff_bound, p=p, rho=rho, kmax=kmax)
         if c != 0:
             F += QQ(c) * m
 
@@ -133,6 +177,8 @@ def run_experiment(
     seed=0,
     n_terms=8,
     coeff_bound=10,
+    rho=0.0,
+    kmax=3,
     max_tries_factor=50,
     verbose=True,
     store_only_ok=True,
@@ -217,7 +263,8 @@ def run_experiment(
     while found < n_samples and tries < max_tries:
         tries += 1
 
-        F = random_quartic_form_QQ(rng=rng, n_terms=n_terms, coeff_bound=coeff_bound)
+        F = random_quartic_form_QQ(rng=rng, n_terms=n_terms, coeff_bound=coeff_bound, 
+                                   p=prime, rho=rho, kmax=kmax)
 
         # accept only smooth quartics over QQ
         try:
@@ -319,6 +366,10 @@ def main():
                         help="Reduce output")
     parser.add_argument("--store-all", action="store_true",
                         help='Store also "hyperelliptic"/"fail" (not recommended).')
+    parser.add_argument("--rho", type=float, default=0.0,
+                    help="Geometric bias parameter for p-adic valuation of coefficients (default: 0.0 = uniform sampling).")
+    parser.add_argument("--kmax", type=int, default=3,
+                    help="Maximum exponent used in p-adic valuation bias (default: 3).")
 
     args = parser.parse_args()
 
@@ -331,6 +382,8 @@ def main():
         seed=args.seed,
         n_terms=args.n_terms,
         coeff_bound=args.coeff_bound,
+        rho=args.rho,
+        kmax=args.kmax,
         max_tries_factor=args.max_tries_factor,
         verbose=(not args.quiet),
         store_only_ok=(not args.store_all),
