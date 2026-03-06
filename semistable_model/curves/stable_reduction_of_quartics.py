@@ -38,7 +38,6 @@ reduction is detected, this is recorded in the result object.
 
     - fix the error with message "there is no unique extension of 3-adic valuation 
       from Rational Field ...", see the examples below
-    - add the thickness of singularity to the tail data
     - Improve the performance of :func:`semistable_model.curves.approximate_factors.ApproximateRoot'
       by simplifying the coefficients of a polynomial before evaluating it on the
       approximate root.
@@ -89,14 +88,15 @@ def stable_reduction_of_quartic(F, v_K, compute_matrix=False):
       recorded in the ``warnings`` attribute of the result object.
 
     If ``compute_matrix`` is ``True`` then for each cusp/tail we record a triple
-    `(v_L, E, T)`, where `v_L` is the valuation on the field extension over
-    the cusp could be resolved, `E` is the tail (a semistable plane cubic)
-    and `T` is the base change matrix representing the resolution.
+    `(v_L, t, E, T)`, where `v_L` is the valuation on the field extension over
+    the cusp could be resolved, `t` is the thickness of the node, `E` is the tail 
+    (a semistable plane cubic) and `T` is the base change matrix representing 
+    the resolution.
 
-    If ``compute_matrix` is ``False`` then instead a triple `(v_L,E, e)` is 
-    recorded, where `E` is as before, `v_L` is the valuation on a subextension
-    and `e` is a positive integer indicating the ramification index necessary
-    to obtain the actual extension.
+    If ``compute_matrix` is ``False`` (the default) then instead a triple 
+    `(v_L, t, E, e)` is recorded, where `t`, `E` are as before, `v_L` is the 
+    valuation on a subextension and `e` is a positive integer indicating the 
+    ramification index necessary to obtain the actual extension.
 
     ALGORITHM (overview):
 
@@ -203,7 +203,7 @@ def stable_reduction_of_quartic(F, v_K, compute_matrix=False):
             cusp_model = XX.apply_matrix(M)
             tail = resolve_cusp(cusp_model.defining_polynomial(), v_L, 
                                    compute_matrix=compute_matrix)
-            E = tail[1]
+            E = tail[2]
             P = Xs.point(C.point)
             res.tail_data[P] = tail
             if E.is_smooth():
@@ -330,11 +330,11 @@ class StableReductionResult:
         git_dfe = extension_triple(self.v_K, v0)
 
         # cusp extension data:
-        # tail_data entries are either (v_L, E, T) or (v_L, E, e)
+        # tail_data entries are either (v_L, t, E, T) or (v_L, t, E, e)
         cusp_dfes = []
         for tail in self.tail_data.values():
             vL = tail[0]
-            third = tail[2]
+            third = tail[3]
 
             # If resolve_cusp returned a matrix, then the cusp resolution was done over vL (e=1)
             if hasattr(third, "nrows"):  # crude: matrix has nrows()
