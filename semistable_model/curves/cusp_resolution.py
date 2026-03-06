@@ -12,14 +12,18 @@ This form represents an integral plane model of a smooth quartic over `\QQ`,
 whose special fiber with respect to the `2`-adic valuation has a cusp in
 normal form in `(1:0:0)`. We can resolve this cusp as follows:
 
-    sage: v_L, E, e = resolve_cusp(F, v_2)
+    sage: v_L, t, E, e = resolve_cusp(F, v_2)
 
 Here `v_L` is the unique extension of `v_2` to a finite extension `L` of `K=\QQ`,
 
     sage: v_L.domain()
     Number Field in alpha with defining polynomial a^8 + 13464*a^7 + 21040*a^6 - 6832/5*a^5 + 93040*a^4 + 39360/43*a^3 + 2820928*a^2 - 10112/443*a - 10816/367
 
-and is *tail*, a semistable plane cubic in Weierstrass normal form,
+`t` is the thickness of the node where the tail is attached to the core,
+
+    sage: t
+
+`E` is the *tail*, a semistable plane cubic in Weierstrass normal form,
 
     sage: E
     Projective Plane Curve over Finite Field of size 2 defined by x^3 + y^2*z + y*z^2,
@@ -57,17 +61,18 @@ def resolve_cusp(F, v_K, compute_matrix=False, return_J=False):
 
     If ``compute_matrix`` is ``False`` (the default):
 
-    a triple `(v_L, E, e)`, where 
+    a tuple `(v_L, t, E, e)`, where 
     - `e` is a positive integer,
     - `v_L` is an extension of `v_K` to a finite field extension `L/K` 
       such that the cusp can be resolved over any extension of `L`
       with ramification index `e`, 
+    - `t` is a positive rational number, the *thickness* of the node, and 
     - `E` is a semistable plane cubic over the residue field of `L`, 
       the resulting one-tail. 
 
     If ``compute_matrix`` is ``True``:
 
-    a tripel `(v_L, E, T)`, where v_L` and `E` are as above, with `e=1`,
+    a tripel `(v_L, t, E, T)`, where v_L`, `t` and `E` are as above, with `e=1`,
     and `T` is an upper triangular`(3,3)`-matrix over `L`,
     representing the base change to the plane model resolving the cusp `P`.
    
@@ -76,6 +81,8 @@ def resolve_cusp(F, v_K, compute_matrix=False, return_J=False):
 
     The following example caused problems before, but is now fixed:
 
+        sage: from semistable_model.curves.plane_curves_valued import PlaneCurveOverValuedField
+        sage: from semistable_model.curves.cusp_resolution import resolve_cusp
         sage: R.<x,y,z> = QQ[]
         sage: F = -16*x^4 - 15*x^3*y - 12*x^2*y^2 - 5*x*y^3 + 15*x^2*z^2 + 12*x*y*z^2 - 4*y^2*z^2 + 8*z^4
         sage: v_K = QQ.valuation(2)
@@ -88,9 +95,12 @@ def resolve_cusp(F, v_K, compute_matrix=False, return_J=False):
         sage: T = C.move_to_e0_x2()
         sage: M = T.map_coefficients(v_L.lift, L)
         sage: cusp_model = XX.apply_matrix(M)
-        sage: v_L, E, e = resolve_cusp(cusp_model.defining_polynomial(), v_L) # long time!
+        sage: v_L, t, E, e = resolve_cusp(cusp_model.defining_polynomial(), v_L) # long time!
         sage: v_L.domain()
         Number Field in alpha with defining polynomial a^8 - ... over its base field
+
+        sage: t
+        1
 
         sage: E
         Projective Plane Curve over Finite Field of size 2 defined by x^3 + y^2*z + y*z^2
@@ -183,7 +193,7 @@ def resolve_cusp(F, v_K, compute_matrix=False, return_J=False):
     E = Curve(Fb)
 
     if not compute_matrix:
-        return v_L, E, e
+        return v_L, t, E, e
 
     # we now have to extend L such that it contains an element Pi with
     # valuation t; then the reduction of F_2:=F_1(Pi^2*x,Pi^3*y,z)
@@ -199,7 +209,7 @@ def resolve_cusp(F, v_K, compute_matrix=False, return_J=False):
         gamma = L(gamma)
     Pi = v_L.element_with_valuation(t)
     T = matrix(L, 3, 3, [1, alpha, beta, 0, Pi**2, Pi**2*gamma, 0, 0, Pi**3])
-    return v_L, E, T
+    return v_L, t, E, T
 
 
 def _valuation_matrix(F1, d, v_L):
@@ -330,7 +340,9 @@ def test_suite(v_K, N):
     for _ in range(N):
         F = random_curve_with_cusp(v_K)
         print(f"F = {F}")
-        v_L, _, Fb = resolve_cusp(F, v_K)
+        v_L, t, E, e = resolve_cusp(F, v_K)
         print(f" L = {v_L.domain()}")
-        print(f"Fb = {Fb}")
+        print(f"t = {t}")
+        print(f"E = {E}")
+        print(f"e = {e}")
         print()
