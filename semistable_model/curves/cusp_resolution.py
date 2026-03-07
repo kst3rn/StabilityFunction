@@ -175,7 +175,7 @@ def resolve_cusp(F, v_K, compute_matrix=False, return_J=False):
             tests = [(0,0), (1,0), (2,0)]
         else:
             tests = [(0,0), (0,1), (1,1)]
-        if all([V[i, j]/(6-2*i-3*j) > t for i, j in tests]):
+        if t > 0 and all([V[i, j]/(6-2*i-3*j) > t for i, j in tests]):
             break
         else:
             gamma, beta, alpha = s.improve_approximation()
@@ -263,7 +263,7 @@ def _normalized_reduction(v_K, a, s):
     """
     t = v_K(a)
     if t < s:
-        raise ValueError("We must have `v_K(a) >= s; a = {a}, s = {s}")
+        raise ValueError(f"We must have `v_K(a) >= s; a = {a}, v_K(a) = {t}, s = {s}")
     elif t == s:
         pi = v_K.uniformizer()
         m = ZZ(t/v_K(pi))

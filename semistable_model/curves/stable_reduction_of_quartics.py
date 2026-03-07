@@ -45,7 +45,8 @@ reduction is detected, this is recorded in the result object.
 """
 
 import hashlib
-from sage.all import QQ
+from sage.all import QQ, GF
+from semistable_model.curves.plane_curves import ProjectivePlaneCurve
 from semistable_model.curves.plane_curves_valued import PlaneCurveOverValuedField
 from semistable_model.curves.cusp_resolution import resolve_cusp
 from semistable_model.curves.component_graphs_of_plane_curves import component_graph_of_GIT_stable_quartic
@@ -151,20 +152,23 @@ def stable_reduction_of_quartic(F, v_K, compute_matrix=False):
          'git_dfe': [4, 2, 2],
          'cusp_dfes': [[8, 1, 8]]}         
     
-    Here is an example that still raises an error:
+    This example also caused an error, see issue #67
 
         sage: F = 4*x^4 - 2*x*y^3 + 6*x^3*z + x*y*z^2 + 10*y^2*z^2 + 7*x*z^3 - 7*y*z^3 + 9*z^4
         sage: SR = stable_reduction_of_quartic(F, QQ.valuation(3)); SR
-        StableReductionResult(fail)
-
-        sage: SR.warnings
-        ['Exception: there is no unique extension of 3-adic valuation from Rational Field ...]
+        StableReductionResult(ok, type=0---0e)
 
     The following example shows that issue #65 has been fixed:
 
         sage: F = 3*x^4 - 12*x^2*y^2 - 5*y^4 - 5*x^3*z - 8*x^2*y*z + 3*x*y^2*z + 18*y*z^3
         sage: SR = stable_reduction_of_quartic(F, QQ.valuation(3)); SR
         StableReductionResult(ok, type=0---0e)
+
+    This example shows that the problem described in commit d3eca6a has been fixed:
+
+        sage: F = -8*x^4 - 2*y^4 + 4*x^3*z + y^3*z + 5*x^2*z^2 - 4*y^2*z^2 + 5*z^4
+        sage: SR = stable_reduction_of_quartic(F, QQ.valuation(2)); SR
+        StableReductionResult(ok, type=1ee)
 
     """
     K = F.base_ring()
@@ -177,7 +181,19 @@ def stable_reduction_of_quartic(F, v_K, compute_matrix=False):
         XX = X.git_semistable_model_with_rational_cusps()
         v_L = XX.base_ring_valuation()
         L = v_L.domain()
-        Xs = XX.special_fiber()
+        # define the special fiber, with reduction and lifting maps
+        # this should later be moved to `plane_curve_valued`
+        k = v_L.residue_field()
+        k1 = GF(k.cardinality())
+        phi = k.an_embedding(k1)
+        phi_inv = phi.inverse()
+        red0 = v_L.reduce
+        red = lambda a: phi(red0(a))
+        lift0 = v_L.lift
+        lift = lambda a: lift0(phi_inv(a))
+        f = XX.defining_polynomial().map_coefficients(red, k1)
+        Xs = ProjectivePlaneCurve(f)
+        # Xs = XX.special_fiber()   # old code
         res.git_model = XX
         res.git_special_fiber = Xs
         res.git_extension = L
@@ -198,8 +214,7 @@ def stable_reduction_of_quartic(F, v_K, compute_matrix=False):
             T = C.move_to_e0_x2()
             # we want to lift T to a matrix in L; for this we first have
             # to change the base ring of T to the residue field of v_L
-            phi = T.base_ring().an_embedding(v_L.residue_field())
-            M = T.map_coefficients(phi, v_L.residue_field()).map_coefficients(v_L.lift, L)
+            M = T.map_coefficients(lift, L)
             cusp_model = XX.apply_matrix(M)
             tail = resolve_cusp(cusp_model.defining_polynomial(), v_L, 
                                    compute_matrix=compute_matrix)
@@ -399,12 +414,13 @@ class StableReductionResult:
 
 def _residue_degree(v):
     k = v.residue_field()
+    # the following gives wrong result if k is a quotient ring
     # Finite field: degree over prime field
-    if hasattr(k, "degree"):
-        try:
-            return int(k.degree())
-        except Exception:
-            pass
+    # if hasattr(k, "degree"):
+    #     try:
+    #         return int(k.degree())
+    #     except Exception:
+    #         pass
     # Fallback for finite fields where degree() may not exist
     if hasattr(k, "cardinality") and hasattr(k, "characteristic"):
         q = int(k.cardinality())
@@ -432,7 +448,7 @@ def extension_triple(v_base, v_ext):
     fK = _residue_degree(v_base)
     fL = _residue_degree(v_ext)
     if fL % fK != 0:
-        raise ValueError("Residue degree not divisible; inconsistent valuations?")
+        raise ValueError(f"Residue degree not divisible; inconsistent valuations? f_K = {fK}, f_L = {fL}")
     f = int(fL // fK)
     if d % f != 0:
         raise ValueError("d not divisible by f; inconsistent (d,f) data?")
