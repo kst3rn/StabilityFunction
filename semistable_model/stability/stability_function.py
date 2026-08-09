@@ -291,6 +291,23 @@ class ApartmentStabilityFunction:
   where
     T = base_change_matrix,
     (x_0,...,x_n) = stability_function.standard_basis().
+
+  .. MATH::
+  Let
+    v_K = stability_function.base_ring_valuation(),
+    T   = base_change_matrix,
+    F   = stability_function.homogeneous_form(),
+    (x_0,...,x_n) = stability_function.standard_basis(),
+    (y_0,...,y_n) = (x_0,...,x_n) * T^{-1}.
+
+  Thus, F is a homogeneous form in K[x_0,...,x_n].
+  To write F with respect to the basis (y_0,...,y_n) means to compute
+    G(y_0,...,y_n) = F((y_0,...,y_n)*A).
+  Let
+    G = sum_{i in I} a_i y^i,
+  where i is a multi-index, i.e. I is a subset of NN^{n+1}.
+  Then, `self` is the piecewise affine function mapping (w_0,...,w_n) to
+    max(d/(n+1) * v_K(det(T)) - v_K(a_i) + sum_{s=0}^n (d/(n+1) - i_s)*w_j : i in I).
   """
 
   def __init__(self, stability_function, base_change_matrix):
@@ -309,6 +326,23 @@ class ApartmentStabilityFunction:
     where
       T = base_change_matrix,
       (x_0,...,x_n) = stability_function.standard_basis().
+
+    .. MATH::
+    Let
+      v_K = stability_function.base_ring_valuation(),
+      T   = base_change_matrix,
+      F   = stability_function.homogeneous_form(),
+      (x_0,...,x_n) = stability_function.standard_basis(),
+      (y_0,...,y_n) = (x_0,...,x_n) * T^{-1}.
+
+    Thus, F is a homogeneous form in K[x_0,...,x_n].
+    To write F with respect to the basis (y_0,...,y_n) means to compute
+      G(y_0,...,y_n) = F((y_0,...,y_n)*A).
+    Let
+      G = sum_{i in I} a_i y^i,
+    where i is a multi-index, i.e. I is a subset of NN^{n+1}.
+    Then, `self` is the piecewise affine function mapping (w_0,...,w_n) to
+      max(d/(n+1) * v_K(det(T)) - v_K(a_i) + sum_{s=0}^n (d/(n+1) - i_s)*w_j : i in I).
     """
 
     if not base_change_matrix.is_invertible():
