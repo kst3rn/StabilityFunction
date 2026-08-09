@@ -157,12 +157,19 @@ class StabilityFunction:
 
   def local_minimum(self, base_change_matrix):
     r"""
-    Return the minimum on the apartment defined by
-    `base_change_matrix` and the point where `self`
-    attains it.
+    Return the minimum and a minimizer of `self` on the
+    apartment defined by `base_change_matrix`.
 
     INPUT:
     - ``base_change_matrix`` -- an invertible matrix.
+
+    OUTPUT:
+    The minimum `a` and a minimizer `b` of `self` on
+    the apartment defined by the basis
+      (x_0,...,x_n) * T^{-1},
+    where
+      T = base_change_matrix,
+      (x_0,...,x_n) = self.standard_basis().
 
     EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
