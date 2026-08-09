@@ -307,7 +307,7 @@ class ApartmentStabilityFunction:
     G = sum_{i in I} a_i y^i,
   where i is a multi-index, i.e. I is a subset of NN^{n+1}.
   Then, `self` is the piecewise affine function mapping (w_0,...,w_n) to
-    max(d/(n+1) * v_K(det(T)) - v_K(a_i) + sum_{s=0}^n (d/(n+1) - i_s)*w_j : i in I).
+    max(d/(n+1) * v_K(det(T)) - v_K(a_i) + sum_{s=0}^n (d/(n+1) - i_s)*w_s : i in I).
   """
 
   def __init__(self, stability_function, base_change_matrix):
@@ -342,7 +342,7 @@ class ApartmentStabilityFunction:
       G = sum_{i in I} a_i y^i,
     where i is a multi-index, i.e. I is a subset of NN^{n+1}.
     Then, `self` is the piecewise affine function mapping (w_0,...,w_n) to
-      max(d/(n+1) * v_K(det(T)) - v_K(a_i) + sum_{s=0}^n (d/(n+1) - i_s)*w_j : i in I).
+      max(d/(n+1) * v_K(det(T)) - v_K(a_i) + sum_{s=0}^n (d/(n+1) - i_s)*w_s : i in I).
     """
 
     if not base_change_matrix.is_invertible():
