@@ -266,7 +266,7 @@ class ProjectivePlaneCurve:
     INPUT:
     - ``P`` -- a point on `self`.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x0,x1,x2> = GF(3)[]
       sage: f = x0^2*x2 - x1^3
       sage: X = ProjectivePlaneCurve(f); X
@@ -315,7 +315,7 @@ class ProjectivePlaneCurve:
     r"""
     Return `True` if `self` is smooth and `False` otherwise.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x1^2*x2 - x0^3 - x0^2*x2
       sage: X = ProjectivePlaneCurve(f); X
@@ -337,7 +337,7 @@ class ProjectivePlaneCurve:
     r"""
     Return `True` if `self` is reduced and `False` otherwise.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x0^4 + x1^4 + x2^4
       sage: X = ProjectivePlaneCurve(f); X
@@ -367,7 +367,7 @@ class ProjectivePlaneCurve:
     r"""
     Return `True` if `self` is irreducible and `False` otherwise.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x0^4 + x1^4 + x2^4
       sage: X = ProjectivePlaneCurve(f); X
@@ -415,7 +415,7 @@ class ProjectivePlaneCurve:
     r"""
     Return `True` if `self` is semistable and `False` otherwise.
 
-    EXAMPLES:
+    EXAMPLES::
     A nodal cubic is semistable.
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x1^2*x2 + x0^3 + x0^2*x2
@@ -459,7 +459,7 @@ class ProjectivePlaneCurve:
     r"""
     Return `True` if `self` is stable and `False` otherwise.
 
-    EXAMPLES:
+    EXAMPLES::
     A smooth curve is stable.
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x0^4 + x1^4 + x2^4
@@ -502,7 +502,7 @@ class ProjectivePlaneCurve:
         return False
 
     # Base change to the field where at least one
-    # semiinstability become rational.
+    # semiinstability becomes rational.
     L = self.stability_field()
     X_L = self.base_change(L)
 
@@ -512,7 +512,7 @@ class ProjectivePlaneCurve:
         if Y.degree() == 1 and m == X_L.degree() / 3:
           return False
 
-    # Search for point of multiplicity 2d/3 or a point
+    # Search for a point of multiplicity 2d/3 or a point
     # of multiplicity d/3 < m <= 2d/3 and a line in the
     # tangent cone of multiplicity >= m/2.
     for P in X_L._reduced_singular_points:
@@ -596,7 +596,7 @@ class ProjectivePlaneCurve:
     Return an instability of `self` or `None` if `self` is
     semistable.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x1^2*x2 - x0^3 - x0^2*x2
       sage: X = ProjectivePlaneCurve(f); X
@@ -663,7 +663,7 @@ class ProjectivePlaneCurve:
                     and `T_{ij}(lambda)` is the elementary matrix with
                     `lambda` at the (i,j)-th position.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x0,x1,x2> = GF(2)[]
       sage: f = x1^2*x2 + x0^3 + x0^2*x2
       sage: X = ProjectivePlaneCurve(f); X
@@ -740,7 +740,7 @@ class ProjectivePlaneCurve:
     r"""
     Return the reduced subscheme of `self` as a projective plane curve.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x0,x1,x2> = GF(2^3)[]
       sage: f = (x0^2 + x1*x2)^2
       sage: X = ProjectivePlaneCurve(f); X
@@ -774,7 +774,7 @@ class ProjectivePlaneCurve:
 
     Note that the components are objects of :class:`IntegralProjectivePlaneCurve`.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x0,x1,x2> = GF(2^3)[]
       sage: f = x0^4 + x1^4 + x2^4
       sage: X = ProjectivePlaneCurve(f); X
@@ -836,7 +836,7 @@ class ProjectivePlaneCurve:
     A list of tuples `(m, Y)` where `Y` is an irreducible component
     contained in `self` with multiplicity `m` such that m > 1.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = (x0 + x1)*x2^2
       sage: X = ProjectivePlaneCurve(f); X
@@ -907,7 +907,7 @@ class ProjectivePlaneCurve:
     r"""
     Return the list of singular points of `self`.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x0^4 + x1^4 + x2^4
       sage: X = ProjectivePlaneCurve(f); X
@@ -949,7 +949,7 @@ class ProjectivePlaneCurve:
     Return `True` if `P` is a singular point of type A2
     in the Arnold's notation and `False` otherwise.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x1^2*x2 - x0^3
       sage: X = ProjectivePlaneCurve(f); X
@@ -1023,7 +1023,7 @@ class ProjectivePlaneCurve:
     r"""
     Return the list of all rational A2 singularities on `self`.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x,y,z> = QQ[]
       sage: f = (z*y^2 - x^3) * (z*(y - z)^2 - (x - z)^3) * ((y - z)^2 - x^2)
       sage: X = ProjectivePlaneCurve(f)
@@ -1071,7 +1071,7 @@ class ProjectivePlaneCurve:
     INPUT:
     - ``P`` -- a point on the projective plane.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
       sage: P = [0,0,1]
       sage: f = x0*x2^2 + x0^2*x1
@@ -1101,7 +1101,7 @@ class ProjectivePlaneCurve:
     Return the maximum of all multiplicities of rational points
     on `self`.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x0 * (x1 + x2)^2
       sage: X = ProjectivePlaneCurve(f); X
@@ -1148,7 +1148,7 @@ class ProjectivePlaneCurve:
     r"""
     Return the dimension of the singular locus of `self`.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x0*(x1 + x2)^2
       sage: X = ProjectivePlaneCurve(f); X
@@ -1180,7 +1180,7 @@ class ProjectivePlaneCurve:
     r"""
     Return the list of points of maximal multiplicity.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x0*(x1 + x2)^2
       sage: X = ProjectivePlaneCurve(f); X
@@ -1225,7 +1225,7 @@ class ProjectivePlaneCurve:
     r"""
     Return a generator object of flags attached to `self`.
 
-    EXAMPLES:
+    EXAMPLES::
     A properly semistable quartic.
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = (x0^2 + x1*x2)^2
@@ -1288,7 +1288,7 @@ class ProjectivePlaneCurve:
     r"""
     Return the factored form of self.defining_polynomial().
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
       sage: f = x0 * x1^2 * (x0 * x1 + x2^2)
       sage: X = ProjectivePlaneCurve(f); X
@@ -1320,7 +1320,7 @@ class PPC_TangentCone:
   - ``projective_plane_curve`` -- a projective plane curve.
   - ``P`` -- a point in the projective plane.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x,y,z> = QQ[]
       sage: f = (y-z)^2*z - (x-2*z)^3 - (x-2*z)^2*z
       sage: X = ProjectivePlaneCurve(f); X
@@ -1347,7 +1347,7 @@ class PPC_TangentCone:
     - ``projective_plane_curve`` -- a projective plane curve.
     - ``P`` -- a point in the projective plane.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: R.<x,y,z> = QQ[]
       sage: f = (y-z)^2*z - (x-2*z)^3 - (x-2*z)^2*z
       sage: X = ProjectivePlaneCurve(f); X
@@ -1391,7 +1391,7 @@ class PPC_TangentCone:
     r"""
     Return the defining polynomial of `self`.
 
-    EXAMPLES:
+    EXAMPLES::
       A nodal cubic with node at (2:1:1).
       sage: R.<x,y,z> = QQ[]
       sage: f = (y-z)^2*z - (x-2*z)^3 - (x-2*z)^2*z
@@ -1455,7 +1455,7 @@ class PPC_TangentCone:
     Return the defining polynomial of the embedding of `self` into
     the projective plane at the point `self.normalized_point`.
 
-    EXAMPLES:
+    EXAMPLES::
     A nodal cubic with node at (2:1:1).
       sage: R.<x,y,z> = QQ[]
       sage: f = (y-z)^2*z - (x-2*z)^3 - (x-2*z)^2*z
@@ -1561,7 +1561,7 @@ class PPC_TangentCone:
     A list of tuples `(L, m)` where `L` is a line contained
     in `self` with multiplicity `m`.
 
-    EXAMPLES:
+    EXAMPLES::
     A nodal cubic with node at (2:1:1).
       sage: R.<x,y,z> = QQ[]
       sage: f = (y-z)^2*z - (x-2*z)^3 - (x-2*z)^2*z
@@ -1622,7 +1622,7 @@ class PPC_TangentCone:
     multiplicity `m`in the embedding of `self` into the projective
     plane at the point `self.normalized_point`.
 
-    EXAMPLES:
+    EXAMPLES::
     A nodal cubic with node at (2:1:1).
       sage: R.<x,y,z> = QQ[]
       sage: f = (y-z)^2*z - (x-2*z)^3 - (x-2*z)^2*z
@@ -1690,7 +1690,7 @@ class ProjectiveFlag:
     - ``projective_point`` -- a point in the projective plane over `R`.
     - ``linear_form`` -- a linear form over `R` defining a line in the projective plane.
 
-    EXAMPLES:
+    EXAMPLES::
       sage: ProjectiveFlag(QQ, [1,2,3])
       Projective flag given by [1, 2, 3]
 
@@ -1795,7 +1795,7 @@ class ProjectiveFlag:
     (w[j] - w[i] < 0) \Rightarrow (T[i][j] = 0)
     holds.
 
-    EXAMPLES:
+    EXAMPLES::
     Define the rings.
       sage: K.<a,b,c,A,B,C> = QQ[]
       sage: K = K.fraction_field()
