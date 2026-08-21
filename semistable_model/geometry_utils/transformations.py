@@ -19,7 +19,7 @@ def _apply_matrix(T, F, i=None):
   OUTPUT:
   F((x_0,...,x_n) * T) with x_i = 1 if `i` is not `None`.
 
-  EXAMPLES:
+  EXAMPLES::
     sage: K.<t00,t01,t02,t10,t11,t12,t20,t21,t22> = QQ[]
     sage: R.<x0,x1,x2> = K[]
     sage: T = matrix(K, [[t00,t01,t02],[t10,t11,t12],[t20,t21,t22]]); T
@@ -70,7 +70,7 @@ def _ult_line_transformation(base_field, coordinates):
   transforming the line spanned by some standard basis vector
   to the line spanned by the vector defined by `coordinates`.
 
-  EXAMPLES:
+  EXAMPLES::
     sage: K.<a,b,c> = QQ[]
     sage: K = K.fraction_field()
     sage: T = _ult_line_transformation(K, [a,b,c]); T
@@ -107,7 +107,7 @@ def _uut_line_transformation(base_field, coordinates):
   transforming the line spanned by some standard basis vector
   to the line spanned by the vector defined by `coordinates`.
 
-  EXAMPLES:
+  EXAMPLES::
     sage: K.<a,b,c> = QQ[]
     sage: K = K.fraction_field()
     sage: T = _uut_line_transformation(K, [a,b,c]); T
@@ -254,7 +254,7 @@ def _ult_plane_transformation(linear_form):
   Return a unipotent lower triangular matrix with maximal
   number of zeros which transforms `linear_form` to some `x_i`.
 
-  EXAMPLES:
+  EXAMPLES::
     sage: K.<A,B,C> = QQ[]
     sage: K = K.fraction_field()
     sage: R.<x0,x1,x2> = K[]
@@ -302,7 +302,7 @@ def _uut_plane_transformation(linear_form):
   Return a unipotent upper triangular matrix with maximal
   number of zeros which transforms `linear_form` to some `x_i`.
 
-  EXAMPLES:
+  EXAMPLES::
     sage: K.<A,B,C> = QQ[]
     sage: K = K.fraction_field()
     sage: R.<x0,x1,x2> = K[]
@@ -439,7 +439,7 @@ def _ult_flag_transformation(Vector, linear_form):
   T - unipotent lower triangular matrix with e_j*T = Vector and
   _apply_matrix(T, linear_form) = x_i
 
-  EXAMPLES:
+  EXAMPLES::
     sage: K.<a,b,c,A,B,C> = QQ[]
     sage: K = K.fraction_field()
     sage: R.<x0,x1,x2> = K[]
@@ -506,7 +506,7 @@ def _uut_flag_transformation(Vector, linear_form):
   T - unipotent upper triangular matrix with e_j*T = Vector and
   _apply_matrix(T, linear_form) = x_i
 
-  EXAMPLES:
+  EXAMPLES::
     sage: K.<a,b,c,A,B,C> = QQ[]
     sage: K = K.fraction_field()
     sage: R.<x0,x1,x2> = K[]
