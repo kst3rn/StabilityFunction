@@ -270,6 +270,10 @@ class StabilityFunction:
     return min(affine_function(w) for affine_function in self.affine_functions_on_apartment(T))
 
 
+  def restriction(self, base_change_matrix):
+    return ApartmentStabilityFunction(self, base_change_matrix)
+
+
   def show(self, base_change_matrix, affine_patch = None):
     return ApartmentStabilityFunction(self, base_change_matrix).show(affine_patch)
 
@@ -278,83 +282,97 @@ class StabilityFunction:
 class ApartmentStabilityFunction:
   r"""
   Construct the restriction of a stability function to an apartment
-  to the following conditions.
+  subject to the following conditions.
 
   INPUT:
-  - ``stability_function`` -- a stability function.
-  - ``base_change_matrix`` -- an invertible matrix.
+
+  - ``stability_function`` -- a stability function
+  - ``base_change_matrix`` -- an invertible matrix
 
   OUTPUT:
-  Restriction of `stability_function` to the apartment defined by
-  the basis
-    (x_0,...,x_n) * T^{-1},
-  where
-    T = base_change_matrix,
-    (x_0,...,x_n) = stability_function.standard_basis().
+
+  Restriction of ``stability_function`` to the apartment defined
+  by the basis `(x_0, \dots, x_n) T^{-1}`, where `T` is the matrix
+  ``base_change_matrix`` and `(x_0, \dots, x_n)` is the basis
+  ``stability_function.standard_basis()``.
+
+  Let `v_K` be the ``stability_function.base_ring_valuation()``,
+  `T` be the ``base_change_matrix``,
+  `F` be the ``stability_function.homogeneous_form()``,
+  `(x_0, \dots, x_n)` be the standard basis, and
+  `(y_0, \dots, y_n) = (x_0, \dots, x_n) T^{-1}`.
+
+  Thus, `F` is a homogeneous form in `K[x_0, \dots, x_n]`. To write
+  `F` with respect to the basis `(y_0, \dots, y_n)` means to compute
 
   .. MATH::
-  Let
-    v_K = stability_function.base_ring_valuation(),
-    T   = base_change_matrix,
-    F   = stability_function.homogeneous_form(),
-    (x_0,...,x_n) = stability_function.standard_basis(),
-    (y_0,...,y_n) = (x_0,...,x_n) * T^{-1}.
 
-  Thus, F is a homogeneous form in K[x_0,...,x_n]. To write
-  F with respect to the basis (y_0,...,y_n) means to compute
-    G(y_0,...,y_n) = F((y_0,...,y_n) * T).
-  Let
-    G = sum_{i in I} a_i y^i,
-  where i is a multi-index, i.e., I is a subset of NN^{n+1}.
-  Then, `self` is the convex piecewise affine function
-    RR^{n+1} \to RR,
-    w \mapsto d * omega(w) - min(v_K(a_i) + <i,w> : i in I),
-  where
-    omega(w) = 1/(n+1) * (<1,w> + v_K(det(T))).
-  Explicitly, `self` is function mapping a tuple of real
-  numbers (w_0,...,w_n) in RR^{n+1} to
-    max(d/(n+1) * v_K(det(T)) - v_K(a_i) + sum_{s=0}^n (d/(n+1) - i_s)*w_s : i in I).
+    G(y_0, \dots, y_n) = F((y_0, \dots, y_n) T).
+
+  Let `G = \sum_{i \in I} a_i y^i`, where `i` is a multi-index, i.e.,
+  `I` is a subset of `\NN^{n+1}`. Then, ``self`` is the convex
+  piecewise affine function `\RR^{n+1} \to \RR` defined by
+
+  .. MATH::
+
+    w \mapsto d \cdot \omega(w) - \min(v_K(a_i) + \langle i, w \rangle : i \in I),
+
+  where `\omega(w) = \frac{1}{n+1} (\langle \mathbb{1}, w \rangle + v_K(\det(T)))`.
+
+  Explicitly, ``self`` is a function mapping a tuple of real
+  numbers `(w_0, \dots, w_n)` in `\RR^{n+1}` to
+
+  .. MATH::
+
+    \max \left(\frac{d}{n+1} v_K(\det(T)) - v_K(a_i) + \sum_{s=0}^n \left( \frac{d}{n+1} - i_s \right) w_s : i \in I \right).
   """
 
   def __init__(self, stability_function, base_change_matrix):
     r"""
     Construct the restriction of a stability function to an apartment
-    to the following conditions.
+    subject to the following conditions.
 
     INPUT:
-    - ``stability_function`` -- a stability function.
-    - ``base_change_matrix`` -- an invertible matrix.
+
+    - ``stability_function`` -- a stability function
+    - ``base_change_matrix`` -- an invertible matrix
 
     OUTPUT:
-    Restriction of `stability_function` to the apartment defined by
-    the basis
-      (x_0,...,x_n) * T^{-1},
-    where
-      T = base_change_matrix,
-      (x_0,...,x_n) = stability_function.standard_basis().
+
+    Restriction of ``stability_function`` to the apartment defined
+    by the basis `(x_0, \dots, x_n) T^{-1}`, where `T` is the matrix
+    ``base_change_matrix`` and `(x_0, \dots, x_n)` is the basis
+    ``stability_function.standard_basis()``.
+
+    Let `v_K` be the ``stability_function.base_ring_valuation()``,
+    `T` be the ``base_change_matrix``,
+    `F` be the ``stability_function.homogeneous_form()``,
+    `(x_0, \dots, x_n)` be the standard basis, and
+    `(y_0, \dots, y_n) = (x_0, \dots, x_n) T^{-1}`.
+
+    Thus, `F` is a homogeneous form in `K[x_0, \dots, x_n]`. To write
+    `F` with respect to the basis `(y_0, \dots, y_n)` means to compute
 
     .. MATH::
-    Let
-      v_K = stability_function.base_ring_valuation(),
-      T   = base_change_matrix,
-      F   = stability_function.homogeneous_form(),
-      (x_0,...,x_n) = stability_function.standard_basis(),
-      (y_0,...,y_n) = (x_0,...,x_n) * T^{-1}.
 
-    Thus, F is a homogeneous form in K[x_0,...,x_n]. To write
-    F with respect to the basis (y_0,...,y_n) means to compute
-      G(y_0,...,y_n) = F((y_0,...,y_n) * T).
-    Let
-      G = sum_{i in I} a_i y^i,
-    where i is a multi-index, i.e., I is a subset of NN^{n+1}.
-    Then, `self` is the convex piecewise affine function
-      RR^{n+1} \to RR,
-      w \mapsto d * omega(w) - min(v_K(a_i) + <i,w> : i in I),
-    where
-      omega(w) = 1/(n+1) * (<1,w> + v_K(det(T))).
-    Explicitly, `self` is function mapping a tuple of real
-    numbers (w_0,...,w_n) in RR^{n+1} to
-      max(d/(n+1) * v_K(det(T)) - v_K(a_i) + sum_{s=0}^n (d/(n+1) - i_s)*w_s : i in I).
+      G(y_0, \dots, y_n) = F((y_0, \dots, y_n) T).
+
+    Let `G = \sum_{i \in I} a_i y^i`, where `i` is a multi-index, i.e.,
+    `I` is a subset of `\NN^{n+1}`. Then, ``self`` is the convex
+    piecewise affine function `\RR^{n+1} \to \RR` defined by
+
+    .. MATH::
+
+      w \mapsto d \cdot \omega(w) - \min(v_K(a_i) + \langle i, w \rangle : i \in I),
+
+    where `\omega(w) = \frac{1}{n+1} (\langle \mathbb{1}, w \rangle + v_K(\det(T)))`.
+
+    Explicitly, ``self`` is a function mapping a tuple of real
+    numbers `(w_0, \dots, w_n)` in `\RR^{n+1}` to
+
+    .. MATH::
+
+      \max \left(\frac{d}{n+1} v_K(\det(T)) - v_K(a_i) + \sum_{s=0}^n \left(\frac{d}{n+1} - i_s \right) w_s : i \in I \right).
     """
 
     if not base_change_matrix.is_invertible():
