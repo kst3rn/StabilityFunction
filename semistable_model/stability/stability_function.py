@@ -953,7 +953,9 @@ class BTB_Point:
 
   def move_to_origin(self):
     r"""
-    Return ...
+    Return `self` with modified base change matrix such that
+    the weight vector is zero if `self` is a vertex. Otherweise,
+    raise a value error.
 
     EXAMPLES::
       sage: w = [0, 1, 2]
@@ -966,7 +968,7 @@ class BTB_Point:
       [1 0 0]
       [0 2 0]
       [0 0 4]
-      sage:
+
       sage: w = [0, 1, 3]
       sage: T = matrix(QQ, [[1,0,0],[2,1,0],[5,0,1]]); T
       [1 0 0]
@@ -980,7 +982,6 @@ class BTB_Point:
       [ 1  0  0]
       [ 4  2  0]
       [40  0  8]
-    .. MATH::
     """
     if not self.is_vertex():
       raise ValueError(f"self is not a vertex")
