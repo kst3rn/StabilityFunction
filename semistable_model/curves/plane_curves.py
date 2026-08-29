@@ -1096,54 +1096,6 @@ class ProjectivePlaneCurve:
     return self.plane_curve.multiplicity(P)
 
 
-  def maximal_multiplicity(self):
-    r"""
-    Return the maximum of all multiplicities of rational points
-    on `self`.
-
-    EXAMPLES::
-      sage: R.<x0,x1,x2> = QQ[]
-      sage: f = x0 * (x1 + x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0*x1^2 + 2*x0*x1*x2 + x0*x2^2
-      sage: X.maximal_multiplicity()
-      3
-      sage:
-      sage: X.multiplicity([1,1,-1])
-      2
-      sage: X.multiplicity([0,1,-1])
-      3
-
-      sage: R.<x0,x1,x2> = GF(2)[]
-      sage: f = x0^3 * (x1 + x2)
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2
-      sage: X.maximal_multiplicity()
-      4
-      sage:
-      sage: max(X.multiplicity(P) for P in X.singular_points())
-      4
-
-    MATHEMATICAL INTERPRETATION:
-    The maximal multiplicity of the scheme defined by self.defining_polynomial() at
-    a rational point P is sought. This occurs either:
-    (1) At a singular point P of the support (reduced subscheme).
-    (2) At a generic (smooth) point P of an irreducible component of the support.
-        If self.defining_polynomial() = ... * factor_i^e_i * ..., the multiplicity of self
-        at a generic point of the component defined by factor_i is e_i.
-    The method computes the maximum over all such values.
-    """
-
-    X_red_sing = self._reduced_singular_points
-    max_sing_mult = max((self.multiplicity(P) for P in X_red_sing), default=1)
-
-    component_mults = [mult for mult, comp in self.nonreduced_components()]
-    max_comp_mult = max(component_mults, default=1)
-
-    return max(max_sing_mult, max_comp_mult)
-
-
-
   def singular_locus_dimension(self):
     r"""
     Return the dimension of the singular locus of `self`.
@@ -1174,51 +1126,6 @@ class ProjectivePlaneCurve:
     if self.is_reduced():
       return 0
     return 1
-
-
-  def maximal_multiplicity_points(self): # upgrade to infinite fields: add nonreduced components to the list
-    r"""
-    Return the list of points of maximal multiplicity.
-
-    EXAMPLES::
-      sage: R.<x0,x1,x2> = QQ[]
-      sage: f = x0*(x1 + x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0*x1^2 + 2*x0*x1*x2 + x0*x2^2
-      sage: X.maximal_multiplicity_points()
-      [(0 : -1 : 1)]
-
-      sage: R.<x0,x1,x2> = GF(2)[]
-      sage: f = x0^3 * (x1 + x2)
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^3*x1 + x0^3*x2
-      sage: X.maximal_multiplicity_points()
-      [(0 : 1 : 1)]
-      sage:
-      sage: f = (x0^2 + x1*x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^4 + x1^2*x2^2
-      sage: X.maximal_multiplicity_points()
-      [(0 : 0 : 1), (0 : 1 : 0), (1 : 1 : 1)]
-    """
-
-    max_mult = self.maximal_multiplicity()
-    points_with_max_multiplicity = []
-
-    if self.base_ring.is_finite():
-      for P in self.singular_points():
-        if self.multiplicity(P) == max_mult:
-          points_with_max_multiplicity.append(P)
-      return points_with_max_multiplicity
-
-    if any(multiplicity == max_mult for multiplicity, component in self.nonreduced_components()):
-        raise NotImplementedError
-
-    for P in self.reduced_subscheme().singular_points():
-      if self.multiplicity(P) == max_mult:
-        points_with_max_multiplicity.append(P)
-
-    return points_with_max_multiplicity
 
 
   def flags(self):
