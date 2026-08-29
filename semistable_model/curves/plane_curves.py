@@ -1096,38 +1096,6 @@ class ProjectivePlaneCurve:
     return self.plane_curve.multiplicity(P)
 
 
-  def singular_locus_dimension(self):
-    r"""
-    Return the dimension of the singular locus of `self`.
-
-    EXAMPLES::
-      sage: R.<x0,x1,x2> = QQ[]
-      sage: f = x0*(x1 + x2)^2
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0*x1^2 + 2*x0*x1*x2 + x0*x2^2
-      sage: X.singular_locus_dimension()
-      1
-      sage:
-      sage: f = x0^2*x2 - x1^3
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial -x1^3 + x0^2*x2
-      sage: X.singular_locus_dimension()
-      0
-      sage:
-      sage: f = x0^4 + x1^4 + x2^4
-      sage: X = ProjectivePlaneCurve(f); X
-      Projective Plane Curve with defining polynomial x0^4 + x1^4 + x2^4
-      sage: X.singular_locus_dimension()
-      -1
-    """
-
-    if self.is_smooth():
-      return -1
-    if self.is_reduced():
-      return 0
-    return 1
-
-
   def flags(self):
     r"""
     Return a generator object of flags attached to `self`.
