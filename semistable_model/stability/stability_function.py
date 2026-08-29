@@ -473,26 +473,6 @@ class ApartmentStabilityFunction:
     return self.stability_function().dimension()
 
 
-  # def active_functions(self, w, flag = True):
-  #   r"""
-  #   Return the set of active functions a w
-  #   """
-  # 
-  #   d = self.homogeneous_form().degree()
-  #   N = self.dimension() + 1
-  #   # Compute d/N*v_K( det(A) )
-  #   const_A = d/N*self.base_ring_valuation(self._embedding_matrix.det())
-  #   affine_functions_values = dict()
-  #   F = _apply_matrix(self._embedding_matrix, self.homogeneous_form())
-  #   for multi_index, coefficient in F.dict().items():
-  #     value_at_w = self.base_ring_valuation()(coefficient) - const_A
-  #     for j in range(N):
-  #       value_at_w = value_at_w + multi_index[j] * w[j]
-  #     affine_functions_values[multi_index] = value_at_w
-  #   min_value = min(affine_functions_values.values())
-  #   return [key for key, value in affine_functions_values.items() if value == min_value]
-
-
   def affine_forms(self, redundancy=True):
     r"""
     Return the affine forms defining `self`.
