@@ -157,12 +157,19 @@ class StabilityFunction:
 
   def local_minimum(self, base_change_matrix):
     r"""
-    Return the minimum on the apartment defined by
-    `base_change_matrix` and the point where `self`
-    attains it.
+    Return the minimum and a minimizer of `self` on the
+    apartment defined by `base_change_matrix`.
 
     INPUT:
     - ``base_change_matrix`` -- an invertible matrix.
+
+    OUTPUT:
+    The minimum `a` and a minimizer `b` of `self` on
+    the apartment defined by the basis
+      (x_0,...,x_n) * T^{-1},
+    where
+      T = base_change_matrix,
+      (x_0,...,x_n) = self.standard_basis().
 
     EXAMPLES::
       sage: R.<x0,x1,x2> = QQ[]
@@ -263,6 +270,10 @@ class StabilityFunction:
     return min(affine_function(w) for affine_function in self.affine_functions_on_apartment(T))
 
 
+  def restriction(self, base_change_matrix):
+    return ApartmentStabilityFunction(self, base_change_matrix)
+
+
   def show(self, base_change_matrix, affine_patch = None):
     return ApartmentStabilityFunction(self, base_change_matrix).show(affine_patch)
 
@@ -271,29 +282,97 @@ class StabilityFunction:
 class ApartmentStabilityFunction:
   r"""
   Construct the restriction of a stability function to an apartment
-  to the following conditions.
+  subject to the following conditions.
 
   INPUT:
-  - ``stability_function`` -- a stability function.
-  - ``base_change_matrix`` -- an invertible matrix.
+
+  - ``stability_function`` -- a stability function
+  - ``base_change_matrix`` -- an invertible matrix
+
+  OUTPUT:
+
+  Restriction of ``stability_function`` to the apartment defined
+  by the basis `(x_0, \dots, x_n) T^{-1}`, where `T` is the matrix
+  ``base_change_matrix`` and `(x_0, \dots, x_n)` is the basis
+  ``stability_function.standard_basis()``.
+
+  Let `v_K` be the ``stability_function.base_ring_valuation()``,
+  `T` be the ``base_change_matrix``,
+  `F` be the ``stability_function.homogeneous_form()``,
+  `(x_0, \dots, x_n)` be the standard basis, and
+  `(y_0, \dots, y_n) = (x_0, \dots, x_n) T^{-1}`.
+
+  Thus, `F` is a homogeneous form in `K[x_0, \dots, x_n]`. To write
+  `F` with respect to the basis `(y_0, \dots, y_n)` means to compute
+
+  .. MATH::
+
+    G(y_0, \dots, y_n) = F((y_0, \dots, y_n) T).
+
+  Let `G = \sum_{i \in I} a_i y^i`, where `i` is a multi-index, i.e.,
+  `I` is a subset of `\NN^{n+1}`. Then, ``self`` is the convex
+  piecewise affine function `\RR^{n+1} \to \RR` defined by
+
+  .. MATH::
+
+    w \mapsto d \cdot \omega(w) - \min(v_K(a_i) + \langle i, w \rangle : i \in I),
+
+  where `\omega(w) = \frac{1}{n+1} (\langle \mathbb{1}, w \rangle + v_K(\det(T)))`.
+
+  Explicitly, ``self`` is a function mapping a tuple of real
+  numbers `(w_0, \dots, w_n)` in `\RR^{n+1}` to
+
+  .. MATH::
+
+    \max \left(\frac{d}{n+1} v_K(\det(T)) - v_K(a_i) + \sum_{s=0}^n \left( \frac{d}{n+1} - i_s \right) w_s : i \in I \right).
   """
 
   def __init__(self, stability_function, base_change_matrix):
     r"""
     Construct the restriction of a stability function to an apartment
-    to the following conditions.
+    subject to the following conditions.
 
     INPUT:
-    - ``stability_function`` -- a stability function.
-    - ``base_change_matrix`` -- an invertible matrix.
+
+    - ``stability_function`` -- a stability function
+    - ``base_change_matrix`` -- an invertible matrix
 
     OUTPUT:
-    Restriction of `stability_function` to the apartment defined by
-    the basis
-      (x_0,...,x_n) * T^{-1},
-    where
-      T = base_change_matrix,
-      (x_0,...,x_n) = stability_function.standard_basis().
+
+    Restriction of ``stability_function`` to the apartment defined
+    by the basis `(x_0, \dots, x_n) T^{-1}`, where `T` is the matrix
+    ``base_change_matrix`` and `(x_0, \dots, x_n)` is the basis
+    ``stability_function.standard_basis()``.
+
+    Let `v_K` be the ``stability_function.base_ring_valuation()``,
+    `T` be the ``base_change_matrix``,
+    `F` be the ``stability_function.homogeneous_form()``,
+    `(x_0, \dots, x_n)` be the standard basis, and
+    `(y_0, \dots, y_n) = (x_0, \dots, x_n) T^{-1}`.
+
+    Thus, `F` is a homogeneous form in `K[x_0, \dots, x_n]`. To write
+    `F` with respect to the basis `(y_0, \dots, y_n)` means to compute
+
+    .. MATH::
+
+      G(y_0, \dots, y_n) = F((y_0, \dots, y_n) T).
+
+    Let `G = \sum_{i \in I} a_i y^i`, where `i` is a multi-index, i.e.,
+    `I` is a subset of `\NN^{n+1}`. Then, ``self`` is the convex
+    piecewise affine function `\RR^{n+1} \to \RR` defined by
+
+    .. MATH::
+
+      w \mapsto d \cdot \omega(w) - \min(v_K(a_i) + \langle i, w \rangle : i \in I),
+
+    where `\omega(w) = \frac{1}{n+1} (\langle \mathbb{1}, w \rangle + v_K(\det(T)))`.
+
+    Explicitly, ``self`` is a function mapping a tuple of real
+    numbers `(w_0, \dots, w_n)` in `\RR^{n+1}` to
+
+    .. MATH::
+
+      \max \left(\frac{d}{n+1} v_K(\det(T)) - v_K(a_i) + \sum_{s=0}^n \left(\frac{d}{n+1} - i_s \right) w_s : i \in I \right).
     """
 
     if not base_change_matrix.is_invertible():
@@ -392,26 +471,6 @@ class ApartmentStabilityFunction:
 
   def dimension(self):
     return self.stability_function().dimension()
-
-
-  # def active_functions(self, w, flag = True):
-  #   r"""
-  #   Return the set of active functions a w
-  #   """
-  # 
-  #   d = self.homogeneous_form().degree()
-  #   N = self.dimension() + 1
-  #   # Compute d/N*v_K( det(A) )
-  #   const_A = d/N*self.base_ring_valuation(self._embedding_matrix.det())
-  #   affine_functions_values = dict()
-  #   F = _apply_matrix(self._embedding_matrix, self.homogeneous_form())
-  #   for multi_index, coefficient in F.dict().items():
-  #     value_at_w = self.base_ring_valuation()(coefficient) - const_A
-  #     for j in range(N):
-  #       value_at_w = value_at_w + multi_index[j] * w[j]
-  #     affine_functions_values[multi_index] = value_at_w
-  #   min_value = min(affine_functions_values.values())
-  #   return [key for key, value in affine_functions_values.items() if value == min_value]
 
 
   def affine_forms(self, redundancy=True):
@@ -874,7 +933,9 @@ class BTB_Point:
 
   def move_to_origin(self):
     r"""
-    Return ...
+    Return `self` with modified base change matrix such that
+    the weight vector is zero if `self` is a vertex. Otherweise,
+    raise a value error.
 
     EXAMPLES::
       sage: w = [0, 1, 2]
@@ -887,7 +948,7 @@ class BTB_Point:
       [1 0 0]
       [0 2 0]
       [0 0 4]
-      sage:
+
       sage: w = [0, 1, 3]
       sage: T = matrix(QQ, [[1,0,0],[2,1,0],[5,0,1]]); T
       [1 0 0]
@@ -901,7 +962,6 @@ class BTB_Point:
       [ 1  0  0]
       [ 4  2  0]
       [40  0  8]
-    .. MATH::
     """
     if not self.is_vertex():
       raise ValueError(f"self is not a vertex")

@@ -32,7 +32,7 @@ class SphericalStabilityFunction:
     position is not None. Otherwise return the symbolic presentation
     of `self` on the apartment given by transformation_matrix.
 
-    EXAMPLES:
+    EXAMPLES::
     sage: R.<x0,x1,x2> = GF(3)[]
     sage: f = x0^2 + x1^2 + x2^2
     sage: mu = SphericalStabilityFunction(f)
@@ -150,7 +150,7 @@ class SphericalStabilityFunction:
     whether the projective hypersurface defined by `self.homogeneous_form()`
     is unstable, strictly semistable or stable, respectively.
 
-    EXAMPLES:
+    EXAMPLES::
     sage: R.<x0,x1,x2> = GF(17^3)[]
     sage: f = x0^3*(x0 + x1 + x2)
     sage: mu = SphericalStabilityFunction(f)
@@ -376,7 +376,7 @@ class ApartmentSphericalStabilityFunction:
     r"""
     Return self.evaluate(position).
 
-    EXAMPLES:
+    EXAMPLES::
     sage: R.<x0,x1,x2> = GF(3)[]
     sage: f = x0^2 + x1^2 + x2^2
     sage: T = matrix(GF(3), [[1,0,2],[1,1,0],[0,2,1]]); T
@@ -458,7 +458,7 @@ class ApartmentSphericalStabilityFunction:
     of self on the apartment given by transformation_matrix at the
     point given by position.
 
-    EXAMPLES:
+    EXAMPLES::
     sage: R.<x0,x1,x2> = GF(3)[]
     sage: F = x0^2 + x1^2 + x2^2
     sage: T = matrix(GF(3), [[1,2,0], [1,1,1], [0,1,1]])
@@ -520,7 +520,7 @@ class ApartmentSphericalStabilityFunction:
     which can be realized by introducing positive and negative variables,
     w_i = w_i_pos - w_i_neg.
 
-    EXAMPLES:
+    EXAMPLES::
     sage: K = GF(17^3)
     sage: a = K.gen()
     sage: R.<x0,x1,x2> = K[]

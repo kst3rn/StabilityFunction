@@ -423,7 +423,7 @@ class LinearValuation:
     INPUT:
     - ``f`` -- element of the domain of `self`.
 
-    EXAMPLES:
+    EXAMPLES::
 
     MATHEMATICAL INTERPRETATION:
     First, let

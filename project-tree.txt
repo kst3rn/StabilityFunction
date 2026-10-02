@@ -1,0 +1,41 @@
+.
+├── documentation
+│   └── commutative_diagrams
+│       ├── base_change_alg.tex
+│       ├── base_change_plane_model.tex
+│       ├── base_change_vec.tex
+│       └── basis_matrix_product.tex
+├── notebooks
+│   ├── example_plane_models.ipynb
+│   ├── example_semistable_model_with_irrational_cusps.ipynb
+│   ├── example_semistable_model_with_rational_cusps.ipynb
+│   └── example_valuations.ipynb
+├── README.md
+├── scripts
+│   ├── random_quartic_reduction_experiments.py
+│   └── test_tame_assumption.sage
+├── semistable_model
+│   ├── curves
+│   │   ├── approximate_factors.py
+│   │   ├── approximate_solutions.py
+│   │   ├── component_graphs_of_plane_curves.py
+│   │   ├── component_graphs.py
+│   │   ├── cusp_resolution.py
+│   │   ├── genus3_reduction_types.py
+│   │   ├── integral_plane_curves.py
+│   │   ├── plane_curves.py
+│   │   ├── plane_curves_valued.py
+│   │   └── stable_reduction_of_quartics.py
+│   ├── finite_schemes.py
+│   ├── geometry_utils
+│   │   └── transformations.py
+│   ├── stability
+│   │   ├── admissible_functions.py
+│   │   ├── bruhat_tits_building.py
+│   │   ├── extension_search.py
+│   │   ├── parametric_optimization.py
+│   │   └── stability_function.py
+│   └── valuations
+│       └── linear_valuations.py
+├── setup.py
+└── spherical_stability_function.py
